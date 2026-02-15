@@ -30,7 +30,7 @@ const envSchema = z.object({
   // Server Configuration
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  FRONTEND_URL: z.string().default('http://localhost:8080').transform((val) => {
+  FRONTEND_URL: z.string().default('https://eatnbill.com').transform((val) => {
     return val.includes(',') ? val.split(',').map(url => url.trim()) : val;
   }),
 
