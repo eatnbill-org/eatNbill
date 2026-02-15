@@ -10,7 +10,7 @@ import { redisClient } from './utils/redis';
 import { env } from './env';
 
 /**
- * Creates and configures the Express application
+ * Create and configures the Express application
  */
 export async function createApp() {
   const app = express();
