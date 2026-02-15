@@ -1,0 +1,561 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model AdminUser {
+  id          String             @id @default(uuid()) @db.Uuid
+  supabase_id String             @unique
+  email       String             @unique
+  name        String?
+  is_active   Boolean            @default(true)
+  created_at  DateTime           @default(now())
+  updated_at  DateTime           @updatedAt
+  deleted_at  DateTime?
+  audit_logs  PlatformAuditLog[]
+
+  @@index([supabase_id])
+  @@index([email])
+}
+
+model PlatformAuditLog {
+  id            String     @id @default(uuid()) @db.Uuid
+  admin_id      String?    @db.Uuid
+  action        String
+  entity        String
+  entity_id     String?
+  tenant_id     String?    @db.Uuid
+  metadata      Json?
+  ip_address    String?
+  user_agent    String?
+  impersonating String?    @db.Uuid
+  created_at    DateTime   @default(now())
+  admin         AdminUser? @relation(fields: [admin_id], references: [id])
+
+  @@index([admin_id])
+  @@index([tenant_id])
+  @@index([action])
+  @@index([created_at])
+}
+
+model Tenant {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  plan        Plan         @default(FREE)
+  status      TenantStatus @default(ACTIVE)
+  notes       String?
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  deleted_at  DateTime?
+  audit_logs  AuditLog[]
+  restaurants Restaurant[]
+  users       User[]
+
+  @@index([id])
+  @@index([status])
+}
+
+model User {
+  id               String           @id @default(uuid()) @db.Uuid
+  supabase_id      String?          @unique
+  tenant_id        String           @db.Uuid
+  email            String
+  phone            String?
+  role             Role             @default(WAITER)
+  is_active        Boolean          @default(true)
+  email_verified   Boolean          @default(false)
+  otp              String?
+  otp_expires_at   DateTime?
+  otp_attempts     Int              @default(0)
+  last_otp_sent_at DateTime?
+  password_hash    String?
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+  deleted_at       DateTime?
+  audit_logs       AuditLog[]
+  restaurant_users RestaurantUser[]
+  tenant           Tenant           @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, email])
+  @@index([tenant_id])
+  @@index([phone])
+  @@index([email])
+}
+
+model Restaurant {
+  id              String                   @id @default(uuid()) @db.Uuid
+  tenant_id       String                   @db.Uuid
+  name            String
+  slug            String
+  phone           String?
+  email           String?
+  logo_url        String?
+  address         String?
+  gst_number      String?
+  tagline         String?
+  restaurant_type String?
+  opening_hours   Json?
+  closing_hours   Json?
+  created_at      DateTime                 @default(now())
+  updated_at      DateTime                 @updatedAt
+  deleted_at      DateTime?
+  categories      Category[]
+  products        Product[]
+  customers       Customer[]
+  tenant          Tenant                   @relation(fields: [tenant_id], references: [id])
+  integrations    IntegrationConfig[]
+  orders          Order[]
+  settings        RestaurantSettings?
+  theme_settings  RestaurantThemeSettings?
+  users           RestaurantUser[]
+  halls           RestaurantHall[]
+  tables          RestaurantTable[]
+  kds_settings    KdsSettings?
+
+  @@unique([slug])
+  @@index([tenant_id])
+  @@index([slug])
+}
+
+model Product {
+  id                       String               @id @default(uuid()) @db.Uuid
+  restaurant_id            String               @db.Uuid
+  category_id              String?              @db.Uuid
+  name                     String
+  description              String?
+  price                    Decimal              @db.Decimal(10, 2)
+  is_active                Boolean              @default(true) @map("is_available")
+  is_veg                   Boolean?
+  preparation_time_minutes Int?
+  costprice                Decimal?             @db.Decimal(10, 2)
+  created_at               DateTime             @default(now())
+  updated_at               DateTime             @updatedAt
+  deleted_at               DateTime?
+  category                 Category?            @relation(fields: [category_id], references: [id])
+  restaurant               Restaurant           @relation(fields: [restaurant_id], references: [id])
+  menu_maps                IntegrationMenuMap[]
+  order_items              OrderItem[]
+  images                   ProductImage[]
+  discount_percent         Decimal?             @default(0) @db.Decimal(5, 2)
+
+  @@index([category_id])
+  @@index([restaurant_id, is_active])
+  @@index([restaurant_id, category_id])
+}
+
+model Category {
+  id            String     @id @default(uuid()) @db.Uuid
+  restaurant_id String     @db.Uuid
+  name          String
+  description   String?
+  image_url     String?
+  is_active     Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  deleted_at    DateTime?
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
+  products      Product[]
+
+  @@unique([restaurant_id, name])
+  @@index([restaurant_id, is_active])
+}
+
+model AuditLog {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenant_id  String    @db.Uuid
+  user_id    String?   @db.Uuid
+  action     String
+  entity     String
+  entity_id  String?
+  metadata   Json?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  tenant     Tenant    @relation(fields: [tenant_id], references: [id])
+  user       User?     @relation(fields: [user_id], references: [id])
+
+  @@index([tenant_id])
+}
+
+model Order {
+  id                String           @id @default(uuid()) @db.Uuid
+  tenant_id         String           @db.Uuid
+  restaurant_id     String           @db.Uuid
+  table_id          String?          @db.Uuid
+  hall_id           String?          @db.Uuid
+  customer_id       String?          @db.Uuid
+  waiter_id         String?          @db.Uuid // Which waiter took this order
+  order_number      String
+  customer_name     String
+  customer_phone    String
+  table_number      String?
+  external_order_id String?
+  external_metadata Json?
+  notes             String?
+  total_amount      Decimal          @db.Decimal(10, 2)
+  status            OrderStatus      @default(PLACED)
+  source            OrderSource      @default(QR)
+  order_type        OrderType        @default(DINE_IN)
+  payment_method    PaymentMethod?
+  payment_status    PaymentStatus    @default(PENDING)
+  payment_provider  String?
+  payment_reference String?
+  payment_amount    Decimal?         @db.Decimal(10, 2)
+  paid_at           DateTime?
+  placed_at         DateTime         @default(now())
+  confirmed_at      DateTime?
+  preparing_at      DateTime?
+  ready_at          DateTime?
+  completed_at      DateTime?
+  cancelled_at      DateTime?
+  cancel_reason     String?
+  arrive_at         String?
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
+  items             OrderItem[]
+  restaurant        Restaurant       @relation(fields: [restaurant_id], references: [id])
+  table             RestaurantTable? @relation(fields: [table_id], references: [id])
+  hall              RestaurantHall?  @relation(fields: [hall_id], references: [id])
+  customer          Customer?        @relation(fields: [customer_id], references: [id])
+  waiter            RestaurantUser?  @relation(fields: [waiter_id], references: [id])
+
+  @@unique([source, external_order_id])
+  @@index([restaurant_id, status])
+  @@index([restaurant_id, placed_at])
+  @@index([customer_phone])
+  @@index([waiter_id])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String  @id @default(uuid()) @db.Uuid
+  order_id       String  @db.Uuid
+  product_id     String  @db.Uuid
+  name_snapshot  String
+  price_snapshot Decimal @db.Decimal(10, 2)
+  cost_snapshot  Decimal? @db.Decimal(10, 2) // Cost price at order time for profit calculation
+  quantity       Int
+  notes          String?
+  status         String  @default("PENDING") // Status of individual item (PENDING, REORDER, SERVED)
+  created_at     DateTime @default(now())
+  order          Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product        Product @relation(fields: [product_id], references: [id])
+
+  @@index([order_id])
+  @@index([product_id])
+  @@map("order_items")
+}
+
+model IntegrationConfig {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  restaurant_id          String                  @db.Uuid
+  platform               IntegrationPlatform
+  is_enabled             Boolean                 @default(false)
+  external_restaurant_id String
+  encrypted_secret       String
+  iv                     String
+  auto_accept            Boolean                 @default(false)
+  created_at             DateTime                @default(now())
+  updated_at             DateTime                @updatedAt
+  rotated_at             DateTime?
+  restaurant             Restaurant              @relation(fields: [restaurant_id], references: [id])
+  menu_maps              IntegrationMenuMap[]
+  logs                   IntegrationWebhookLog[]
+
+  @@unique([restaurant_id, platform])
+  @@unique([external_restaurant_id, platform])
+  @@index([is_enabled])
+  @@map("integration_configs")
+}
+
+model IntegrationMenuMap {
+  id                 String            @id @default(uuid()) @db.Uuid
+  integration_id     String            @db.Uuid
+  product_id         String            @db.Uuid
+  external_item_id   String
+  external_item_name String?
+  is_active          Boolean           @default(true)
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
+  integration        IntegrationConfig @relation(fields: [integration_id], references: [id], onDelete: Cascade)
+  product            Product           @relation(fields: [product_id], references: [id])
+
+  @@unique([integration_id, external_item_id])
+  @@unique([integration_id, product_id])
+  @@index([external_item_id])
+  @@map("integration_menu_maps")
+}
+
+model IntegrationWebhookLog {
+  id                String              @id @default(uuid()) @db.Uuid
+  integration_id    String              @db.Uuid
+  platform          IntegrationPlatform
+  restaurant_id     String              @db.Uuid
+  external_event_id String?
+  payload_raw       Json
+  signature_valid   Boolean
+  status            WebhookLogStatus    @default(RECEIVED)
+  failure_reason    String?
+  order_id          String?             @db.Uuid
+  received_at       DateTime            @default(now())
+  processed_at      DateTime?
+  replayed_by       String?             @db.Uuid
+  replayed_at       DateTime?
+  integration       IntegrationConfig   @relation(fields: [integration_id], references: [id])
+
+  @@index([integration_id])
+  @@index([status])
+  @@index([received_at])
+  @@index([external_event_id, platform])
+  @@map("integration_webhook_logs")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  WAITER
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum TenantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PLACED
+  CONFIRMED
+  PREPARING
+  READY
+  SERVED
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderSource {
+  QR
+  WEB
+  MANUAL
+  ZOMATO
+  SWIGGY
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  CREDIT
+  GPAY
+  APPLE_PAY
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+enum FontScale {
+  SM
+  MD
+  LG
+}
+
+enum IntegrationPlatform {
+  ZOMATO
+  SWIGGY
+}
+
+enum WebhookLogStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  REPLAYED
+}
+
+// ============================================================================
+// Restaurant Module
+// ============================================================================
+
+model RestaurantSettings {
+  restaurant_id String     @id @db.Uuid
+  opening_hours Json?
+  currency      String     @default("INR")
+  tax_included  Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_settings")
+}
+
+model RestaurantThemeSettings {
+  restaurant_id   String     @id @db.Uuid
+  theme_id        String
+  primary_color   String
+  secondary_color String
+  accent_color    String
+  font_scale      FontScale  @default(MD)
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_theme_settings")
+}
+
+model RestaurantUser {
+  id            String   @id @default(uuid()) @db.Uuid
+  restaurant_id String   @db.Uuid
+  user_id       String?  @db.Uuid // Optional for waiters (they use email/password instead)
+  role          Role
+  is_active     Boolean  @default(true)
+  is_shared_login Boolean @default(false)
+  created_at    DateTime @default(now())
+
+  // Waiter-specific fields
+  login_id               String? // Auto-generated like WTR-001 (deprecated, kept for compatibility)
+  email                  String? // Waiter login email
+  password_hash          String? // Hashed password for waiter login
+  name                   String? // Display name
+  phone                  String? // Contact number
+  address                String? // Contact address
+  profile_image_url      String? // Avatar URL
+  salary                 Decimal? @db.Decimal(10, 2) // Monthly salary
+  shift_detail           String? // Shift timing (e.g., "9 AM - 6 PM")
+  completed_orders_count Int      @default(0) // Total completed+paid orders
+
+  restaurant Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  user       User?      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  orders     Order[] // Orders handled by this waiter
+
+  @@unique([restaurant_id, user_id])
+  @@index([restaurant_id, role])
+  @@index([login_id])
+  @@index([email])
+  @@index([user_id, is_active]) // ✅ Auth middleware lookup
+  @@index([restaurant_id, is_active]) // ✅ Role checks
+  @@map("restaurant_users")
+}
+
+model RestaurantHall {
+  id            String            @id @default(uuid()) @db.Uuid
+  restaurant_id String            @db.Uuid
+  name          String
+  is_ac         Boolean           @default(false)
+  created_at    DateTime          @default(now())
+  restaurant    Restaurant        @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  tables        RestaurantTable[]
+  orders        Order[]
+
+  @@index([restaurant_id])
+  @@map("restaurant_halls")
+}
+
+model RestaurantTable {
+  id            String         @id @default(uuid()) @db.Uuid
+  restaurant_id String         @db.Uuid
+  hall_id       String         @db.Uuid
+  table_number  String
+  seats         Int
+  is_active     Boolean        @default(true)
+  created_at    DateTime       @default(now())
+  restaurant    Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  hall          RestaurantHall @relation(fields: [hall_id], references: [id], onDelete: Cascade)
+  orders        Order[]
+  qr_code       TableQRCode?
+
+  @@unique([restaurant_id, table_number])
+  @@index([restaurant_id])
+  @@index([hall_id])
+  @@map("restaurant_tables")
+}
+
+model ProductImage {
+  id           String   @id @default(uuid()) @db.Uuid
+  product_id   String   @db.Uuid
+  storage_path String
+  public_url   String?
+  sort_order   Int      @default(0)
+  created_at   DateTime @default(now())
+  product      Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@index([sort_order])
+  @@map("product_images")
+}
+
+model Customer {
+  id             String     @id @default(uuid()) @db.Uuid
+  tenant_id      String     @db.Uuid
+  restaurant_id  String     @db.Uuid
+  name           String
+  phone          String
+  email          String?
+  tags           String[]   @default([])
+  notes          String?
+  credit_balance Decimal    @default(0) @db.Decimal(10, 2)
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
+  restaurant     Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  orders         Order[]
+
+  @@unique([restaurant_id, phone])
+  @@index([tenant_id])
+  @@index([restaurant_id])
+  @@index([restaurant_id, tags])
+  @@index([phone])
+  @@map("customers")
+}
+
+// ============================================================================
+// KDS (Kitchen Display System) Settings
+// ============================================================================
+
+model KdsSettings {
+  restaurant_id                      String     @id @db.Uuid
+  restaurant                         Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  sound_enabled                      Boolean    @default(true)
+  auto_clear_completed_after_seconds Int        @default(300)
+  created_at                         DateTime   @default(now())
+  updated_at                         DateTime   @updatedAt
+
+  @@map("kds_settings")
+}
+
+// ============================================================================
+// Table QR Codes
+// ============================================================================
+
+model TableQRCode {
+  id          String          @id @default(uuid()) @db.Uuid
+  table_id    String          @unique @db.Uuid
+  menu_url    String
+  qr_png_path String // Storage path for PNG
+  qr_pdf_path String // Storage path for PDF
+  qr_png_url  String? // Public/signed PNG URL
+  qr_pdf_url  String? // Public/signed PDF URL
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @updatedAt
+  table       RestaurantTable @relation(fields: [table_id], references: [id], onDelete: Cascade)
+
+  @@index([table_id])
+  @@map("table_qrcodes")
+}
