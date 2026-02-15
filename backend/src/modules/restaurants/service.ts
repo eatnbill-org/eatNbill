@@ -342,6 +342,51 @@ export async function addTable(
   return table;
 }
 
+export async function bulkAddTables(
+  tenantId: string,
+  userId: string,
+  restaurantId: string,
+  tablesData: Array<{ hall_id: string; table_number: string; seats: number; is_active?: boolean }>
+) {
+  const createdTables = [];
+  const errors = [];
+
+  for (const data of tablesData) {
+    try {
+      const table = await createTable(restaurantId, data);
+      await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT_TABLE', table.id);
+
+      // Automatically generate QR code for the new table
+      try {
+        console.log(`[QR_GEN] Starting QR generation for table ${table.id}`);
+        await generateTableQrAssets(tenantId, userId, restaurantId, table.id);
+        console.log(`[QR_GEN] Successfully generated QR code for table ${table.id}`);
+        createdTables.push(table);
+      } catch (error) {
+        console.error(`[QR_GEN] Failed to generate QR code for table ${table.id}:`, error);
+        errors.push({
+          table_number: data.table_number,
+          error: 'QR code generation failed'
+        });
+        // Still add the table to createdTables as it was created, just without QR
+        createdTables.push(table);
+      }
+    } catch (error) {
+      console.error(`Failed to create table ${data.table_number}:`, error);
+      errors.push({
+        table_number: data.table_number,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  return {
+    created: createdTables,
+    errors,
+    success: createdTables.length > 0
+  };
+}
+
 export async function updateTableInfo(
   tenantId: string,
   userId: string,

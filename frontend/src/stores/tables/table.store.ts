@@ -17,6 +17,7 @@ type TableState = {
     fetchTables: () => Promise<void>;
     fetchHalls: () => Promise<void>;
     addTable: (data: CreateTablePayload) => Promise<boolean>;
+    bulkAddTables: (data: CreateTablePayload[]) => Promise<boolean>;
     updateTable: (id: string, data: UpdateTablePayload) => Promise<boolean>;
     deleteTable: (id: string) => Promise<boolean>;
     addHall: (data: CreateHallPayload) => Promise<RestaurantHall | null>;
@@ -78,6 +79,25 @@ export const useTableStore = create<TableState>((set, get) => ({
         } catch (err) {
             set({
                 error: { code: 'CREATE_FAILED', message: err instanceof Error ? err.message : 'Failed to add table' },
+                loading: false
+            });
+            return false;
+        }
+    },
+
+    bulkAddTables: async (data: CreateTablePayload[]) => {
+        set({ loading: true, error: null });
+        try {
+            const response = await apiClient.post<{ data: any }>('/restaurant/tables/bulk', { tables: data });
+            if (response.error) {
+                set({ error: response.error, loading: false });
+                return false;
+            }
+            await get().fetchTables(); // Refresh list
+            return true;
+        } catch (err) {
+            set({
+                error: { code: 'CREATE_FAILED', message: err instanceof Error ? err.message : 'Failed to add tables' },
                 loading: false
             });
             return false;

@@ -3,6 +3,7 @@ import { AppError } from '../../middlewares/error.middleware';
 import {
   addHall,
   addTable,
+  bulkAddTables,
   addUser,
   generateTableQrAssets,
   generateAllTableQrAssets,
@@ -33,6 +34,7 @@ import {
   createRestaurantSchema,
   createRestaurantUserSchema,
   createTableSchema,
+  bulkCreateTablesSchema,
   updateHallSchema,
   updateRestaurantProfileSchema,
   updateRestaurantSlugSchema,
@@ -381,6 +383,21 @@ export async function createTableController(req: Request, res: Response, next: N
     }
     const table = await addTable(user.tenantId, user.userId, restaurantId, parsed.data);
     return res.status(201).json({ data: table });
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function bulkCreateTablesController(req: Request, res: Response, next: NextFunction) {
+  try {
+    requireAdminOrManager(req);
+    const { user, restaurantId } = requireContext(req);
+    const parsed = bulkCreateTablesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
+    }
+    const result = await bulkAddTables(user.tenantId, user.userId, restaurantId, parsed.data.tables);
+    return res.status(201).json({ data: result });
   } catch (error) {
     return next(error as Error);
   }

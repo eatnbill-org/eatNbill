@@ -5,6 +5,7 @@ import { tenantMiddleware } from '../../middlewares/tenant.middleware';
 import {
   createHallController,
   createTableController,
+  bulkCreateTablesController,
   deleteHallController,
   deleteTableController,
   generateTableQrController,
@@ -246,6 +247,7 @@ export function restaurantRoutes() {
   // Tables
   router.get('/tables', listTablesController);
   router.post('/tables', createTableController);
+  router.post('/tables/bulk', bulkCreateTablesController);
   router.patch('/tables/:id', updateTableController);
   router.delete('/tables/:id', deleteTableController);
 

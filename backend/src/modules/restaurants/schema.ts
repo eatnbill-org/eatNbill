@@ -83,6 +83,12 @@ export const createTableSchema = z
   })
   .strict();
 
+export const bulkCreateTablesSchema = z
+  .object({
+    tables: z.array(createTableSchema).min(1).max(50),
+  })
+  .strict();
+
 export const updateTableSchema = z
   .object({
     hall_id: z.string().uuid().optional(),

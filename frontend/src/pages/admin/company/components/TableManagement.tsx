@@ -29,7 +29,8 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
         addTable,
         updateTable,
         deleteTable,
-        addHall
+        addHall,
+        bulkAddTables
     } = useTableStore();
 
     const { restaurant } = useRestaurantStore();
@@ -48,26 +49,29 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
     const [capacity, setCapacity] = React.useState("4");
     const [hallId, setHallId] = React.useState("");
 
+    // Bulk creation
+    const [isBulkMode, setIsBulkMode] = React.useState(false);
+    const [bulkRangeStart, setBulkRangeStart] = React.useState("1");
+    const [bulkRangeEnd, setBulkRangeEnd] = React.useState("10");
+
+    // Track if we've already initialized
+    const hasInitialized = React.useRef(false);
+
     // Initial Fetch
     React.useEffect(() => {
-        fetchTables();
-        fetchHalls();
-    }, [fetchTables, fetchHalls]);
-
-    // Ensure at least one hall exists
-    React.useEffect(() => {
-        if (!loading && halls.length === 0) {
-            console.log("No halls found, creating default...");
-            addHall({ name: "Main Hall", is_ac: true });
+        if (!hasInitialized.current) {
+            hasInitialized.current = true;
+            fetchTables();
+            fetchHalls();
         }
-    }, [halls, loading, addHall]);
+    }, []);
 
     // Set default hallId when halls load
     React.useEffect(() => {
-        if (halls.length > 0 && !hallId) {
+        if (halls.length > 0 && !hallId && isAddOpen) {
             setHallId(halls[0].id);
         }
-    }, [halls, hallId]);
+    }, [halls, isAddOpen]);
 
     // --- HANDLERS ---
 
@@ -75,6 +79,9 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
         setEditingId(null);
         setName("");
         setCapacity("4");
+        setIsBulkMode(false);
+        setBulkRangeStart("1");
+        setBulkRangeEnd("10");
         if (halls.length > 0) setHallId(halls[0].id);
         setIsAddOpen(true);
     };
@@ -84,27 +91,66 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
         setName(t.table_number);
         setCapacity(t.seats.toString());
         setHallId(t.hall_id);
+        setIsBulkMode(false);
         setIsAddOpen(true);
     };
 
+    const handleCreateRandomTable = async () => {
+        let targetHallId = "";
+        
+        // Try to find "Non-AC" hall or create it
+        const nonAcHall = halls.find(h => h.name.toLowerCase().includes("non-ac") || h.name.toLowerCase().includes("nonac"));
+        
+        if (nonAcHall) {
+            targetHallId = nonAcHall.id;
+        } else {
+            const newHall = await addHall({ name: "Non AC", is_ac: false });
+            if (!newHall) {
+                toast.error("Failed to create hall");
+                return;
+            }
+            targetHallId = newHall.id;
+        }
+
+        const success = await addTable({
+            table_number: "non-ac-1",
+            seats: 4,
+            hall_id: targetHallId
+        });
+
+        if (success) {
+            toast.success("Random Table Created: non-ac-1");
+            fetchTables();
+        }
+    };
+
     const handleSave = async () => {
-        if (!name.trim()) return toast.error("Table Name is required");
+        if (!isBulkMode && !name.trim()) return toast.error("Table Name is required");
         if (!hallId) return toast.error("Hall is required");
 
         let targetHallId = hallId;
 
-        // Handle Dynamic Hall Creation
+        // Handle Dynamic Hall Creation (for predefined hall options)
         if (hallId.startsWith('create:')) {
             let newHallName = "";
             let isAc = false;
 
-            if (hallId === 'create:AC') { newHallName = "AC Hall"; isAc = true; }
-            else if (hallId === 'create:Non-AC') { newHallName = "Non AC Hall"; isAc = false; }
-            else if (hallId === 'create:Outdoor') { newHallName = "Outdoor"; isAc = false; }
-            else if (hallId === 'create:Custom') {
+            const hallMapping: Record<string, { name: string; isAc: boolean }> = {
+                'create:AC': { name: "AC", isAc: true },
+                'create:Non-AC': { name: "Non AC", isAc: false },
+                'create:Outdoor': { name: "Outdoor", isAc: false },
+                'create:Family-Room': { name: "Family Room", isAc: true },
+                'create:Ground-Floor': { name: "Ground Floor", isAc: false },
+                'create:Second-Floor': { name: "Second Floor", isAc: true },
+            };
+
+            if (hallId === 'create:Custom') {
                 const input = document.getElementById('custom-hall-input') as HTMLInputElement;
                 newHallName = input?.value || "";
                 if (!newHallName) return toast.error("Please enter a name for the hall");
+            } else if (hallMapping[hallId]) {
+                newHallName = hallMapping[hallId].name;
+                isAc = hallMapping[hallId].isAc;
             }
 
             // check if already exists
@@ -123,14 +169,48 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
         }
 
         let success = false;
+        
         if (editingId) {
+            // Update existing table
             success = await updateTable(editingId, {
                 table_number: name,
                 seats: parseInt(capacity),
                 hall_id: targetHallId
             });
             if (success) toast.success("Table Updated Successfully");
+        } else if (isBulkMode) {
+            // Bulk create tables
+            const start = parseInt(bulkRangeStart);
+            const end = parseInt(bulkRangeEnd);
+
+            if (isNaN(start) || isNaN(end) || start > end || start < 1) {
+                return toast.error("Invalid range. Enter numbers like 1-10");
+            }
+
+            if (end - start > 50) {
+                return toast.error("Maximum 50 tables at once");
+            }
+
+            // Get the hall name for the prefix
+            const selectedHall = halls.find(h => h.id === targetHallId);
+            const hallPrefix = selectedHall?.name.toLowerCase().replace(/\s+/g, '-') || 'table';
+
+            const tables = [];
+            for (let i = start; i <= end; i++) {
+                tables.push({
+                    table_number: `${hallPrefix}-${i}`,
+                    seats: parseInt(capacity),
+                    hall_id: targetHallId
+                });
+            }
+
+            success = await bulkAddTables(tables);
+            if (success) {
+                toast.success(`${tables.length} Tables Created Successfully`);
+                fetchTables();
+            }
         } else {
+            // Single table creation
             success = await addTable({
                 table_number: name,
                 seats: parseInt(capacity),
@@ -209,61 +289,135 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                 </DialogTitle>
                             </DialogHeader>
                             <div className="space-y-6">
+                                {/* Bulk Mode Toggle (only for new tables) */}
+                                {!editingId && (
+                                    <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                                        <Label className="text-xs font-bold uppercase tracking-wide text-indigo-700">Bulk Creation Mode</Label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsBulkMode(!isBulkMode)}
+                                            className={cn(
+                                                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                                                isBulkMode ? "bg-indigo-600" : "bg-slate-300"
+                                            )}
+                                        >
+                                            <span className={cn(
+                                                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                                isBulkMode ? "translate-x-6" : "translate-x-1"
+                                            )} />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Hall Selection - Now first */}
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 shadow-sm">
-                                            <Hash className="h-3 w-3" />
+                                        <div className="h-6 w-6 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-400 border border-indigo-200 shadow-sm">
+                                            <MapPin className="h-3 w-3" />
                                         </div>
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Structural ID / Number</Label>
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Sector Hall</Label>
                                     </div>
-                                    <Input
-                                        value={name}
-                                        onChange={e => setName(e.target.value)}
-                                        placeholder="T-101"
-                                        className="h-12 bg-slate-50 border-slate-100 rounded-xl focus-visible:ring-indigo-100 font-bold text-slate-700"
-                                    />
+                                    <Select value={hallId} onValueChange={setHallId}>
+                                        <SelectTrigger className="h-12 bg-slate-50 border-slate-100 rounded-xl focus:ring-indigo-100 font-bold text-slate-700">
+                                            <SelectValue placeholder="Select Zone" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl shadow-2xl">
+                                            {/* Existing halls first */}
+                                            {halls.map(hall => (
+                                                <SelectItem key={hall.id} value={hall.id} className="font-bold py-3 uppercase text-[10px] tracking-widest">
+                                                    {hall.name}
+                                                </SelectItem>
+                                            ))}
+                                            
+                                            {/* Divider if there are existing halls */}
+                                            {halls.length > 0 && (
+                                                <div className="border-t border-slate-200 my-2"></div>
+                                            )}
+                                            
+                                            {/* Predefined hall options */}
+                                            <SelectItem value="create:AC" className="font-bold py-3 uppercase text-[10px] tracking-widest text-indigo-600">+ AC</SelectItem>
+                                            <SelectItem value="create:Non-AC" className="font-bold py-3 uppercase text-[10px] tracking-widest text-indigo-600">+ Non AC</SelectItem>
+                                            <SelectItem value="create:Outdoor" className="font-bold py-3 uppercase text-[10px] tracking-widest text-indigo-600">+ Outdoor</SelectItem>
+                                            <SelectItem value="create:Family-Room" className="font-bold py-3 uppercase text-[10px] tracking-widest text-indigo-600">+ Family Room</SelectItem>
+                                            <SelectItem value="create:Ground-Floor" className="font-bold py-3 uppercase text-[10px] tracking-widest text-indigo-600">+ Ground Floor</SelectItem>
+                                            <SelectItem value="create:Second-Floor" className="font-bold py-3 uppercase text-[10px] tracking-widest text-indigo-600">+ Second Floor</SelectItem>
+                                            <SelectItem value="create:Custom" className="font-bold py-3 uppercase text-[10px] tracking-widest text-purple-600">+ Custom...</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {hallId === 'create:Custom' && (
+                                        <Input
+                                            placeholder="Zone Name"
+                                            className="mt-2 h-12 bg-slate-50 border-slate-100 rounded-xl focus-visible:ring-indigo-100 font-bold text-slate-700 uppercase tracking-widest text-[10px]"
+                                            id="custom-hall-input"
+                                        />
+                                    )}
                                 </div>
-                                <div className="grid grid-cols-2 gap-6">
+
+                                {/* Conditional rendering based on bulk mode */}
+                                {isBulkMode ? (
+                                    // Bulk Mode: Range Input
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <div className="h-6 w-6 rounded-lg bg-orange-50 flex items-center justify-center text-orange-400 border border-orange-200 shadow-sm">
-                                                <UsersIcon className="h-3 w-3" />
+                                            <div className="h-6 w-6 rounded-lg bg-purple-50 flex items-center justify-center text-purple-400 border border-purple-200 shadow-sm">
+                                                <Hash className="h-3 w-3" />
                                             </div>
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Pax Capacity</Label>
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Table Range (e.g., 1-10)</Label>
+                                        </div>
+                                        <div className="flex gap-3 items-center">
+                                            <Input
+                                                type="number"
+                                                value={bulkRangeStart}
+                                                onChange={e => setBulkRangeStart(e.target.value)}
+                                                placeholder="Start"
+                                                className="h-12 bg-slate-50 border-slate-100 rounded-xl focus-visible:ring-indigo-100 font-bold text-slate-700"
+                                            />
+                                            <span className="text-slate-400 font-bold">to</span>
+                                            <Input
+                                                type="number"
+                                                value={bulkRangeEnd}
+                                                onChange={e => setBulkRangeEnd(e.target.value)}
+                                                placeholder="End"
+                                                className="h-12 bg-slate-50 border-slate-100 rounded-xl focus-visible:ring-indigo-100 font-bold text-slate-700"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-slate-500 italic">
+                                            Tables will be created as: {halls.find(h => h.id === hallId)?.name.toLowerCase().replace(/\s+/g, '-') || 'table'}-{bulkRangeStart} to {halls.find(h => h.id === hallId)?.name.toLowerCase().replace(/\s+/g, '-') || 'table'}-{bulkRangeEnd}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    // Single Mode: Table Name
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 shadow-sm">
+                                                <Hash className="h-3 w-3" />
+                                            </div>
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Structural ID / Number</Label>
                                         </div>
                                         <Input
-                                            type="number"
-                                            value={capacity}
-                                            onChange={e => setCapacity(e.target.value)}
+                                            value={name}
+                                            onChange={e => setName(e.target.value)}
+                                            placeholder="T-101"
                                             className="h-12 bg-slate-50 border-slate-100 rounded-xl focus-visible:ring-indigo-100 font-bold text-slate-700"
                                         />
                                     </div>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="h-6 w-6 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-400 border border-indigo-200 shadow-sm">
-                                                <MapPin className="h-3 w-3" />
-                                            </div>
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Sector Hall</Label>
+                                )}
+
+                                {/* Capacity (for both modes) */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="h-6 w-6 rounded-lg bg-orange-50 flex items-center justify-center text-orange-400 border border-orange-200 shadow-sm">
+                                            <UsersIcon className="h-3 w-3" />
                                         </div>
-                                        <Select value={hallId} onValueChange={setHallId}>
-                                            <SelectTrigger className="h-12 bg-slate-50 border-slate-100 rounded-xl focus:ring-indigo-100 font-bold text-slate-700">
-                                                <SelectValue placeholder="Select Zone" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl shadow-2xl">
-                                                <SelectItem value="create:AC" className="font-bold py-3 uppercase text-[10px] tracking-widest">AC Hall</SelectItem>
-                                                <SelectItem value="create:Non-AC" className="font-bold py-3 uppercase text-[10px] tracking-widest">Non AC Hall</SelectItem>
-                                                <SelectItem value="create:Outdoor" className="font-bold py-3 uppercase text-[10px] tracking-widest">Outdoor</SelectItem>
-                                                <SelectItem value="create:Custom" className="font-bold py-3 uppercase text-[10px] tracking-widest">Custom Expansion...</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        {hallId === 'create:Custom' && (
-                                            <Input
-                                                placeholder="Zone Name"
-                                                className="mt-2 h-12 bg-slate-50 border-slate-100 rounded-xl focus-visible:ring-indigo-100 font-bold text-slate-700 uppercase tracking-widest text-[10px]"
-                                                id="custom-hall-input"
-                                            />
-                                        )}
+                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">
+                                            Pax Capacity {isBulkMode && "(for all tables)"}
+                                        </Label>
                                     </div>
+                                    <Input
+                                        type="number"
+                                        value={capacity}
+                                        onChange={e => setCapacity(e.target.value)}
+                                        className="h-12 bg-slate-50 border-slate-100 rounded-xl focus-visible:ring-indigo-100 font-bold text-slate-700"
+                                    />
                                 </div>
                             </div>
                             <DialogFooter className="mt-8 gap-3 sm:gap-0">
@@ -273,7 +427,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                     className="w-full sm:w-auto bg-slate-900 hover:bg-black h-12 px-8 rounded-xl font-bold uppercase tracking-widest text-[11px] text-white shadow-xl shadow-slate-200"
                                 >
                                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                    {editingId ? "Commit Spec" : "Execute Deployment"}
+                                    {editingId ? "Commit Spec" : isBulkMode ? "Execute Bulk Deployment" : "Execute Deployment"}
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -364,9 +518,26 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                         {tables.length === 0 && !loading && (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center py-20">
-                                    <div className="flex flex-col items-center justify-center gap-3 opacity-30">
-                                        <Armchair className="h-12 w-12 text-slate-400" />
-                                        <p className="font-black text-slate-600 uppercase tracking-widest text-xs">No Structural Deployments Found</p>
+                                    <div className="flex flex-col items-center justify-center gap-5">
+                                        <div className="opacity-30">
+                                            <Armchair className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                                            <p className="font-black text-slate-600 uppercase tracking-widest text-xs">No Tables Found</p>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <Button
+                                                onClick={handleOpenAdd}
+                                                className="bg-slate-900 hover:bg-black h-11 px-5 rounded-xl font-bold uppercase tracking-widest text-[11px] text-white transition-all shadow-xl shadow-slate-200"
+                                            >
+                                                <Plus className="w-4 h-4 mr-2" /> Create Table
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={handleCreateRandomTable}
+                                                className="h-11 px-5 rounded-xl font-bold uppercase tracking-widest text-[11px] border-slate-200 hover:bg-slate-50 transition-all shadow-sm"
+                                            >
+                                                <Armchair className="w-4 h-4 mr-2" /> Create Random Table
+                                            </Button>
+                                        </div>
                                     </div>
                                 </TableCell>
                             </TableRow>
