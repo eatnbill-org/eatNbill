@@ -31,7 +31,6 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   FRONTEND_URL: z.string().default('http://localhost:8080').transform((val) => {
-    // Support comma-separated URLs for multiple frontend origins
     return val.includes(',') ? val.split(',').map(url => url.trim()) : val;
   }),
 
