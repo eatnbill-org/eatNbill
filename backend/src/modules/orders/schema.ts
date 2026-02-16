@@ -22,10 +22,15 @@ export const createPublicOrderSchema = z.object({
 
 // Internal order creation (by staff)
 export const createInternalOrderSchema = z.object({
-  customer_name: z.string().min(2).max(100),
+  customer_name: z.string().trim().max(100).optional(),
   customer_phone: z
     .string()
-    .regex(/^\+?[1-9]\d{9,14}$/, "Invalid phone number format"),
+    .trim()
+    .refine(
+      (value) => value.length === 0 || /^\+?[1-9]\d{9,14}$/.test(value),
+      "Invalid phone number format"
+    )
+    .optional(),
   table_number: z.string().max(20).optional(),
   notes: z.string().max(500).optional(),
   items: z.array(orderItemSchema).min(1).max(50),
@@ -33,6 +38,24 @@ export const createInternalOrderSchema = z.object({
   order_type: z.enum(["DINE_IN", "TAKEAWAY", "DELIVERY"]).optional(),
   table_id: z.string().uuid().optional(),
   arrive_at: z.string().optional(),
+}).superRefine((data, ctx) => {
+  const orderType = data.order_type;
+
+  if (orderType === "DINE_IN" && !data.table_id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "table_id is required for DINE_IN orders",
+      path: ["table_id"],
+    });
+  }
+
+  if (orderType && orderType !== "DINE_IN" && data.table_id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "table_id is only allowed for DINE_IN orders",
+      path: ["table_id"],
+    });
+  }
 });
 
 // Update payment details

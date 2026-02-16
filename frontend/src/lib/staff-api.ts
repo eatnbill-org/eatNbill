@@ -8,6 +8,10 @@ export {
   addOrderItems,
   createOrder,
   fetchTables,
+  fetchHalls,
+  updateTableStatus,
   fetchOrderById,
   updateOrderItemStatus,
+  updateOrderItem,
+  removeOrderItem,
 } from './waiter-api';

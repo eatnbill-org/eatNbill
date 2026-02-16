@@ -3,7 +3,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom"; // For menu page redirect
 import { createClient } from "@supabase/supabase-js";
 import { useStaffAuth } from "@/hooks/use-staff-auth";
-import { fetchStaffOrders, updateOrderStatus, fetchProducts, addOrderItems, updateOrderItemStatus } from "@/lib/staff-api";
+import {
+    fetchStaffOrders,
+    updateOrderStatus,
+    fetchProducts,
+    addOrderItems,
+    updateOrderItemStatus,
+    updateOrderItem,
+    removeOrderItem,
+} from "@/lib/staff-api";
 import { formatINR, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import {
     Check, Clock, CookingPot, Utensils, UtensilsCrossed,
-    IndianRupee, Plus, RefreshCw, MapPin, Loader2, Search, ArrowRight, User
+    IndianRupee, Plus, RefreshCw, MapPin, Loader2, Search, ArrowRight, User, Minus, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -187,6 +195,54 @@ export default function WaiterOrdersPage() {
             toast.error(error.message || 'Failed to update item status');
         }
     });
+
+    const updateItemMutation = useMutation({
+        mutationFn: ({ orderId, itemId, payload }: { orderId: string; itemId: string; payload: { quantity?: number; notes?: string } }) =>
+            updateOrderItem(orderId, itemId, payload),
+        onSuccess: (response: any) => {
+            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+            const updatedOrder = response?.data || response;
+            if (updatedOrder?.id && selectedOrder?.id === updatedOrder.id) {
+                setSelectedOrder(updatedOrder);
+            }
+            toast.success('Order item updated');
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Failed to update item');
+        }
+    });
+
+    const removeItemMutation = useMutation({
+        mutationFn: ({ orderId, itemId }: { orderId: string; itemId: string }) =>
+            removeOrderItem(orderId, itemId),
+        onSuccess: (response: any) => {
+            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+            const updatedOrder = response?.data || response;
+            if (updatedOrder?.id && selectedOrder?.id === updatedOrder.id) {
+                setSelectedOrder(updatedOrder);
+            }
+            toast.success('Item removed from order');
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Failed to remove item');
+        }
+    });
+
+    const canEditDineInItems = (order: any) =>
+        order?.order_type === 'DINE_IN' &&
+        order?.payment_status !== 'PAID' &&
+        order?.status !== 'COMPLETED' &&
+        order?.status !== 'CANCELLED';
+
+    const handleEditNote = (orderId: string, item: any) => {
+        const nextNote = window.prompt('Edit item note', item.notes || '');
+        if (nextNote === null) return;
+        updateItemMutation.mutate({
+            orderId,
+            itemId: item.id,
+            payload: { notes: nextNote.trim() || undefined },
+        });
+    };
 
     // Helper to open details
     const openDetails = (order: any) => {
@@ -572,6 +628,7 @@ export default function WaiterOrdersPage() {
                                                 <tbody className="bg-white">
                                                     {selectedOrder.items?.slice().sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item: any) => {
                                                         const isServed = item.status === 'SERVED';
+                                                        const canEditItem = canEditDineInItems(selectedOrder);
 
                                                         // Determine item status label
                                                         let displayStatus = 'New';
@@ -604,16 +661,67 @@ export default function WaiterOrdersPage() {
                                                                             {displayStatus}
                                                                             {canServe && <span className="ml-1 text-[7px] opacity-70 underline decoration-dotted">(Serve)</span>}
                                                                         </Badge>
+                                                                        {canEditItem && (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="text-[10px] text-slate-500 hover:text-primary underline"
+                                                                                onClick={() => handleEditNote(selectedOrder.id, item)}
+                                                                            >
+                                                                                Edit note
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                     {item.notes && <p className="text-xs text-slate-500 italic mt-0.5">Note: {item.notes}</p>}
                                                                 </td>
                                                                 <td className="py-3 px-3 text-center">
-                                                                    <span className="inline-flex items-center justify-center bg-slate-100 text-slate-700 font-bold rounded-lg px-2 py-1 text-sm min-w-[2rem]">
-                                                                        {item.quantity}
-                                                                    </span>
+                                                                    {canEditItem ? (
+                                                                        <div className="inline-flex items-center gap-1 bg-slate-100 rounded-lg px-1 py-1">
+                                                                            <button
+                                                                                type="button"
+                                                                                className="h-6 w-6 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50"
+                                                                                disabled={item.quantity <= 1}
+                                                                                onClick={() => updateItemMutation.mutate({
+                                                                                    orderId: selectedOrder.id,
+                                                                                    itemId: item.id,
+                                                                                    payload: { quantity: item.quantity - 1 }
+                                                                                })}
+                                                                            >
+                                                                                <Minus className="h-3 w-3" />
+                                                                            </button>
+                                                                            <span className="inline-flex items-center justify-center text-slate-700 font-bold px-1 text-sm min-w-[1.5rem]">
+                                                                                {item.quantity}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                className="h-6 w-6 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50"
+                                                                                onClick={() => updateItemMutation.mutate({
+                                                                                    orderId: selectedOrder.id,
+                                                                                    itemId: item.id,
+                                                                                    payload: { quantity: item.quantity + 1 }
+                                                                                })}
+                                                                            >
+                                                                                <Plus className="h-3 w-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center justify-center bg-slate-100 text-slate-700 font-bold rounded-lg px-2 py-1 text-sm min-w-[2rem]">
+                                                                            {item.quantity}
+                                                                        </span>
+                                                                    )}
                                                                 </td>
                                                                 <td className="py-3 px-4 text-right font-semibold text-slate-900 tabular-nums">
-                                                                    {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
+                                                                        {canEditItem && (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="h-7 w-7 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 inline-flex items-center justify-center"
+                                                                                onClick={() => removeItemMutation.mutate({ orderId: selectedOrder.id, itemId: item.id })}
+                                                                            >
+                                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         );

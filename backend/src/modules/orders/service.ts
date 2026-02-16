@@ -16,8 +16,8 @@ export interface CreatePublicOrderInput {
 }
 
 export interface CreateInternalOrderInput {
-  customer_name: string;
-  customer_phone: string;
+  customer_name?: string;
+  customer_phone?: string;
   table_number?: string;
   notes?: string;
   source: "MANUAL" | "ZOMATO" | "SWIGGY";
@@ -153,7 +153,8 @@ export async function placePublicOrder(
 export async function createInternalOrder(
   tenantId: string,
   restaurantId: string,
-  input: CreateInternalOrderInput
+  input: CreateInternalOrderInput,
+  userId?: string
 ) {
   // ✅ FIX #7: Parallelize independent queries
   const productIds = input.items.map((i) => i.product_id);
@@ -175,32 +176,51 @@ export async function createInternalOrder(
     );
   }
 
+  const requestedOrderType: OrderType =
+    input.order_type ?? (input.table_id ? "DINE_IN" : "TAKEAWAY");
   let tableId: string | undefined;
   let hallId: string | undefined;
 
-  if (table) {
+  if (requestedOrderType === "DINE_IN") {
+    if (!table) {
+      throw new AppError("VALIDATION_ERROR", "Valid table is required for DINE_IN orders", 400);
+    }
     tableId = table.id;
     hallId = table.hall_id;
+  } else {
+    tableId = undefined;
+    hallId = undefined;
   }
 
-  const customer = await repository.upsertCustomer(tenantId, restaurantId, {
-    name: input.customer_name,
-    phone: input.customer_phone,
-  });
+  const normalizedName = input.customer_name?.trim() || "Guest";
+  const normalizedPhone = input.customer_phone?.trim() || "N/A";
+  const shouldUpsertCustomer = normalizedPhone !== "N/A";
+
+  const customer = shouldUpsertCustomer
+    ? await repository.upsertCustomer(tenantId, restaurantId, {
+      name: normalizedName,
+      phone: normalizedPhone,
+    })
+    : null;
+
+  const staff = userId
+    ? await repository.findRestaurantStaffByUserId(restaurantId, userId)
+    : null;
 
   const order = await repository.createOrder({
     tenant_id: tenantId,
     restaurant_id: restaurantId,
     table_id: tableId,
     hall_id: hallId,
-    customer_id: customer.id,
-    customer_name: input.customer_name,
-    customer_phone: input.customer_phone,
+    waiter_id: staff?.id ?? null,
+    customer_id: customer?.id ?? null,
+    customer_name: normalizedName,
+    customer_phone: normalizedPhone,
     table_number: input.table_number,
     notes: input.notes,
     arrive_at: input.arrive_at,
     source: input.source as OrderSource,
-    order_type: input.order_type ?? (input.table_id ? "DINE_IN" : "TAKEAWAY"),
+    order_type: requestedOrderType,
     items: input.items,
   });
 
@@ -753,4 +773,3 @@ export async function settleCredit(
     return updatedCustomer;
   });
 }
-

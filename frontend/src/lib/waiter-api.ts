@@ -253,10 +253,12 @@ export async function addOrderItems(orderId: string, items: Array<{ product_id: 
  * Create a new order (internal/staff)
  */
 export async function createOrder(payload: {
-    customer_name: string;
-    customer_phone: string;
+    customer_name?: string;
+    customer_phone?: string;
     items: Array<{ product_id: string; quantity: number; notes?: string }>;
+    order_type: 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
     table_id?: string;
+    hall_id?: string;
     notes?: string;
 }) {
     const token = getStaffToken();
@@ -278,7 +280,6 @@ export async function createOrder(payload: {
     const body = {
         ...payload,
         source: 'MANUAL',
-        order_type: payload.table_id ? 'DINE_IN' : 'TAKEAWAY',
     };
 
     const response = await fetch(getPath('orders'), {
@@ -322,6 +323,72 @@ export async function fetchTables() {
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to fetch tables');
+    }
+
+    return response.json();
+}
+
+/**
+ * Fetch halls for the restaurant
+ */
+export async function fetchHalls() {
+    const token = getStaffToken();
+    const restaurantId = getRestaurantId();
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath('restaurant/halls'), {
+        headers,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch halls');
+    }
+
+    return response.json();
+}
+
+/**
+ * Update table status (AVAILABLE/RESERVED)
+ */
+export async function updateTableStatus(tableId: string, table_status: 'AVAILABLE' | 'RESERVED') {
+    const token = getStaffToken();
+    const restaurantId = getRestaurantId();
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath(`restaurant/tables/${tableId}/status`), {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ table_status }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update table status');
     }
 
     return response.json();
@@ -391,6 +458,77 @@ export async function updateOrderItemStatus(orderId: string, itemId: string, sta
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to update item status');
+    }
+
+    return response.json();
+}
+
+/**
+ * Update order item details (quantity/notes/status)
+ */
+export async function updateOrderItem(
+    orderId: string,
+    itemId: string,
+    payload: { quantity?: number; notes?: string; status?: string }
+) {
+    const token = getStaffToken();
+    const restaurantId = getRestaurantId();
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath(`orders/${orderId}/items/${itemId}`), {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update item');
+    }
+
+    return response.json();
+}
+
+/**
+ * Remove an order item
+ */
+export async function removeOrderItem(orderId: string, itemId: string) {
+    const token = getStaffToken();
+    const restaurantId = getRestaurantId();
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath(`orders/${orderId}/items/${itemId}`), {
+        method: 'DELETE',
+        headers,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to remove item');
     }
 
     return response.json();

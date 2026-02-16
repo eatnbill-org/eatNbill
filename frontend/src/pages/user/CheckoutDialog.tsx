@@ -47,6 +47,8 @@ type Props = {
   items: OrderItem[];
   tableId?: string | null;
   isWaiterMode?: boolean; // Waiter mode doesn't auto-fill from storage
+  orderType?: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
+  customerFieldsOptional?: boolean;
   reorderContext?: {
     orderNumber: string;
     customerName: string;
@@ -61,7 +63,17 @@ type Props = {
   }) => void;
 };
 
-export default function CheckoutDialog({ open, onOpenChange, items, tableId, isWaiterMode = false, reorderContext, onSubmit }: Props) {
+export default function CheckoutDialog({
+  open,
+  onOpenChange,
+  items,
+  tableId,
+  isWaiterMode = false,
+  orderType = "DINE_IN",
+  customerFieldsOptional = false,
+  reorderContext,
+  onSubmit
+}: Props) {
   const { state } = useDemoStore();
   const [name, setName] = React.useState(reorderContext?.customerName || "");
   const [phone, setPhone] = React.useState(reorderContext?.customerPhone || "");
@@ -88,7 +100,9 @@ export default function CheckoutDialog({ open, onOpenChange, items, tableId, isW
 
   const total = items.reduce((s, i) => s + i.qty * i.price, 0);
 
-  const canSubmit = name.trim().length >= 2 && normalizedPhone.length >= 10 && items.length > 0;
+  const canSubmit = customerFieldsOptional
+    ? items.length > 0
+    : name.trim().length >= 2 && normalizedPhone.length >= 10 && items.length > 0;
 
   const handleSubmit = () => {
     // Save customer info for 6 months (only for customer mode)
@@ -111,6 +125,7 @@ export default function CheckoutDialog({ open, onOpenChange, items, tableId, isW
           <DialogTitle>Complete your order</DialogTitle>
           <DialogDescription>
             {repeatCustomer ? `Welcome back, ${repeatCustomer.name}!` : "Thanks for trying us."}{" "}
+            <span className="text-slate-500 font-medium">• {orderType.replace("_", "-")}</span>{" "}
             {tableId && <span className="text-orange-500 font-medium">• Table: {tableId}</span>}
           </DialogDescription>
         </DialogHeader>
@@ -121,14 +136,14 @@ export default function CheckoutDialog({ open, onOpenChange, items, tableId, isW
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-400" />
-                  Full Name
+                  Full Name {customerFieldsOptional ? "(optional)" : ""}
                 </label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-400" />
-                  Phone Number
+                  Phone Number {customerFieldsOptional ? "(optional)" : ""}
                 </label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91-XXXXXXXXXX" inputMode="tel" />
               </div>

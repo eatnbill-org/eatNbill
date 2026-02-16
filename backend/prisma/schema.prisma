@@ -373,6 +373,12 @@ enum PaymentStatus {
   PAID
 }
 
+enum TableStatus {
+  AVAILABLE
+  RESERVED
+  OCCUPIED
+}
+
 enum FontScale {
   SM
   MD
@@ -476,6 +482,7 @@ model RestaurantTable {
   table_number  String
   seats         Int
   is_active     Boolean        @default(true)
+  table_status  TableStatus    @default(AVAILABLE)
   created_at    DateTime       @default(now())
   restaurant    Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   hall          RestaurantHall @relation(fields: [hall_id], references: [id], onDelete: Cascade)
