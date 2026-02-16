@@ -173,6 +173,26 @@ export function orderRoutes() {
     controller.removeOrderItem
   );
 
+  // Accept QR order (waiter acknowledges the order)
+  router.post(
+    "/:id/accept",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    requireRestaurantRole('OWNER', 'MANAGER', 'WAITER'),
+    controller.acceptQROrder
+  );
+
+  // Reject QR order (waiter declines the order)
+  router.post(
+    "/:id/reject",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    requireRestaurantRole('OWNER', 'MANAGER', 'WAITER'),
+    controller.rejectQROrder
+  );
+
   // Update order status
   router.patch(
     "/:id/status",

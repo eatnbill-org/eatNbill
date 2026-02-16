@@ -562,3 +562,55 @@ export async function removeOrderItem(orderId: string, itemId: string) {
 
     return response.json();
 }
+
+/**
+ * Accept a pending QR order
+ */
+export async function acceptQROrder(orderId: string, restaurantId?: string): Promise<any> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath(`orders/${orderId}/accept`), {
+        method: 'POST',
+        headers,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to accept order');
+    }
+
+    return response.json();
+}
+
+/**
+ * Reject a pending QR order
+ */
+export async function rejectQROrder(orderId: string, reason?: string, restaurantId?: string): Promise<any> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath(`orders/${orderId}/reject`), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ reason }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to reject order');
+    }
+
+    return response.json();
+}
+

@@ -15,4 +15,6 @@ export {
   toggleProductAvailability,
   updateOrderItem,
   removeOrderItem,
+  acceptQROrder,
+  rejectQROrder,
 } from './head-api';

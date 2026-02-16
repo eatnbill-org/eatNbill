@@ -2,10 +2,10 @@
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom"; // For menu page redirect
-import { useRealtimeStore } from "@/stores/realtime/realtime.store";
+import { useRealtimeStore, type QROrderPayload } from "@/stores/realtime/realtime.store";
 import { useNotificationStore } from "@/stores/notifications.store";
 import { useHeadAuth } from "@/hooks/use-head-auth";
-import { fetchStaffOrders, fetchProducts, addOrderItems, updateOrderItem, removeOrderItem } from "@/lib/staff-api";
+import { fetchStaffOrders, fetchProducts, addOrderItems, updateOrderItem, removeOrderItem, acceptQROrder, rejectQROrder } from "@/lib/staff-api";
 import { formatINR, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ import {
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
+import { QROrderNotificationContainer } from "@/components/orders/QROrderNotification";
 
 // Simplified Status configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode; ringClass: string }> = {
@@ -61,6 +62,9 @@ export default function HeadOrdersPage() {
     // Search state
     const [searchQuery, setSearchQuery] = React.useState("");
 
+    // QR Order notification state
+    const [pendingQROrders, setPendingQROrders] = React.useState<QROrderPayload[]>([]);
+
     const { restaurant } = useHeadAuth();
 
     // Subscribe to realtime updates
@@ -78,6 +82,29 @@ export default function HeadOrdersPage() {
                 if (update?.eventType === 'INSERT' && update?.order?.source === 'QR') {
                     useNotificationStore.getState().addNotification(update.order);
                 }
+            }
+        );
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [restaurant?.id, queryClient]);
+
+    // Subscribe to pending QR orders
+    React.useEffect(() => {
+        if (!restaurant?.id) return;
+
+        const unsubscribe = useRealtimeStore.getState().subscribeToPendingOrders(
+            restaurant.id,
+            (payload: QROrderPayload) => {
+                console.log('[HeadOrdersPage] New QR order:', payload);
+                toast.info(`New order #${payload.order_number} from Table ${payload.table_number}`);
+                
+                // Add to pending orders list
+                setPendingQROrders((prev) => [...prev, payload]);
+
+                // Also invalidate orders query to refresh the list
+                queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
             }
         );
 
@@ -256,6 +283,49 @@ export default function HeadOrdersPage() {
             }
             toast.error(error.message || 'Failed to add items');
         }
+    });
+
+    // Accept QR order mutation
+    const acceptOrderMutation = useMutation({
+        mutationFn: ({ orderId, isAutoAccept }: { orderId: string; isAutoAccept?: boolean }) => 
+            acceptQROrder(orderId, restaurant?.id),
+        onSuccess: (data, { orderId, isAutoAccept }) => {
+            // Remove from pending orders immediately
+            setPendingQROrders((prev) => prev.filter((order) => order.order_id !== orderId));
+            
+            // Refresh orders list with refetch to ensure it updates
+            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+            queryClient.refetchQueries({ queryKey: ['staff-orders'] });
+            
+            // Only show toast for manual accepts, not auto-accepts
+            if (!isAutoAccept) {
+                toast.success('Order accepted successfully');
+            }
+        },
+        onError: (error: any, { isAutoAccept }) => {
+            // Don't show error toast for auto-accepts to avoid confusion
+            if (!isAutoAccept) {
+                toast.error(error.message || 'Failed to accept order');
+            }
+        },
+    });
+
+    // Reject QR order mutation
+    const rejectOrderMutation = useMutation({
+        mutationFn: (orderId: string) => rejectQROrder(orderId, 'Rejected by staff', restaurant?.id),
+        onSuccess: (data, orderId) => {
+            // Remove from pending orders immediately
+            setPendingQROrders((prev) => prev.filter((order) => order.order_id !== orderId));
+            
+            // Refresh orders list with refetch to ensure it updates
+            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+            queryClient.refetchQueries({ queryKey: ['staff-orders'] });
+            
+            toast.success('Order rejected');
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Failed to reject order');
+        },
     });
 
     // 🟢 Nice to Have: Show confirmation before adding items
@@ -890,6 +960,13 @@ export default function HeadOrdersPage() {
                     scrollbar-color: #cbd5e1 #f1f5f9;
                 }
             `}</style>
+
+            {/* QR Order Notification Popups */}
+            <QROrderNotificationContainer
+                orders={pendingQROrders}
+                onAccept={(orderId, isAutoAccept) => acceptOrderMutation.mutate({ orderId, isAutoAccept })}
+                onReject={(orderId) => rejectOrderMutation.mutate(orderId)}
+            />
         </div>
     );
 }

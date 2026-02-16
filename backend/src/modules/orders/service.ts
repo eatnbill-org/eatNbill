@@ -5,6 +5,7 @@ import { AppError } from "../../middlewares/error.middleware";
 import { updateCustomerStats, updateCustomerCredit } from "../customers/repository";
 import { prisma } from "../../utils/prisma";
 import type { Prisma } from "@prisma/client";
+import { supabaseAdmin } from "../../utils/supabase";
 
 // Input types
 export interface CreatePublicOrderInput {
@@ -128,6 +129,28 @@ export async function placePublicOrder(
     order_type: orderType,
     items: input.items,
   });
+
+  // 🔔 Notify waiters/staff of new QR order via Supabase Realtime
+  if (input.source === "QR") {
+    try {
+      await supabaseAdmin.channel(`restaurant:${restaurant.id}:pending-orders`).send({
+        type: 'broadcast',
+        event: 'new_qr_order',
+        payload: {
+          order_id: order.id,
+          order_number: order.order_number,
+          table_number: resolvedTableNumber || 'Unknown',
+          customer_name: input.customer_name,
+          total_amount: Number(order.total_amount),
+          items_count: order.items.length,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (broadcastError) {
+      // Don't fail the order if broadcast fails
+      console.error('[QR Order Notification] Failed to broadcast:', broadcastError);
+    }
+  }
 
   return {
     id: order.id,
@@ -776,3 +799,116 @@ export async function settleCredit(
     return updatedCustomer;
   });
 }
+
+/**
+ * Accept a pending QR order
+ */
+export async function acceptQROrder(
+  tenantId: string,
+  restaurantId: string,
+  orderId: string
+) {
+  // Verify order exists and belongs to restaurant
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      order_number: true,
+      restaurant_id: true,
+      tenant_id: true,
+      source: true,
+      status: true,
+    },
+  });
+
+  if (!order) {
+    throw new AppError("NOT_FOUND", "Order not found", 404);
+  }
+  if (order.restaurant_id !== restaurantId || order.tenant_id !== tenantId) {
+    throw new AppError("FORBIDDEN", "Access denied to this order", 403);
+  }
+  if (order.source !== "QR") {
+    throw new AppError("VALIDATION_ERROR", "Only QR orders can be accepted", 400);
+  }
+  if (order.status !== "ACTIVE") {
+    throw new AppError("VALIDATION_ERROR", "Order is not in pending state", 400);
+  }
+
+  // Order is already active, just confirm acceptance
+  // No status change needed since ACTIVE is the correct state
+  
+  // Optionally, broadcast acceptance to update UI in real-time
+  try {
+    await supabaseAdmin.channel(`restaurant:${restaurantId}:pending-orders`).send({
+      type: 'broadcast',
+      event: 'qr_order_accepted',
+      payload: {
+        order_id: orderId,
+        order_number: order.order_number,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (broadcastError) {
+    console.error('[QR Order Acceptance] Failed to broadcast:', broadcastError);
+  }
+
+  return order;
+}
+
+/**
+ * Reject a pending QR order
+ */
+export async function rejectQROrder(
+  tenantId: string,
+  restaurantId: string,
+  orderId: string,
+  reason?: string
+) {
+  // Verify order exists and belongs to restaurant
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      order_number: true,
+      restaurant_id: true,
+      tenant_id: true,
+      source: true,
+      status: true,
+    },
+  });
+
+  if (!order) {
+    throw new AppError("NOT_FOUND", "Order not found", 404);
+  }
+  if (order.restaurant_id !== restaurantId || order.tenant_id !== tenantId) {
+    throw new AppError("FORBIDDEN", "Access denied to this order", 403);
+  }
+  if (order.source !== "QR") {
+    throw new AppError("VALIDATION_ERROR", "Only QR orders can be rejected", 400);
+  }
+  if (order.status !== "ACTIVE") {
+    throw new AppError("VALIDATION_ERROR", "Order is not in pending state", 400);
+  }
+
+  // Cancel the order
+  const updatedOrder = await repository.updateOrderStatus(tenantId, orderId, "CANCELLED", reason);
+
+  // Broadcast rejection to update UI in real-time
+  try {
+    await supabaseAdmin.channel(`restaurant:${restaurantId}:pending-orders`).send({
+      type: 'broadcast',
+      event: 'qr_order_rejected',
+      payload: {
+        order_id: orderId,
+        order_number: order.order_number,
+        reason: reason || 'No reason provided',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (broadcastError) {
+    console.error('[QR Order Rejection] Failed to broadcast:', broadcastError);
+  }
+
+  return updatedOrder;
+}
+

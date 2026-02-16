@@ -651,3 +651,77 @@ export async function settleCredit(
     return next(error);
   }
 }
+
+/**
+ * POST /orders/:id/accept
+ * Accept a pending QR order
+ */
+export async function acceptQROrder(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { tenantId, allowedRestaurantIds } = req.user!;
+    const restaurantId = req.restaurantId;
+    const orderId = req.params.id;
+
+    if (!restaurantId) {
+      return next(new AppError("VALIDATION_ERROR", "Restaurant ID is required", 400));
+    }
+    if (!allowedRestaurantIds.includes(restaurantId)) {
+      return next(new AppError("FORBIDDEN", "Access denied to this restaurant", 403));
+    }
+    if (!orderId || typeof orderId !== 'string') {
+      return next(new AppError("VALIDATION_ERROR", "Valid order ID is required", 400));
+    }
+
+    const order = await service.acceptQROrder(tenantId, restaurantId, orderId);
+
+    return res.json({
+      success: true,
+      message: "Order accepted successfully",
+      data: order
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/**
+ * POST /orders/:id/reject
+ * Reject a pending QR order
+ */
+export async function rejectQROrder(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { tenantId, allowedRestaurantIds } = req.user!;
+    const restaurantId = req.restaurantId;
+    const orderId = req.params.id;
+    const { reason } = req.body;
+
+    if (!restaurantId) {
+      return next(new AppError("VALIDATION_ERROR", "Restaurant ID is required", 400));
+    }
+    if (!allowedRestaurantIds.includes(restaurantId)) {
+      return next(new AppError("FORBIDDEN", "Access denied to this restaurant", 403));
+    }
+    if (!orderId || typeof orderId !== 'string') {
+      return next(new AppError("VALIDATION_ERROR", "Valid order ID is required", 400));
+    }
+
+    const order = await service.rejectQROrder(tenantId, restaurantId, orderId, reason);
+
+    return res.json({
+      success: true,
+      message: "Order rejected successfully",
+      data: order
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+

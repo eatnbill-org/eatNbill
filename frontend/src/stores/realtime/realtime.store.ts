@@ -10,6 +10,19 @@ import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 import type { Order, RealtimeOrderUpdate, RealtimeEvent } from '@/types/order';
 
 type OrderEventHandler = (update: RealtimeOrderUpdate) => void;
+
+// QR Order notification handlers
+export interface QROrderPayload {
+  order_id: string;
+  order_number: string;
+  table_number: string;
+  customer_name: string;
+  total_amount: number;
+  items_count: number;
+  timestamp: string;
+}
+
+type QROrderEventHandler = (payload: QROrderPayload) => void;
 type ConnectionMode = 'realtime' | 'polling';
 
 interface RealtimeState {
@@ -23,9 +36,11 @@ interface RealtimeState {
 
   activeChannels: Map<string, RealtimeChannel>;
   eventHandlers: Map<string, Set<OrderEventHandler>>;
+  qrOrderHandlers: Map<string, Set<QROrderEventHandler>>;
 
   subscribeToRestaurantOrders: (restaurantId: string, handler: OrderEventHandler) => () => void;
   subscribeToOrder: (orderId: string, handler: OrderEventHandler) => () => void;
+  subscribeToPendingOrders: (restaurantId: string, handler: QROrderEventHandler) => () => void;
   unsubscribeAll: () => void;
   reconnect: () => Promise<void>;
 
@@ -77,6 +92,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   disabled: import.meta.env.VITE_DISABLE_REALTIME === 'true',
   activeChannels: new Map(),
   eventHandlers: new Map(),
+  qrOrderHandlers: new Map(),
 
   _supabase: null,
   _retryAttempts: 0,
@@ -350,6 +366,103 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     };
   },
 
+  subscribeToPendingOrders: (restaurantId: string, handler: QROrderEventHandler) => {
+    const state = get();
+    if (state.disabled) {
+      return () => {};
+    }
+
+    state._initSupabase();
+
+    const channelName = `restaurant:${restaurantId}:pending-orders`;
+    const handlerKey = channelName;
+
+    const handlers = new Set(state.qrOrderHandlers.get(handlerKey) || []);
+    handlers.add(handler);
+
+    set({
+      qrOrderHandlers: new Map(state.qrOrderHandlers).set(handlerKey, handlers),
+    });
+
+    // Create channel if it doesn't exist
+    let channel = state.activeChannels.get(channelName);
+    
+    if (!channel && state._supabase) {
+      console.info(`[Realtime] Creating channel: ${channelName}`);
+      
+      channel = state._supabase.channel(channelName);
+
+      channel
+        .on('broadcast', { event: 'new_qr_order' }, (payload: any) => {
+          console.info('[Realtime] New QR order broadcast received:', payload);
+          
+          const currentHandlers = get().qrOrderHandlers.get(handlerKey);
+          if (currentHandlers) {
+            currentHandlers.forEach((h) => {
+              try {
+                h(payload.payload as QROrderPayload);
+              } catch (error) {
+                console.error('[Realtime] Error in QR order handler:', error);
+              }
+            });
+          }
+        })
+        .subscribe((status) => {
+          console.info(`[Realtime] Channel ${channelName} status:`, status);
+          
+          if (status === 'SUBSCRIBED') {
+            set({
+              isConnected: true,
+              connectionMode: 'realtime',
+              lastConnectedAt: Date.now(),
+              error: null,
+              _retryAttempts: 0,
+            });
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            set({ error: `Channel ${channelName} error: ${status}` });
+          }
+        });
+
+      const newChannels = new Map(state.activeChannels);
+      newChannels.set(channelName, channel);
+      set({ activeChannels: newChannels });
+    }
+
+    return () => {
+      const currentState = get();
+      const currentHandlers = currentState.qrOrderHandlers.get(handlerKey);
+      if (!currentHandlers) {
+        return;
+      }
+
+      currentHandlers.delete(handler);
+
+      if (currentHandlers.size === 0) {
+        const channel = currentState.activeChannels.get(channelName);
+        if (channel) {
+          channel.unsubscribe();
+        }
+
+        const newChannels = new Map(currentState.activeChannels);
+        newChannels.delete(channelName);
+
+        const newHandlers = new Map(currentState.qrOrderHandlers);
+        newHandlers.delete(handlerKey);
+
+        set({
+          activeChannels: newChannels,
+          qrOrderHandlers: newHandlers,
+          isConnected: newChannels.size > 0,
+          connectionMode: newChannels.size > 0 ? currentState.connectionMode : 'polling',
+        });
+      } else {
+        const newHandlers = new Map(currentState.qrOrderHandlers);
+        newHandlers.set(handlerKey, currentHandlers);
+        set({ qrOrderHandlers: newHandlers });
+      }
+    };
+  },
+
   unsubscribeAll: () => {
     const { activeChannels, _supabase, _retryTimeout } = get();
 
@@ -372,6 +485,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     set({
       activeChannels: new Map(),
       eventHandlers: new Map(),
+      qrOrderHandlers: new Map(),
       isConnected: false,
       isConnecting: false,
       connectionMode: 'polling',
