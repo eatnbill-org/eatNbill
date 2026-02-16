@@ -341,6 +341,27 @@ export async function createTable(
   });
 }
 
+export async function findExistingTableNumbers(
+  restaurantId: string,
+  tableNumbers: string[]
+) {
+  if (tableNumbers.length === 0) {
+    return [];
+  }
+
+  const rows = await prisma.restaurantTable.findMany({
+    where: {
+      restaurant_id: restaurantId,
+      table_number: { in: tableNumbers },
+    },
+    select: {
+      table_number: true,
+    },
+  });
+
+  return rows.map((row) => row.table_number);
+}
+
 export async function updateTable(
   tableId: string,
   data: { hall_id?: string; table_number?: string; seats?: number; is_active?: boolean }

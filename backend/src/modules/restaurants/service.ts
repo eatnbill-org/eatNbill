@@ -13,6 +13,7 @@ import {
   createHall,
   createRestaurantUser,
   createTable,
+  findExistingTableNumbers,
   deleteHall,
   deleteRestaurantUser,
   deleteTable,
@@ -351,9 +352,43 @@ export async function bulkAddTables(
   tablesData: Array<{ hall_id: string; table_number: string; seats: number; is_active?: boolean }>
 ) {
   const createdTables = [];
-  const errors = [];
+  const errors: Array<{ table_number: string; error: string }> = [];
+  const seenInPayload = new Set<string>();
+  const candidates: Array<{ hall_id: string; table_number: string; seats: number; is_active?: boolean }> = [];
 
-  for (const data of tablesData) {
+  for (const table of tablesData) {
+    const tableNumber = table.table_number.trim();
+    if (seenInPayload.has(tableNumber)) {
+      errors.push({
+        table_number: tableNumber,
+        error: 'Duplicate table number in request payload',
+      });
+      continue;
+    }
+
+    seenInPayload.add(tableNumber);
+    candidates.push({ ...table, table_number: tableNumber });
+  }
+
+  const existingTableNumbers = new Set(
+    await findExistingTableNumbers(
+      restaurantId,
+      candidates.map((table) => table.table_number)
+    )
+  );
+
+  const tablesToCreate = candidates.filter((table) => {
+    if (existingTableNumbers.has(table.table_number)) {
+      errors.push({
+        table_number: table.table_number,
+        error: 'Table number already exists for this restaurant',
+      });
+      return false;
+    }
+    return true;
+  });
+
+  for (const data of tablesToCreate) {
     try {
       const table = await createTable(restaurantId, data);
       await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT_TABLE', table.id);
@@ -374,15 +409,33 @@ export async function bulkAddTables(
         createdTables.push(table);
       }
     } catch (error) {
-      console.error(`Failed to create table ${data.table_number}:`, error);
+      const isUniqueViolation =
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: string }).code === 'P2002';
+
+      if (isUniqueViolation) {
+        console.warn(`[TABLE_BULK] Duplicate table number skipped: ${data.table_number}`);
+      } else {
+        console.error(`Failed to create table ${data.table_number}:`, error);
+      }
+
       errors.push({
         table_number: data.table_number,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: isUniqueViolation
+          ? 'Table number already exists for this restaurant'
+          : error instanceof Error
+            ? error.message
+            : 'Unknown error',
       });
     }
   }
 
   return {
+    attempted_count: tablesData.length,
+    created_count: createdTables.length,
+    failed_count: errors.length,
     created: createdTables,
     errors,
     success: createdTables.length > 0

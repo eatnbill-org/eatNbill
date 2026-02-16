@@ -5,7 +5,8 @@ import type {
     RestaurantHall,
     CreateTablePayload,
     UpdateTablePayload,
-    CreateHallPayload
+    CreateHallPayload,
+    BulkCreateTablesResult,
 } from '@/types/table';
 
 type TableState = {
@@ -17,7 +18,7 @@ type TableState = {
     fetchTables: () => Promise<void>;
     fetchHalls: () => Promise<void>;
     addTable: (data: CreateTablePayload) => Promise<boolean>;
-    bulkAddTables: (data: CreateTablePayload[]) => Promise<boolean>;
+    bulkAddTables: (data: CreateTablePayload[]) => Promise<BulkCreateTablesResult | null>;
     updateTable: (id: string, data: UpdateTablePayload) => Promise<boolean>;
     deleteTable: (id: string) => Promise<boolean>;
     addHall: (data: CreateHallPayload) => Promise<RestaurantHall | null>;
@@ -88,19 +89,34 @@ export const useTableStore = create<TableState>((set, get) => ({
     bulkAddTables: async (data: CreateTablePayload[]) => {
         set({ loading: true, error: null });
         try {
-            const response = await apiClient.post<{ data: any }>('/restaurant/tables/bulk', { tables: data });
+            const response = await apiClient.post<{ data: BulkCreateTablesResult }>('/restaurant/tables/bulk', { tables: data });
             if (response.error) {
                 set({ error: response.error, loading: false });
-                return false;
+                return null;
             }
-            await get().fetchTables(); // Refresh list
-            return true;
+
+            const result = response.data?.data || null;
+            if (!result) {
+                set({
+                    error: { code: 'CREATE_FAILED', message: 'Invalid bulk create response' },
+                    loading: false
+                });
+                return null;
+            }
+
+            if (result.created_count > 0) {
+                await get().fetchTables(); // Refresh list when something was created
+            } else {
+                set({ loading: false });
+            }
+
+            return result;
         } catch (err) {
             set({
                 error: { code: 'CREATE_FAILED', message: err instanceof Error ? err.message : 'Failed to add tables' },
                 loading: false
             });
-            return false;
+            return null;
         }
     },
 

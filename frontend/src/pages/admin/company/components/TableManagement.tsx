@@ -204,10 +204,23 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                 });
             }
 
-            success = await bulkAddTables(tablesToAdd);
-            if (success) {
-                toast.success(`${tablesToAdd.length} Tables Created Successfully`);
-                fetchTables();
+            const result = await bulkAddTables(tablesToAdd);
+            if (!result) {
+                return;
+            }
+
+            success = result.created_count > 0;
+
+            if (result.failed_count === 0) {
+                toast.success(`${result.created_count} Tables Created Successfully`);
+            } else if (result.created_count > 0) {
+                toast.warning(
+                    `${result.created_count} created, ${result.failed_count} skipped (usually duplicate table numbers)`
+                );
+            } else {
+                toast.error(
+                    `No tables created. ${result.failed_count} skipped (duplicate table numbers).`
+                );
             }
         } else {
             // Single table creation

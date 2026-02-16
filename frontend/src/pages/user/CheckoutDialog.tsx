@@ -153,7 +153,18 @@ type Props = {
   onTableChange?: (tableId: string) => void; // Callback when table is changed
 };
 
-export default function CheckoutDialog({ open, onOpenChange, items, tableId, tables = [], isWaiterMode = false, reorderContext, onSubmit, onTableChange }: Props) {
+export default function CheckoutDialog({
+  open,
+  onOpenChange,
+  items,
+  tableId,
+  tables = [],
+  isWaiterMode = false,
+  customerFieldsOptional = false,
+  reorderContext,
+  onSubmit,
+  onTableChange,
+}: Props) {
   const { state } = useDemoStore();
   const [name, setName] = React.useState(reorderContext?.customerName || "");
   const [phone, setPhone] = React.useState(reorderContext?.customerPhone || "");

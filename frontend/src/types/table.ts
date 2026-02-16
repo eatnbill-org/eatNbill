@@ -51,3 +51,17 @@ export interface CreateHallPayload {
     name: string;
     is_ac?: boolean;
 }
+
+export interface BulkCreateTableError {
+    table_number: string;
+    error: string;
+}
+
+export interface BulkCreateTablesResult {
+    attempted_count: number;
+    created_count: number;
+    failed_count: number;
+    created: RestaurantTable[];
+    errors: BulkCreateTableError[];
+    success: boolean;
+}
