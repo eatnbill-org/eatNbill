@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info } from "lucide-react";
+import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { SecuritySettings } from "./components/SecuritySettings";
+import { getSoundSettings, updateSoundSetting, setAllSoundsEnabled, areAllSoundsEnabled, testSound, type SoundSettings } from "@/lib/sound-notification";
 
 export default function AdminSideSettings() {
     const { state, dispatch } = useDemoStore();
@@ -28,6 +29,9 @@ export default function AdminSideSettings() {
     // Security
     const [pin, setPin] = React.useState(state.ui?.adminPin || "1234"); // Safe Access
     const [showPin, setShowPin] = React.useState(false);
+
+    // Sound settings
+    const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings());
 
     const updatePrefs = (section: 'sidebar' | 'dashboardFields', key: string, val: boolean) => {
         dispatch({
@@ -109,26 +113,59 @@ export default function AdminSideSettings() {
 
                 <div className="space-y-6">
 
-                    {/* 2. ALERT CENTER (COMPACT) */}
+                    {/* 2. NOTIFICATION SOUNDS */}
                     <Card className="shadow-sm border-t-4 border-t-orange-500">
-                        <CardHeader className="py-3 bg-orange-50/50 border-b">
-                            <CardTitle className="text-base flex items-center gap-2 text-orange-700"><Bell className="w-4 h-4" /> Alert Center</CardTitle>
+                        <CardHeader className="py-3 bg-orange-50/50 border-b flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-base flex items-center gap-2 text-orange-700">
+                                <Bell className="w-4 h-4" /> Notification Sounds
+                            </CardTitle>
+                            <Button
+                                size="sm"
+                                variant={areAllSoundsEnabled() ? "destructive" : "default"}
+                                onClick={() => {
+                                    const newState = !areAllSoundsEnabled();
+                                    setAllSoundsEnabled(newState);
+                                    setSoundSettings(getSoundSettings());
+                                    toast.success(newState ? "All sounds enabled" : "All sounds disabled");
+                                }}
+                                className="h-7 text-xs"
+                            >
+                                {areAllSoundsEnabled() ? "Disable All" : "Enable All"}
+                            </Button>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="divide-y divide-gray-100">
-                                {['zomato', 'swiggy', 'walkin', 'reorder', 'stock'].map((key) => (
+                                {[
+                                    { key: 'qr', label: 'QR / Table Orders', icon: '📱' },
+                                    { key: 'takeaway', label: 'Takeaway / Walk-in', icon: '🛍️' },
+                                    { key: 'zomato', label: 'Zomato Orders', icon: '🍔' },
+                                    { key: 'swiggy', label: 'Swiggy Orders', icon: '🍕' },
+                                ].map(({ key, label, icon }) => (
                                     <div key={key} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${prefs.alerts[key]?.enabled ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                            <span className="text-sm font-medium capitalize text-gray-700">{key} Alert</span>
+                                            <span className="text-lg">{icon}</span>
+                                            <div>
+                                                <span className="text-sm font-medium text-gray-700">{label}</span>
+                                                <p className="text-[10px] text-gray-400">Notification sound</p>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Button size="icon" variant="ghost" className="h-6 w-6 text-gray-400 hover:text-orange-600" title="Upload Sound">
-                                                <Upload className="w-3 h-3" />
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-7 w-7 text-gray-400 hover:text-orange-600"
+                                                title="Test Sound"
+                                                onClick={() => testSound(key as keyof SoundSettings)}
+                                            >
+                                                <Volume2 className="w-3.5 h-3.5" />
                                             </Button>
                                             <Switch
-                                                checked={prefs.alerts[key]?.enabled}
-                                                onCheckedChange={(v) => updateAlert(key, v)}
+                                                checked={soundSettings[key as keyof SoundSettings]?.enabled}
+                                                onCheckedChange={(v) => {
+                                                    updateSoundSetting(key as keyof SoundSettings, v);
+                                                    setSoundSettings(getSoundSettings());
+                                                    toast.success(`${label} sound ${v ? 'enabled' : 'disabled'}`);
+                                                }}
                                                 className="scale-75 data-[state=checked]:bg-orange-500"
                                             />
                                         </div>

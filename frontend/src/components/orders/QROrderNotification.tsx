@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { X, CheckCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -30,20 +30,11 @@ export function QROrderNotification({
 }: QROrderNotificationProps) {
   const [timeLeft, setTimeLeft] = useState(autoAcceptSeconds);
   const [isProcessing, setIsProcessing] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Play notification sound on mount
-    try {
-      audioRef.current = new Audio('/sounds/notification.mp3');
-      audioRef.current.volume = 0.5;
-      audioRef.current.play().catch(() => {
-        // Ignore if audio fails to play (browser restrictions)
-      });
-    } catch (error) {
-      // Ignore audio errors
-    }
-
+    // Note: Sound is played by HeadOrdersPage when order arrives
+    // to avoid duplicate sounds and respect user's sound settings
+    
     // Start countdown timer
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
@@ -63,10 +54,6 @@ export function QROrderNotification({
 
     return () => {
       clearInterval(interval);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

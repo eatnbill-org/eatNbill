@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 import { QROrderNotificationContainer } from "@/components/orders/QROrderNotification";
+import { playOrderSound, type OrderSource } from '@/lib/sound-notification';
 
 // Simplified Status configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode; ringClass: string }> = {
@@ -71,10 +72,54 @@ export default function HeadOrdersPage() {
     React.useEffect(() => {
         if (!restaurant?.id) return;
 
+        console.log('[HeadOrdersPage] Setting up realtime subscription for restaurant:', restaurant.id);
+
         // Use centralized realtime store
         const unsubscribe = useRealtimeStore.getState().subscribeToRestaurantOrders(
             restaurant.id,
             (update: any) => {
+                console.log('[HeadOrdersPage] Realtime update received:', update);
+                
+                // Play notification sound for new orders
+                if (update?.eventType === 'INSERT' && update?.order) {
+                    const orderSource = update.order.source as OrderSource;
+                    
+                    console.log('[HeadOrdersPage] New order detected - Source:', orderSource);
+                    
+                    // Map order source to sound notification
+                    let soundType: 'QR' | 'TAKEAWAY' | 'ZOMATO' | 'SWIGGY' = 'TAKEAWAY';
+                    
+                    switch (orderSource) {
+                        case 'QR':
+                            soundType = 'QR';
+                            break;
+                        case 'ZOMATO':
+                            soundType = 'ZOMATO';
+                            break;
+                        case 'SWIGGY':
+                            soundType = 'SWIGGY';
+                            break;
+                        case 'TAKEAWAY':
+                        case 'WEB':
+                        case 'MANUAL':
+                        default:
+                            soundType = 'TAKEAWAY';
+                            break;
+                    }
+                    
+                    console.log('[HeadOrdersPage] Playing sound:', soundType);
+                    
+                    // Play the appropriate sound
+                    playOrderSound(soundType);
+                    
+                    // Show toast notification
+                    const orderNumber = update.order.order_number || 'New';
+                    const customerName = update.order.customer_name || 'Customer';
+                    toast.success(`New ${orderSource} order #${orderNumber} from ${customerName}`, {
+                        duration: 4000,
+                    });
+                }
+                
                 // Invalidate and refetch orders when any change happens
                 queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
 
@@ -86,6 +131,7 @@ export default function HeadOrdersPage() {
         );
 
         return () => {
+            console.log('[HeadOrdersPage] Cleaning up realtime subscription');
             if (unsubscribe) unsubscribe();
         };
     }, [restaurant?.id, queryClient]);
@@ -98,6 +144,10 @@ export default function HeadOrdersPage() {
             restaurant.id,
             (payload: QROrderPayload) => {
                 console.log('[HeadOrdersPage] New QR order:', payload);
+                
+                // Play notification sound for QR orders
+                playOrderSound('QR');
+                
                 toast.info(`New order #${payload.order_number} from Table ${payload.table_number}`);
                 
                 // Add to pending orders list

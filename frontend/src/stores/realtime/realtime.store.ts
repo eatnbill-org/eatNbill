@@ -157,7 +157,16 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
   _ensureChannel: (channelName: string, handlerKey: string) => {
     const state = get();
-    if (state.disabled || state.activeChannels.has(channelName)) {
+    
+    console.log(`[Realtime] _ensureChannel called for: ${channelName}`);
+    
+    if (state.disabled) {
+      console.warn('[Realtime] ⚠️ Realtime is disabled via environment variable');
+      return;
+    }
+    
+    if (state.activeChannels.has(channelName)) {
+      console.log(`[Realtime] ℹ️ Channel ${channelName} already exists`);
       return;
     }
 
@@ -166,6 +175,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     const supabase = fresh._supabase;
 
     if (!supabase) {
+      console.error('[Realtime] ❌ Supabase client unavailable');
       get()._scheduleReconnect('Supabase realtime client unavailable');
       return;
     }
@@ -174,15 +184,18 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     if (channelName.startsWith('restaurant:') && channelName.endsWith(':orders')) {
       const restaurantId = channelName.split(':')[1];
       filter = `restaurant_id=eq.${restaurantId}`;
+      console.log(`[Realtime] 🔍 Creating restaurant orders channel with filter: ${filter}`);
     } else if (channelName.startsWith('order:')) {
       const orderId = channelName.split(':')[1];
       filter = `id=eq.${orderId}`;
+      console.log(`[Realtime] 🔍 Creating single order channel with filter: ${filter}`);
     } else {
       console.warn(`[Realtime] Unknown channel format: ${channelName}`);
       return;
     }
 
     set({ isConnecting: true });
+    console.log('[Realtime] 🔄 Setting isConnecting: true');
 
     const channel = supabase
       .channel(channelName)
@@ -195,6 +208,8 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
           filter,
         },
         (payload) => {
+          console.log(`[Realtime] 📦 Received postgres_changes payload on ${channelName}:`, payload);
+          
           const eventType = payload.eventType as RealtimeEvent;
           const order = payload.new as Order;
           const oldOrder = payload.old as Partial<Order>;
@@ -205,11 +220,15 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
             oldOrder: eventType === 'UPDATE' ? oldOrder : undefined,
           };
 
+          console.log(`[Realtime] 📤 Dispatching update to handlers:`, update);
           get()._dispatchUpdate(handlerKey, update);
         }
       )
       .subscribe((status) => {
+        console.log(`[Realtime] Channel ${channelName} status:`, status);
+        
         if (status === 'SUBSCRIBED') {
+          console.log(`[Realtime] ✅ Successfully subscribed to ${channelName}`);
           const current = get();
           if (current._retryTimeout) {
             clearTimeout(current._retryTimeout);
@@ -225,10 +244,13 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
             _retryTimeout: null,
           });
         } else if (status === 'CHANNEL_ERROR') {
+          console.error(`[Realtime] ❌ Channel error for ${channelName}`);
           get()._scheduleReconnect('Failed to subscribe to realtime channel');
         } else if (status === 'TIMED_OUT') {
+          console.error(`[Realtime] ⏱️ Timeout for ${channelName}`);
           get()._scheduleReconnect('Realtime connection timed out');
         } else if (status === 'CLOSED') {
+          console.warn(`[Realtime] 🔌 Connection closed for ${channelName}`);
           get()._scheduleReconnect('Realtime connection closed');
         }
       });
