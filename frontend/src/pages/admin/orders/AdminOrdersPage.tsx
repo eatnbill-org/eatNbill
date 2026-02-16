@@ -202,29 +202,29 @@ export default function AdminOrdersPage() {
     <div className="min-h-screen bg-transparent p-4 sm:p-6 space-y-6 overflow-y-auto no-scrollbar">
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Orders</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Orders</h1>
           <div className="flex items-center gap-2 mt-1">
             {realtimeConnected && (
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200 uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                Live Hub
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                Live
               </span>
             )}
-            <span className="text-xs text-muted-foreground uppercase tracking-widest font-medium opacity-70">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold opacity-70">
               {format(selectedDate, 'MMMM yyyy')}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center bg-muted/30 p-1 rounded-xl border self-end sm:self-auto">
+        <div className="flex items-center bg-muted/30 p-1 rounded-lg border self-end sm:self-auto">
           {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as FilterPeriod[]).map((p) => (
             <Button
               key={p}
               variant="ghost"
               size="sm"
               className={cn(
-                "h-8 px-3 text-[11px] font-bold tracking-wider rounded-lg transition-all",
-                period === p ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:bg-white/50"
+                "h-8 px-3 text-[11px] font-bold tracking-wider rounded-md transition-all",
+                period === p ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:bg-white/50"
               )}
               onClick={() => setPeriod(p)}
             >
@@ -237,8 +237,8 @@ export default function AdminOrdersPage() {
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "h-8 w-8 p-0 rounded-lg ml-1",
-                  period === 'CUSTOM' ? "bg-white shadow-sm text-foreground" : "text-muted-foreground"
+                  "h-8 w-8 p-0 rounded-md ml-1",
+                  period === 'CUSTOM' ? "bg-white shadow-sm text-primary" : "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="h-4 w-4" />
@@ -258,14 +258,14 @@ export default function AdminOrdersPage() {
               />
             </PopoverContent>
           </Popover>
-          <div className="h-4 w-px bg-slate-200 mx-2" />
+          <div className="h-4 w-px bg-border mx-2" />
           <Select
             value={pagination?.limit?.toString() || "25"}
             onValueChange={(v) => {
               fetchOrders({ ...filters, limit: parseInt(v), page: 1 });
             }}
           >
-            <SelectTrigger className="h-8 w-20 border-none bg-transparent shadow-none text-xs font-bold focus:ring-0">
+            <SelectTrigger className="h-8 w-20 border-none bg-transparent shadow-none text-xs font-bold focus:ring-0 text-primary">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -277,12 +277,12 @@ export default function AdminOrdersPage() {
         </div>
       </header>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white/40 backdrop-blur-sm border rounded-2xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-border shadow-sm">
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by customer, phone, or order ID..."
-            className="pl-10 h-10 bg-white/50 border-none ring-1 ring-slate-100 focus-visible:ring-slate-900 shadow-none rounded-xl"
+            placeholder="Search orders..."
+            className="pl-10 h-10 bg-muted/20 border-none ring-1 ring-border focus-visible:ring-primary shadow-none rounded-xl"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -291,14 +291,14 @@ export default function AdminOrdersPage() {
           <Button
             variant="outline"
             size="icon"
-            className="h-10 w-10 shrink-0 rounded-xl bg-white/50 border-none ring-1 ring-slate-100 hover:ring-slate-900 transition-all"
+            className="h-10 w-10 shrink-0 rounded-xl bg-white/50 border-none ring-1 ring-border hover:ring-primary transition-all"
             onClick={handleRefresh}
             disabled={loading}
           >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin text-primary")} />
           </Button>
           <Button
-            className="h-10 w-full sm:w-auto px-6 rounded-xl bg-slate-900 hover:bg-black text-white shadow-lg shadow-slate-200 transition-all font-bold gap-2"
+            className="h-10 w-full sm:w-auto px-6 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-md transition-all font-bold gap-2"
             onClick={() => setCreateDialogOpen(true)}
           >
             <Plus className="h-4 w-4" />
@@ -314,39 +314,39 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      <Card className="border shadow-sm rounded-3xl overflow-hidden bg-white/50 backdrop-blur-md">
+      <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-slate-50/50">
+            <TableHeader className="bg-muted/50 border-b border-border">
               <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="w-[100px] text-[11px] uppercase tracking-widest font-black text-slate-400 pl-6 h-12"># ID</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-widest font-black text-slate-400 h-12">Customer</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-widest font-black text-slate-400 h-12">Items</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-widest font-black text-slate-400 h-12">Total</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-widest font-black text-slate-400 h-12">Status</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-widest font-black text-slate-400 h-12">Timing</TableHead>
-                <TableHead className="text-[11px] uppercase tracking-widest font-black text-slate-400 h-12">Payment</TableHead>
-                <TableHead className="text-right text-[11px] uppercase tracking-widest font-black text-slate-400 pr-6 h-12">Actions</TableHead>
+                <TableHead className="w-[100px] text-[11px] uppercase tracking-wider font-bold text-muted-foreground pl-6 h-12">Order ID</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Customer</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Items</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Total</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Status</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Time</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Payment</TableHead>
+                <TableHead className="text-right text-[11px] uppercase tracking-wider font-bold text-muted-foreground pr-6 h-12">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-48 text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">
-                    Synching orders...
+                  <TableCell colSpan={8} className="h-48 text-center text-muted-foreground font-bold uppercase tracking-widest animate-pulse">
+                    Loading Orders...
                   </TableCell>
                 </TableRow>
               ) : filteredOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-48 text-center space-y-2">
-                    <p className="text-slate-400 font-bold italic text-sm">No orders found for this shift.</p>
+                    <p className="text-muted-foreground font-semibold italic text-sm">No orders found.</p>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredOrders.map((order) => (
                   <TableRow
                     key={order.id}
-                    className="hover:bg-white/80 cursor-pointer border-b border-slate-50 transition-colors group"
+                    className="hover:bg-muted/30 cursor-pointer border-b border-border transition-colors group"
                     onClick={() => setDetailsOrder(order)}
                   >
                     <TableCell className="font-mono text-sm font-bold pl-6 py-4">
@@ -354,29 +354,29 @@ export default function AdminOrdersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-black text-sm text-slate-800 italic uppercase">{order.customer_name}</span>
+                        <span className="font-bold text-sm text-foreground uppercase">{order.customer_name}</span>
                         {order.customer_phone && (
-                          <span className="text-[10px] text-slate-400 font-bold tracking-tighter uppercase">
+                          <span className="text-[10px] text-muted-foreground font-semibold tracking-tight uppercase">
                             {order.customer_phone}
                           </span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-xs font-bold text-slate-500 uppercase">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">
                         {getItemSummary(order)}
                       </span>
                     </TableCell>
-                    <TableCell className="font-black text-sm tracking-tight text-slate-900">
+                    <TableCell className="font-bold text-sm tracking-tight text-foreground">
                       {formatINR(parseFloat(order.total_amount))}
                     </TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="text-[11px] font-black text-slate-800">
+                        <span className="text-[11px] font-bold text-foreground">
                           {order.arrive_at || formatTime(order.placed_at || order.created_at)}
                         </span>
-                        <span className="text-[9px] text-indigo-400 font-black uppercase tracking-widest leading-none">
+                        <span className="text-[9px] text-primary font-bold uppercase tracking-wider leading-none">
                           {order.source}
                         </span>
                       </div>
@@ -386,7 +386,7 @@ export default function AdminOrdersPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 rounded-lg"
+                          className="h-7 text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary hover:bg-primary/20 rounded-md"
                           onClick={(e) => {
                             e.stopPropagation();
                             setMarkPaidOrder(order);
@@ -396,7 +396,7 @@ export default function AdminOrdersPage() {
                         </Button>
                       )}
                       {order.payment_status === 'PAID' && (
-                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0 border-emerald-200">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0 border-primary/20">
                           PAID
                         </Badge>
                       )}
@@ -406,7 +406,7 @@ export default function AdminOrdersPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             setBillOrder(order);
@@ -417,7 +417,7 @@ export default function AdminOrdersPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeleteOrder(order);
@@ -434,15 +434,15 @@ export default function AdminOrdersPage() {
           </Table>
         </div>
         {pagination && pagination.pages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t">
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+          <div className="flex items-center justify-between px-6 py-4 bg-muted/50 border-t border-border">
+            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">
               Page {pagination.page} of {pagination.pages}
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 rounded-lg font-bold border-none ring-1 ring-slate-200"
+                className="h-8 rounded-lg font-bold border-border"
                 disabled={pagination.page <= 1}
                 onClick={() => fetchOrders({ ...filters, page: pagination.page - 1 })}
               >
@@ -452,7 +452,7 @@ export default function AdminOrdersPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 rounded-lg font-bold border-none ring-1 ring-slate-200"
+                className="h-8 rounded-lg font-bold border-border"
                 disabled={pagination.page >= pagination.pages}
                 onClick={() => fetchOrders({ ...filters, page: pagination.page + 1 })}
               >
@@ -462,7 +462,7 @@ export default function AdminOrdersPage() {
             </div>
           </div>
         )}
-      </Card>
+      </div>
 
       <CreateOrderDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
       <MarkPaidDialog
@@ -484,11 +484,6 @@ export default function AdminOrdersPage() {
           setDetailsOrder(null);
         }}
         onReversePayment={(order) => {
-          updatePayment(order.id, {
-            payment_status: 'PENDING',
-            payment_method: (order.payment_method || 'CASH') as any,
-            payment_amount: parseFloat(order.total_amount),
-          });
           setDetailsOrder(null);
         }}
       />

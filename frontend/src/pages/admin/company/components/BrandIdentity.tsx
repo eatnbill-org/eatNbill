@@ -144,22 +144,22 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
             className="relative group shrink-0"
           >
             <div
-              className="h-24 w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-2xl border-2 border-slate-50 shadow-md cursor-pointer bg-slate-50 transition-all group-hover:ring-2 group-hover:ring-indigo-500/10"
+              className="h-24 w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-2xl border-2 border-border shadow-md cursor-pointer bg-muted transition-all group-hover:ring-2 group-hover:ring-primary/10"
               onClick={() => fileInputRef.current?.click()}
             >
               {data.logo_url ? (
                 <img src={data.logo_url} alt="Logo" className="h-full w-full object-cover transition-transform group-hover:scale-110" />
               ) : (
-                <div className="h-full w-full flex flex-col items-center justify-center text-slate-300 gap-1">
+                <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground gap-1">
                   <ImageIcon className="h-6 w-6" />
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Add Logo</span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Add Logo</span>
                 </div>
               )}
 
-              {/* Hover Overlay - Perfectly circular */}
+              {/* Hover Overlay */}
               <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all backdrop-blur-[2px] rounded-2xl">
                 <Camera className="h-4 w-4 mb-0.5" />
-                <span className="text-[7px] font-black uppercase tracking-widest leading-none">{uploading ? "..." : "UPLOAD"}</span>
+                <span className="text-[7px] font-bold uppercase tracking-widest leading-none">{uploading ? "..." : "UPLOAD"}</span>
               </div>
             </div>
             <input
@@ -177,10 +177,10 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
               {/* Name Field */}
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 px-1">
-                  <div className="h-5 w-5 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-500 border border-indigo-100">
+                  <div className="h-5 w-5 rounded-md bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                     <Store className="h-3 w-3" />
                   </div>
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Brand Name</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Restaurant Name</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   {isEditingName ? (
@@ -189,19 +189,19 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                       onChange={(e) => onChange({ ...data, name: e.target.value })}
                       onBlur={() => setIsEditingName(false)}
                       autoFocus
-                      className="text-lg font-black text-slate-800 h-9 px-3 bg-slate-50 border-indigo-50 rounded-xl focus-visible:ring-indigo-500"
+                      className="text-lg font-bold text-foreground h-9 px-3 bg-muted/20 border-border rounded-xl focus-visible:ring-primary"
                     />
                   ) : (
                     <div
-                      className="flex-1 text-xl font-black tracking-tight text-slate-800 uppercase leading-none cursor-pointer hover:text-indigo-600 transition-colors"
+                      className="flex-1 text-xl font-bold tracking-tight text-foreground uppercase leading-none cursor-pointer hover:text-primary transition-colors"
                       onClick={() => setIsEditingName(true)}
                     >
-                      {data.name || "Enterprise name"}
+                      {data.name || "Restaurant name"}
                     </div>
                   )}
                   <button
                     onClick={() => setIsEditingName(!isEditingName)}
-                    className="p-1.5 hover:bg-slate-50 rounded-lg transition-all text-slate-300 hover:text-indigo-500"
+                    className="p-1.5 hover:bg-muted rounded-lg transition-all text-muted-foreground hover:text-primary"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -211,10 +211,10 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
               {/* Slug Field - NEW */}
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 px-1">
-                  <div className="h-5 w-5 rounded-md bg-purple-50 flex items-center justify-center text-purple-500 border border-purple-100">
+                  <div className="h-5 w-5 rounded-md bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                     <Hash className="h-3 w-3" />
                   </div>
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Menu URL Slug</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Menu URL</Label>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -223,9 +223,9 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                       onChange={(e) => handleSlugChange(e.target.value.toLowerCase())}
                       placeholder="restaurant-name-location"
                       className={cn(
-                        "text-sm font-mono text-slate-700 h-9 px-3 bg-slate-50 rounded-xl focus-visible:ring-indigo-500",
-                        slugValidation?.isValid === false && "border-red-300 bg-red-50",
-                        slugValidation?.isValid === true && "border-green-300 bg-green-50"
+                        "text-sm font-mono text-foreground h-9 px-3 bg-muted/20 border-border rounded-xl focus-visible:ring-primary",
+                        slugValidation?.isValid === false && "border-destructive bg-destructive/10",
+                        slugValidation?.isValid === true && "border-primary bg-primary/10"
                       )}
                     />
                     <Button
@@ -241,14 +241,14 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                   {slugValidation && (
                     <p className={cn(
                       "text-[10px] font-semibold px-1",
-                      slugValidation.isValid ? "text-green-600" : "text-red-600"
+                      slugValidation.isValid ? "text-primary" : "text-destructive"
                     )}>
                       {slugValidation.message}
                     </p>
                   )}
                   {data.slug && (
-                    <p className="text-[10px] font-medium text-slate-400 px-1">
-                      Menu URL: <span className="font-mono text-indigo-600">{window.location.origin}/{data.slug}/menu</span>
+                    <p className="text-[10px] font-medium text-muted-foreground px-1">
+                      Menu URL: <span className="font-mono text-primary">{window.location.origin}/{data.slug}/menu</span>
                     </p>
                   )}
                   <p className="text-[9px] text-slate-400 px-1 italic">
@@ -260,16 +260,16 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
               {/* Tagline Field */}
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 px-1">
-                  <div className="h-5 w-4 rounded-md bg-amber-50 flex items-center justify-center text-amber-500 border border-amber-100">
+                  <div className="h-5 w-4 rounded-md bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                     <Utensils className="h-3 w-3" />
                   </div>
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Brand Slogan</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tagline</Label>
                 </div>
                 <Input
                   value={data.tagline || ""}
                   onChange={(e) => onChange({ ...data, tagline: e.target.value })}
-                  placeholder="Define your mantra..."
-                  className="text-sm font-bold text-slate-500 border-none bg-slate-50/50 h-9 px-3 rounded-xl focus-visible:ring-1 focus-visible:ring-indigo-100 placeholder:text-slate-300"
+                  placeholder="Your brand slogan..."
+                  className="text-sm font-semibold text-muted-foreground border-none bg-muted/20 h-9 px-3 rounded-xl focus-visible:ring-1 focus-visible:ring-primary/10"
                 />
               </div>
             </div>
@@ -277,16 +277,16 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
             {/* Address field */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 px-1">
-                <div className="h-5 w-5 rounded-md bg-rose-50 flex items-center justify-center text-rose-500 border border-rose-100">
+                <div className="h-5 w-5 rounded-md bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                   <MapPin className="h-3 w-3" />
                 </div>
-                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Street Address</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Address</Label>
               </div>
               <Input
                 value={data.address || ""}
                 onChange={(e) => onChange({ ...data, address: e.target.value })}
-                placeholder="City, Area, Building..."
-                className="text-xs font-semibold text-slate-500 bg-slate-50/30 border border-slate-100 rounded-xl px-3 h-10 transition-all hover:bg-white focus-visible:ring-1 focus-visible:ring-indigo-100"
+                placeholder="Restaurant full address..."
+                className="text-xs font-semibold text-muted-foreground bg-muted/20 border border-border rounded-xl px-3 h-10 transition-all hover:bg-white focus-visible:ring-1 focus-visible:ring-primary/10"
               />
             </div>
           </div>
@@ -301,19 +301,19 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
           <div className="space-y-3">
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className="h-6 w-6 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500 border border-orange-100 shadow-sm">
+                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                   <Utensils className="h-3 w-3" />
                 </div>
-                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Classification</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Restaurant Type</Label>
               </div>
               <Select
                 value={data.restaurant_type || ""}
                 onValueChange={(val) => onChange({ ...data, restaurant_type: val })}
               >
-                <SelectTrigger className="border-slate-100 bg-slate-50/30 rounded-xl h-11 font-bold text-xs text-slate-600 hover:bg-white hover:border-indigo-100 transition-all focus:ring-1 focus:ring-indigo-100 shadow-sm">
+                <SelectTrigger className="border-border bg-muted/20 rounded-xl h-11 font-bold text-xs text-foreground hover:bg-white hover:border-primary transition-all focus:ring-1 focus:ring-primary shadow-sm">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                <SelectContent className="rounded-xl border-border shadow-2xl">
                   {RESTAURANT_TYPES.map((type) => (
                     <SelectItem key={type} value={type} className="rounded-lg font-bold py-2 text-[10px]">{type.toUpperCase()}</SelectItem>
                   ))}
@@ -323,25 +323,25 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className="h-6 w-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 border border-blue-100 shadow-sm">
+                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                   <Hash className="h-3 w-3" />
                 </div>
-                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">GST Registration</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">GST Number</Label>
               </div>
               <Input
                 value={data.gst_number || ""}
                 onChange={(e) => onChange({ ...data, gst_number: e.target.value })}
-                placeholder="GSTIN IDENTIFIER"
-                className="border-slate-100 bg-slate-50/30 rounded-xl h-11 font-black tracking-widest text-xs text-slate-600 uppercase placeholder:text-slate-200 focus-visible:ring-indigo-50 transition-all hover:bg-white hover:border-indigo-100"
+                placeholder="GST NUMBER"
+                className="border-border bg-muted/20 rounded-xl h-11 font-bold tracking-tight text-xs text-foreground uppercase placeholder:text-muted-foreground placeholder:opacity-50 focus-visible:ring-primary transition-all hover:bg-white hover:border-primary"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className="h-6 w-6 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 border border-emerald-100 shadow-sm">
+                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                   <Clock className="h-3 w-3" />
                 </div>
-                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Operation Window</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Opening Hours</Label>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative">
@@ -349,18 +349,18 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                     type="time"
                     value={getOpenTime()}
                     onChange={(e) => onChange({ ...data, opening_hours: { default: e.target.value } })}
-                    className="border-slate-100 bg-slate-50/30 rounded-xl h-11 font-bold text-xs text-slate-600 focus-visible:ring-indigo-50 hover:bg-white transition-all pl-3 pr-8"
+                    className="border-border bg-muted/20 rounded-xl h-11 font-bold text-xs text-foreground focus-visible:ring-primary hover:bg-white transition-all pl-3 pr-8"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300 uppercase">Open</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted-foreground uppercase">Open</span>
                 </div>
                 <div className="relative">
                   <Input
                     type="time"
                     value={getCloseTime()}
                     onChange={(e) => onChange({ ...data, closing_hours: { default: e.target.value } })}
-                    className="border-slate-100 bg-slate-50/30 rounded-xl h-11 font-bold text-xs text-slate-600 focus-visible:ring-indigo-100 hover:bg-white transition-all pl-3 pr-8"
+                    className="border-border bg-muted/20 rounded-xl h-11 font-bold text-xs text-foreground focus-visible:ring-primary hover:bg-white transition-all pl-3 pr-8"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300 uppercase">Close</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted-foreground uppercase">Close</span>
                 </div>
               </div>
             </div>
@@ -370,44 +370,44 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className="h-6 w-6 rounded-lg bg-purple-50 flex items-center justify-center text-purple-500 border border-purple-100 shadow-sm">
+                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                   <Mail className="h-3 w-3" />
                 </div>
-                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Digital Contact</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Email Address</Label>
               </div>
               <Input
                 type="email"
                 value={data.email || ""}
                 onChange={(e) => onChange({ ...data, email: e.target.value })}
-                placeholder="corporate@domain.com"
-                className="border-slate-100 bg-slate-50/30 rounded-xl h-11 font-bold text-xs text-slate-600 focus-visible:ring-indigo-50 hover:bg-white transition-all shadow-sm"
+                placeholder="contact@restaurant.com"
+                className="border-border bg-muted/20 rounded-xl h-11 font-bold text-xs text-foreground focus-visible:ring-primary hover:bg-white transition-all shadow-sm"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 px-1">
-                <div className="h-6 w-6 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 border border-indigo-100 shadow-sm">
+                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                   <Phone className="h-3 w-3" />
                 </div>
-                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Primary Phone</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Phone Number</Label>
               </div>
               <Input
                 type="tel"
                 value={data.phone || ""}
                 onChange={(e) => onChange({ ...data, phone: e.target.value })}
-                placeholder="+0 (000) 000-0000"
-                className="border-slate-100 bg-slate-50/30 rounded-xl h-11 font-bold text-xs text-slate-600 focus-visible:ring-indigo-50 hover:bg-white transition-all shadow-sm"
+                placeholder="+91 00000 00000"
+                className="border-border bg-muted/20 rounded-xl h-11 font-bold text-xs text-foreground focus-visible:ring-primary hover:bg-white transition-all shadow-sm"
               />
             </div>
 
-            <div className="bg-slate-900 rounded-[1.5rem] p-5 text-white relative overflow-hidden shadow-xl shadow-slate-100 mt-2">
+            <div className="bg-primary rounded-2xl p-5 text-white relative overflow-hidden shadow-md mt-2">
               <div className="relative z-10 flex flex-col gap-1">
-                <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40">Identity Verification</span>
-                <p className="font-bold text-sm leading-tight tracking-tight text-slate-200">
-                  Update your contact protocols to ensure seamless communication with stakeholders.
+                <span className="text-[8px] font-bold uppercase tracking-widest opacity-60">Profile Status</span>
+                <p className="font-bold text-sm leading-tight tracking-tight text-white/90">
+                  Keep your restaurant information updated to help customers find and contact you easily.
                 </p>
               </div>
-              <Store className="absolute -right-4 -bottom-4 h-24 w-24 opacity-5 rotate-12" />
+              <Store className="absolute -right-4 -bottom-4 h-24 w-24 opacity-10 rotate-12" />
             </div>
           </div>
         </div>

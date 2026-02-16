@@ -574,36 +574,35 @@ export async function getRevenueSummary(
   from: Date,
   to: Date
 ) {
-  const orders = await prisma.order.findMany({
-    where: {
-      tenant_id: tenantId,
-      restaurant_id: restaurantId,
-      status: 'COMPLETED',
-      payment_status: 'PAID',
-      completed_at: { gte: from, lte: to },
-    },
-    include: {
-      items: true
-    }
-  });
+  // Optimized: Single DB round-trip with aggregation
+  const result: any[] = await prisma.$queryRaw`
+    SELECT 
+      COALESCE(SUM(o.total_amount), 0.00) as revenue,
+      COUNT(DISTINCT o.id) as orders,
+      COALESCE(SUM(CASE 
+        WHEN oi.cost_snapshot IS NOT NULL THEN oi.cost_snapshot * oi.quantity
+        ELSE 0.00 
+      END), 0.00) as cost
+    FROM "orders" o
+    LEFT JOIN "order_items" oi ON o.id = oi.order_id
+    WHERE 
+      o.tenant_id = ${tenantId}::uuid AND 
+      o.restaurant_id = ${restaurantId}::uuid AND 
+      o.status = 'COMPLETED' AND 
+      o.payment_status = 'PAID' AND
+      o.completed_at >= ${from} AND 
+      o.completed_at <= ${to}
+  `;
 
-  let totalRevenue = 0;
-  let totalCost = 0;
-
-  orders.forEach(order => {
-    totalRevenue += Number(order.total_amount);
-    order.items.forEach(item => {
-      // Use cost_snapshot if available, otherwise fallback to 0
-      const costAtOrderTime = item.cost_snapshot ? Number(item.cost_snapshot) : 0;
-      totalCost += costAtOrderTime * item.quantity;
-    });
-  });
+  const stats = result[0] || { revenue: 0, cost: 0, orders: 0 };
+  const revenue = Number(stats.revenue || 0);
+  const cost = Number(stats.cost || 0);
 
   return {
-    revenue: totalRevenue.toString(),
-    cost: totalCost.toString(),
-    profit: (totalRevenue - totalCost).toString(),
-    orders: orders.length
+    revenue: revenue.toString(),
+    cost: cost.toString(),
+    profit: (revenue - cost).toString(),
+    orders: Number(stats.orders || 0)
   };
 }
 
@@ -611,31 +610,28 @@ export async function getRevenueSummary(
  * Get total outstanding debt (Customer Credits + Completed Orders with Pending Payment)
  */
 export async function getReceivableDebt(tenantId: string, restaurantId: string) {
-  const [customerDebt, pendingOrders] = await Promise.all([
-    prisma.customer.aggregate({
-      where: {
-        tenant_id: tenantId,
-        restaurant_id: restaurantId,
-      },
-      _sum: {
-        credit_balance: true
-      }
-    }),
-    prisma.order.aggregate({
-      where: {
-        tenant_id: tenantId,
-        restaurant_id: restaurantId,
-        status: 'COMPLETED',
-        payment_status: 'PENDING',
-        payment_method: { not: 'CREDIT' }
-      },
-      _sum: {
-        total_amount: true
-      }
-    })
-  ]);
+  // Optimized: Single DB query to fetch both metrics
+  const result: any[] = await prisma.$queryRaw`
+    SELECT 
+      (
+        SELECT COALESCE(SUM(credit_balance), 0.00)
+        FROM "customers"
+        WHERE tenant_id = ${tenantId}::uuid AND restaurant_id = ${restaurantId}::uuid
+      ) as customer_debt,
+      (
+        SELECT COALESCE(SUM(total_amount), 0.00)
+        FROM "orders"
+        WHERE 
+          tenant_id = ${tenantId}::uuid AND 
+          restaurant_id = ${restaurantId}::uuid AND 
+          status = 'COMPLETED' AND 
+          payment_status = 'PENDING' AND 
+          payment_method != 'CREDIT'
+      ) as pending_orders
+  `;
 
-  return Number(customerDebt._sum.credit_balance || 0) + Number(pendingOrders._sum.total_amount || 0);
+  const stats = result[0] || { customer_debt: 0, pending_orders: 0 };
+  return Number(stats.customer_debt || 0) + Number(stats.pending_orders || 0);
 }
 
 /**
@@ -672,47 +668,71 @@ export async function getGranularRevenueStats(
   to: Date,
   granularity: 'hourly' | 'daily' | 'monthly'
 ) {
-  const orders = await prisma.order.findMany({
-    where: {
-      tenant_id: tenantId,
-      restaurant_id: restaurantId,
-      status: 'COMPLETED',
-      payment_status: 'PAID',
-      completed_at: { gte: from, lte: to },
-    },
-    select: {
-      completed_at: true,
-      total_amount: true,
+  const truncOp = granularity === 'hourly' ? 'hour' : granularity === 'daily' ? 'day' : 'month';
+
+  // Optimized: Group by time bucket in DB
+  const rawStats: any[] = await prisma.$queryRaw`
+    SELECT 
+      date_trunc(${truncOp}, "completed_at") as time,
+      COALESCE(SUM("total_amount"), 0.00) as revenue,
+      COUNT("id") as orders
+    FROM "orders"
+    WHERE 
+      "tenant_id" = ${tenantId}::uuid AND 
+      "restaurant_id" = ${restaurantId}::uuid AND 
+      "status" = 'COMPLETED' AND 
+      "payment_status" = 'PAID' AND
+      "completed_at" >= ${from} AND 
+      "completed_at" <= ${to}
+    GROUP BY 1
+    ORDER BY 1 ASC
+  `;
+
+  // Zero-Filling Logic
+  const filledStats: { time: string; revenue: string; orders: number }[] = [];
+  const current = new Date(from);
+
+  // Align current to start of bucket
+  if (granularity === 'hourly') current.setMinutes(0, 0, 0);
+  else if (granularity === 'daily') current.setHours(0, 0, 0, 0);
+  else { // monthly
+    current.setDate(1);
+    current.setHours(0, 0, 0, 0);
+  }
+
+  // Create lookup map
+  const statsMap = new Map();
+  rawStats.forEach(s => {
+    // rawStats time is usually Date object from Prisma
+    const timeVal = new Date(s.time).getTime();
+    if (!isNaN(timeVal)) {
+      statsMap.set(timeVal, s);
     }
   });
 
-  const grouped: Record<string, { revenue: number, orders: number }> = {};
+  const generateLabel = (date: Date) => {
+    if (granularity === 'hourly') return date.toISOString().slice(0, 13) + ":00";
+    if (granularity === 'monthly') return date.toISOString().slice(0, 7);
+    return date.toISOString().split('T')[0];
+  };
 
-  orders.forEach(o => {
-    if (!o.completed_at) return;
+  while (current <= to) {
+    const timeKey = current.getTime();
+    const existing = statsMap.get(timeKey);
 
-    let key = "";
-    const date = o.completed_at;
+    filledStats.push({
+      time: generateLabel(current),
+      revenue: existing ? Number(existing.revenue).toString() : "0",
+      orders: existing ? Number(existing.orders) : 0
+    });
 
-    if (granularity === 'hourly') {
-      key = date.toISOString().split(':')[0]! + ":00"; // YYYY-MM-DDTHH:00
-    } else if (granularity === 'monthly') {
-      key = date.toISOString().slice(0, 7); // YYYY-MM
-    } else {
-      key = date.toISOString().split('T')[0]!; // YYYY-MM-DD
-    }
+    // Increment
+    if (granularity === 'hourly') current.setHours(current.getHours() + 1);
+    else if (granularity === 'daily') current.setDate(current.getDate() + 1);
+    else current.setMonth(current.getMonth() + 1);
+  }
 
-    const current = grouped[key] || { revenue: 0, orders: 0 };
-    current.revenue += Number(o.total_amount);
-    current.orders += 1;
-    grouped[key] = current;
-  });
-
-  return Object.entries(grouped).map(([time, data]) => ({
-    time,
-    revenue: data.revenue.toString(),
-    orders: data.orders
-  })).sort((a, b) => a.time.localeCompare(b.time));
+  return filledStats;
 }
 
 /**
@@ -1042,39 +1062,67 @@ export async function getAdvancedAnalytics(
   const totalRevenue = stats.reduce((acc, curr) => acc + Number(curr.revenue), 0);
   const totalOrders = stats.reduce((acc, curr) => acc + Number(curr.orders), 0);
 
-  // Fetch all completed orders with items to calculate actual cost
-  const ordersWithItems = await prisma.order.findMany({
-    where: {
-      tenant_id: tenantId,
-      restaurant_id: restaurantId,
-      status: 'COMPLETED',
-      payment_status: 'PAID',
-      completed_at: { gte: from, lte: to }
-    },
-    include: {
-      items: true
-    }
-  });
+  // --- RECONSTRUCT TRENDS WITH ZERO-FILLING ---
+  const trends: any[] = [];
+  let current = new Date(from);
 
-  // Calculate total cost from cost_snapshot of each order item
-  let totalCost = 0;
-  ordersWithItems.forEach(order => {
-    order.items.forEach(item => {
-      // Use cost_snapshot if available, otherwise fallback to 0
-      const costAtOrderTime = item.cost_snapshot ? Number(item.cost_snapshot) : 0;
-      totalCost += costAtOrderTime * item.quantity;
+  // Align current to start of its period
+  if (timeGroup === 'hour') current.setMinutes(0, 0, 0);
+  else if (timeGroup === 'day') current.setHours(0, 0, 0, 0);
+  else if (timeGroup === 'month') {
+    current.setDate(1);
+    current.setHours(0, 0, 0, 0);
+  }
+
+  // Use a map for O(1) lookup of existing stats
+  const statsMap = new Map(
+    stats.map(s => [new Date(s.period).getTime(), s])
+  );
+
+  while (current <= to) {
+    const time = current.getTime();
+    const existing = statsMap.get(time);
+
+    trends.push({
+      period: current.toISOString(),
+      revenue: existing ? Number(existing.revenue) : 0,
+      orders: existing ? Number(existing.orders) : 0
     });
-  });
+
+    if (timeGroup === 'hour') {
+      current.setHours(current.getHours() + 1);
+    } else if (timeGroup === 'day') {
+      current.setDate(current.getDate() + 1);
+    } else {
+      current.setMonth(current.getMonth() + 1);
+    }
+  }
+
+  // Optimized: Calculate total cost using SQL aggregation instead of loop
+  const costResult: any[] = await prisma.$queryRaw`
+    SELECT 
+      COALESCE(SUM(CASE 
+        WHEN oi.cost_snapshot IS NOT NULL THEN oi.cost_snapshot * oi.quantity
+        ELSE 0.00 
+      END), 0.00) as total_cost
+    FROM "orders" o
+    JOIN "order_items" oi ON o.id = oi.order_id
+    WHERE 
+      o.tenant_id = ${tenantId}::uuid AND 
+      o.restaurant_id = ${restaurantId}::uuid AND 
+      o.status = 'COMPLETED' AND 
+      o.payment_status = 'PAID' AND
+      o.completed_at >= ${from} AND 
+      o.completed_at <= ${to}
+  `;
+
+  const totalCost = Number(costResult[0]?.total_cost || 0);
 
   // Real profit = Revenue - Cost
   const totalProfit = totalRevenue - totalCost;
 
   return {
-    trends: stats.map(s => ({
-      period: s.period,
-      revenue: Number(s.revenue),
-      orders: Number(s.orders)
-    })),
+    trends,
     distribution: categorySales.map(c => ({
       name: c.name,
       value: Number(c.total)

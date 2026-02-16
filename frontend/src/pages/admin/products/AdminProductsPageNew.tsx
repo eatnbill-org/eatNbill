@@ -185,13 +185,13 @@ export default function AdminProductsPage() {
         >
           <div>
             <div className="flex items-center gap-3 mb-2 px-1">
-              <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
+              <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <Package className="w-5 h-5" />
               </div>
-              <h1 className="text-3xl font-black text-slate-800 tracking-tight uppercase tracking-tighter">Inventory Console</h1>
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">Products</h1>
             </div>
-            <p className="text-sm font-medium text-slate-400 max-w-lg leading-relaxed px-1">
-              Manage your culinary offerings, organize categories, and optimize your menu for maximum conversion and profitability.
+            <p className="text-sm font-medium text-muted-foreground max-w-lg leading-relaxed px-1">
+              Manage your menu items, organize categories, and set pricing and discounts.
             </p>
           </div>
 
@@ -200,15 +200,15 @@ export default function AdminProductsPage() {
             className="flex items-center gap-4 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm"
           >
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Active Catalog</span>
-              <span className="text-sm font-black text-slate-800 tracking-tighter">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-1">Catalog</span>
+              <span className="text-sm font-bold text-foreground tracking-tight">
                 {products.length} Products / {categories.length} Categories
               </span>
             </div>
-            <div className="h-8 w-[1px] bg-slate-100" />
+            <div className="h-8 w-[1px] bg-border" />
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">Live System</span>
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] font-bold text-primary uppercase tracking-wider leading-none">Live</span>
             </div>
           </motion.div>
         </motion.div>
@@ -216,17 +216,17 @@ export default function AdminProductsPage() {
         {/* Tabs Control */}
         <Tabs defaultValue="products" className="space-y-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50 h-auto">
+            <TabsList className="bg-muted/50 p-1.5 rounded-xl border border-border h-auto">
               <TabsTrigger
                 value="products"
-                className="rounded-xl px-6 py-2.5 font-bold uppercase tracking-widest text-[11px] data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all"
+                className="rounded-lg px-6 py-2.5 font-bold uppercase tracking-widest text-[11px] data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
               >
                 <Package className="w-4 h-4 mr-2" />
                 Products
               </TabsTrigger>
               <TabsTrigger
                 value="categories"
-                className="rounded-xl px-6 py-2.5 font-bold uppercase tracking-widest text-[11px] data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all"
+                className="rounded-lg px-6 py-2.5 font-bold uppercase tracking-widest text-[11px] data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
               >
                 <Tag className="w-4 h-4 mr-2" />
                 Categories
@@ -241,7 +241,7 @@ export default function AdminProductsPage() {
                   onCheckedChange={setShowProfit}
                   className="data-[state=checked]:bg-emerald-500"
                 />
-                <Label htmlFor="show-profit" className="ml-3 text-[11px] font-black uppercase tracking-widest text-slate-500 cursor-pointer">
+                <Label htmlFor="show-profit" className="ml-3 text-[11px] font-bold uppercase tracking-widest text-[#64748b] cursor-pointer">
                   Profit View
                 </Label>
               </div>
@@ -250,12 +250,12 @@ export default function AdminProductsPage() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 shadow-sm flex items-center gap-3"
+                  className="bg-primary/10 px-4 py-2 rounded-xl border border-primary/20 shadow-sm flex items-center gap-3"
                 >
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  <TrendingUp className="w-4 h-4 text-primary" />
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-0.5">Potential Yield</span>
-                    <span className="text-xs font-black text-emerald-800">{formatINR(totalProfit)}</span>
+                    <span className="text-[9px] font-bold text-primary uppercase tracking-wider leading-none mb-0.5">Total Profit Potential</span>
+                    <span className="text-xs font-bold text-primary">{formatINR(totalProfit)}</span>
                   </div>
                 </motion.div>
               )}
@@ -265,14 +265,14 @@ export default function AdminProductsPage() {
           {/* PRODUCTS TAB */}
           <TabsContent value="products" className="space-y-6 outline-none">
             {/* Search & Filters Bar */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-xl shadow-slate-200/50">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-border shadow-sm">
               <div className="relative flex-1 w-full max-w-[460px] group transition-all">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products by name or description..."
-                  className="pl-11 h-12 bg-white/80 border-slate-100 rounded-2xl focus-visible:ring-indigo-500 focus-visible:ring-offset-0 shadow-sm transition-all"
+                  placeholder="Search products..."
+                  className="pl-11 h-12 bg-muted/20 border-border rounded-xl focus-visible:ring-primary focus-visible:ring-offset-0 transition-all"
                 />
               </div>
 
@@ -308,36 +308,36 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Products Table Container */}
-            <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-2xl shadow-slate-200/40 overflow-hidden">
+            <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100">
-                    <TableHead className="w-[80px] py-6 pl-8 text-xs font-black uppercase tracking-widest text-slate-400">Image</TableHead>
-                    <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-slate-400">Product Identity</TableHead>
-                    <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-slate-400">Attribution</TableHead>
-                    <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-slate-400">Pricing Model</TableHead>
-                    <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-slate-400">Promotion</TableHead>
-                    {showProfit && <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-slate-400">Margins</TableHead>}
-                    <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-slate-400 text-center">Lifecycle</TableHead>
-                    <TableHead className="py-6 pr-8 text-right text-xs font-black uppercase tracking-widest text-slate-400">Actions</TableHead>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                    <TableHead className="w-[80px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-muted-foreground">Image</TableHead>
+                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Product</TableHead>
+                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Category</TableHead>
+                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Price</TableHead>
+                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Discount</TableHead>
+                    {showProfit && <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Profit</TableHead>}
+                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
+                    <TableHead className="py-6 pr-8 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {productsLoading && products.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-64 text-center">
+                      <TableCell colSpan={showProfit ? 9 : 8} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center space-y-4 opacity-40">
-                          <Package className="h-12 w-12 text-slate-300 animate-pulse" />
-                          <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Synchronizing Inventory...</p>
+                          <Package className="h-12 w-12 text-muted-foreground animate-pulse" />
+                          <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">Loading Products...</p>
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : filteredProducts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-64 text-center">
+                      <TableCell colSpan={showProfit ? 9 : 8} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center space-y-4 opacity-40">
-                          <Search className="h-12 w-12 text-slate-300" />
-                          <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">No entries found matching criteria</p>
+                          <Search className="h-12 w-12 text-muted-foreground" />
+                          <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">No products found</p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -375,7 +375,7 @@ export default function AdminProductsPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col min-w-0">
-                                <span className="font-black text-slate-800 tracking-tight text-base mb-0.5">{product.name}</span>
+                                <span className="font-bold text-slate-800 tracking-tight text-base mb-0.5">{product.name}</span>
                                 {product.description && (
                                   <span className="text-[10px] font-medium text-slate-400 leading-tight line-clamp-1 max-w-[200px]">
                                     {product.description}
@@ -405,31 +405,31 @@ export default function AdminProductsPage() {
                               <div className="flex flex-col">
                                 {discount > 0 ? (
                                   <>
-                                    <span className="text-sm font-black text-emerald-600 tracking-tighter italic">{formatINR(discountedPrice)}</span>
-                                    <span className="text-[10px] text-slate-400 line-through font-mono opacity-60 tracking-tighter">{formatINR(originalPrice)}</span>
+                                    <span className="text-sm font-bold text-emerald-600 tracking-tight">{formatINR(discountedPrice)}</span>
+                                    <span className="text-[10px] text-slate-400 line-through font-medium opacity-60">{formatINR(originalPrice)}</span>
                                   </>
                                 ) : (
-                                  <span className="text-sm font-black text-slate-800 tracking-tighter italic">{formatINR(originalPrice)}</span>
+                                  <span className="text-sm font-bold text-slate-800 tracking-tight">{formatINR(originalPrice)}</span>
                                 )}
                               </div>
                             </TableCell>
                             <TableCell>
                               {discount > 0 ? (
                                 <div className="inline-flex items-center bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
-                                  <span className="text-[10px] font-black text-orange-600 uppercase tracking-tighter">
+                                  <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">
                                     -{discount}% YIELD
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">— none —</span>
+                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">— none —</span>
                               )}
                             </TableCell>
                             {showProfit && (
                               <TableCell>
                                 <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Net Margin</span>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Net Margin</span>
                                   <span className={cn(
-                                    "text-sm font-black tracking-tighter italic",
+                                    "text-sm font-bold tracking-tight",
                                     profit > 0 ? "text-emerald-600" : "text-rose-500"
                                   )}>
                                     {formatINR(profit)}
@@ -446,10 +446,10 @@ export default function AdminProductsPage() {
                                     if (success) {
                                       toast.success(`Product ${checked ? 'Activated' : 'Suspended'}`);
                                     } else {
-                                      toast.error("Protocol Error");
+                                      toast.error("Update Error");
                                     }
                                   }}
-                                  className="data-[state=checked]:bg-indigo-500"
+                                  className="data-[state=checked]:bg-primary"
                                 />
                               </div>
                             </TableCell>
@@ -487,42 +487,42 @@ export default function AdminProductsPage() {
 
           {/* CATEGORIES TAB */}
           <TabsContent value="categories" className="space-y-6 outline-none">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-xl shadow-slate-200/50">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-border shadow-sm">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 px-1">Structure Management</span>
-                <p className="text-sm font-medium text-slate-500 px-1">
-                  Define the logical hierarchy for your products to optimize browsing experience.
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-1 px-1">Categories</span>
+                <p className="text-sm font-medium text-muted-foreground px-1">
+                  Organize your menu into logical groups like Starters, Main Course, etc.
                 </p>
               </div>
               <Button
                 onClick={() => setCreateCategoryOpen(true)}
-                className="h-12 px-6 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-slate-200 transition-all shrink-0 w-full md:w-auto"
+                className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[11px] shadow-md transition-all shrink-0 w-full md:w-auto"
               >
-                <Plus className="w-4 h-4 mr-2" /> Add Structure
+                <Plus className="w-4 h-4 mr-2" /> Add Category
               </Button>
             </div>
 
-            <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-2xl shadow-slate-200/40 overflow-hidden">
+            <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100">
-                    <TableHead className="w-[100px] py-6 pl-8 text-xs font-black uppercase tracking-widest text-slate-400">Media</TableHead>
-                    <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-slate-400">Category Identity</TableHead>
-                    <TableHead className="py-6 text-xs font-black uppercase tracking-widest text-slate-400 text-center">Protocol</TableHead>
-                    <TableHead className="py-6 pr-8 text-right text-xs font-black uppercase tracking-widest text-slate-400">Actions</TableHead>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                    <TableHead className="w-[100px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-muted-foreground">Media</TableHead>
+                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Category Name</TableHead>
+                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground text-center">Status</TableHead>
+                    <TableHead className="py-6 pr-8 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {categoriesLoading && categories.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-48 text-center text-slate-400 font-bold uppercase tracking-widest text-xs opacity-40">
-                        Syncing structures...
+                      <TableCell colSpan={4} className="h-48 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs opacity-40">
+                        Loading categories...
                       </TableCell>
                     </TableRow>
                   ) : categories.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-48 text-center text-slate-400 font-bold uppercase tracking-widest text-xs opacity-40">
-                        Zero structures defined
+                      <TableCell colSpan={4} className="h-48 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs opacity-40">
+                        No categories found
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -549,20 +549,20 @@ export default function AdminProductsPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="font-black text-slate-800 tracking-tight text-lg">{category.name}</span>
+                            <span className="font-bold text-slate-800 tracking-tight text-lg">{category.name}</span>
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center space-x-3">
                               <Switch
                                 checked={category.is_active}
                                 onCheckedChange={() => handleStatusChange(category.id, category.is_active)}
-                                className="data-[state=checked]:bg-indigo-500"
+                                className="data-[state=checked]:bg-primary"
                               />
                               <span className={cn(
-                                "text-[10px] font-black uppercase tracking-widest",
-                                category.is_active ? "text-emerald-500" : "text-slate-400"
+                                "text-[10px] font-bold uppercase tracking-wider",
+                                category.is_active ? "text-primary" : "text-muted-foreground"
                               )}>
-                                {category.is_active ? 'Operational' : 'Deactivated'}
+                                {category.is_active ? 'Active' : 'Inactive'}
                               </span>
                             </div>
                           </TableCell>
@@ -618,29 +618,29 @@ export default function AdminProductsPage() {
         <AlertDialogContent className="max-w-md p-0 overflow-hidden border-none rounded-[2rem] shadow-2xl">
           <div className="p-8 pb-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-14 w-14 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+              <div className="h-14 w-14 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
                 <AlertCircle className="w-8 h-8" />
               </div>
               <div>
-                <AlertDialogTitle className="text-xl font-black text-slate-800 tracking-tight uppercase">Structure Dissolution</AlertDialogTitle>
-                <AlertDialogDescription className="text-sm font-medium text-slate-400 mt-1">
-                  You are about to dissolve this category. This action is irreversible.
+                <AlertDialogTitle className="text-xl font-bold text-foreground tracking-tight">Delete Category?</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm font-medium text-muted-foreground mt-1">
+                  You are about to delete this category. This action cannot be undone.
                 </AlertDialogDescription>
               </div>
             </div>
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-2">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Dependency Check</p>
-              <p className="text-xs text-slate-500 leading-relaxed italic">
-                The operation will fail if any active products remain linked to this structural node.
+            <div className="bg-accent/30 rounded-xl p-4 border border-border mb-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Check Dependencies</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                You cannot delete a category that has products linked to it.
               </p>
             </div>
           </div>
-          <AlertDialogFooter className="p-6 bg-slate-50 flex-col sm:flex-row gap-3">
-            <AlertDialogCancel className="mt-0 flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[11px] text-slate-400 border-slate-200">
-              Retain Structure
+          <AlertDialogFooter className="p-6 bg-accent/50 flex-col sm:flex-row gap-3">
+            <AlertDialogCancel className="mt-0 flex-1 h-12 rounded-xl font-semibold text-sm border-border">
+              Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteCategory} className="flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[11px] bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-100 border-none">
-              Confirm Purge
+            <AlertDialogAction onClick={confirmDeleteCategory} className="flex-1 h-12 rounded-xl font-semibold text-sm bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-md">
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -650,23 +650,23 @@ export default function AdminProductsPage() {
         <AlertDialogContent className="max-w-md p-0 overflow-hidden border-none rounded-[2rem] shadow-2xl">
           <div className="p-8 pb-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-14 w-14 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+              <div className="h-14 w-14 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
                 <AlertCircle className="w-8 h-8" />
               </div>
               <div>
-                <AlertDialogTitle className="text-xl font-black text-slate-800 tracking-tight uppercase">Record Termination</AlertDialogTitle>
-                <AlertDialogDescription className="text-sm font-medium text-slate-400 mt-1">
-                  You are about to remove this product from the master catalog.
+                <AlertDialogTitle className="text-xl font-bold text-foreground tracking-tight">Delete Product?</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm font-medium text-muted-foreground mt-1">
+                  You are about to delete this product from your catalog.
                 </AlertDialogDescription>
               </div>
             </div>
           </div>
-          <AlertDialogFooter className="p-6 bg-slate-50 flex-col sm:flex-row gap-3">
-            <AlertDialogCancel className="mt-0 flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[11px] text-slate-400 border-slate-200">
-              Maintain Record
+          <AlertDialogFooter className="p-6 bg-accent/50 flex-col sm:flex-row gap-3">
+            <AlertDialogCancel className="mt-0 flex-1 h-12 rounded-xl font-semibold text-sm border-border">
+              Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteProduct} className="flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[11px] bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-100 border-none">
-              Execute Purge
+            <AlertDialogAction onClick={confirmDeleteProduct} className="flex-1 h-12 rounded-xl font-semibold text-sm bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-md">
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -181,13 +181,13 @@ export default function AdminCampaignPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <motion.div variants={itemVariants}>
             <div className="flex items-center gap-2.5 mb-1.5 px-0.5">
-              <div className="h-8 w-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-100">
+              <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <Megaphone className="w-4 h-4" />
               </div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Campaign Console</h1>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Campaigns</h1>
             </div>
-            <p className="text-[13px] font-medium text-slate-400 max-w-lg leading-snug px-0.5">
-              Target your audience with high-impact WhatsApp marketing protocols and real-time conversion tracking.
+            <p className="text-sm font-medium text-muted-foreground max-w-lg leading-snug px-0.5">
+              Create and send WhatsApp messages to your customers to keep them engaged.
             </p>
           </motion.div>
 
@@ -195,8 +195,8 @@ export default function AdminCampaignPage() {
           <motion.div variants={itemVariants} className="flex gap-3 overflow-x-auto no-scrollbar pb-2 md:pb-0">
             {[
               { label: "Available Credits", value: "₹2,450", icon: Wallet, color: "text-emerald-600", bg: "bg-emerald-50" },
-              { label: "Monthly Burn", value: "₹450", icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
-              { label: "Reach Potential", value: "5.2k", icon: CalendarRange, color: "text-slate-600", bg: "bg-slate-100" },
+              { label: "Spent this Month", value: "₹450", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+              { label: "Total Customers", value: "5.2k", icon: CalendarRange, color: "text-muted-foreground", bg: "bg-muted" },
             ].map((stat, i) => (
               <div key={i} className="flex-none min-w-[140px] bg-white rounded-2xl p-3 border border-slate-100 shadow-sm transition-all hover:shadow-md hover:border-indigo-100 group">
                 <div className="flex items-center gap-2 mb-2">
@@ -229,22 +229,22 @@ export default function AdminCampaignPage() {
           {/* 2. Preview Section */}
           <motion.div variants={itemVariants} className="space-y-6">
             <Card className="rounded-[2.5rem] shadow-sm border-none bg-white overflow-hidden h-fit">
-              <CardHeader className="p-6 border-b border-slate-50">
+              <CardHeader className="p-6 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                    <span className="text-indigo-500 font-black">2.</span> Real-time Preview
+                  <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+                    <span className="text-primary font-bold">2.</span> Preview
                   </CardTitle>
 
                   {/* Template Toggle */}
                   <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
                     <ToggleGroup type="single" value={String(template)} onValueChange={(v) => { if (v) setTemplate(Number(v) as Template) }}>
-                      <ToggleGroupItem value="1" className="h-7 w-7 rounded-lg data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=on]:text-indigo-600">
+                      <ToggleGroupItem value="1" className="h-7 w-7 rounded-sm data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=on]:text-primary">
                         <div className="flex flex-col items-center gap-[2px]">
                           <ImgIcon className="w-3.5 h-[6px]" />
                           <AlignLeft className="w-3.5 h-[6px]" />
                         </div>
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="2" className="h-7 w-7 rounded-lg data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=on]:text-indigo-600">
+                      <ToggleGroupItem value="2" className="h-7 w-7 rounded-sm data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=on]:text-primary">
                         <div className="flex flex-col items-center gap-[2px]">
                           <AlignLeft className="w-3.5 h-[6px]" />
                           <ImgIcon className="w-3.5 h-[6px]" />
@@ -260,10 +260,10 @@ export default function AdminCampaignPage() {
                 </div>
                 <Button
                   variant="ghost"
-                  className="w-full h-11 rounded-2xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:bg-white transition-all"
+                  className="w-full h-11 rounded-xl text-xs font-semibold text-muted-foreground hover:text-primary hover:bg-white transition-all"
                   onClick={() => setFullPreviewOpen(true)}
                 >
-                  Launch Interactive Preview
+                  Full Preview
                 </Button>
               </CardContent>
             </Card>
@@ -279,17 +279,17 @@ export default function AdminCampaignPage() {
             />
 
             {/* Cost Summary Card */}
-            <Card className="rounded-[2.5rem] border-none shadow-sm bg-gradient-to-br from-indigo-600 to-indigo-700 text-white overflow-hidden">
+            <Card className="rounded-[1.5rem] border-none shadow-sm bg-primary text-white overflow-hidden">
               <CardContent className="p-6 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Execution Cost</p>
+                    <Sparkles className="w-3.5 h-3.5 text-white/80" />
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/80">Campaign Cost</p>
                   </div>
-                  <p className="text-[11px] text-indigo-200 font-medium">{effectiveRecipients.length} recipients × ₹0.50</p>
+                  <p className="text-[11px] text-white/70 font-medium">{effectiveRecipients.length} recipients × ₹0.50</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-3xl font-black tabular-nums">₹{estimatedCost.toFixed(2)}</span>
+                  <span className="text-3xl font-bold tabular-nums">₹{estimatedCost.toFixed(2)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -308,14 +308,14 @@ export default function AdminCampaignPage() {
         <AlertDialogContent className="rounded-[2.5rem] p-8 border-none shadow-2xl">
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-10 w-10 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                 <Send className="w-5 h-5" />
               </div>
-              <AlertDialogTitle className="text-xl font-black text-slate-800 uppercase tracking-tight">Initiate Broadcast?</AlertDialogTitle>
+              <AlertDialogTitle className="text-xl font-bold text-foreground tracking-tight">Send Campaign?</AlertDialogTitle>
             </div>
-            <AlertDialogDescription className="text-sm font-medium text-slate-500 leading-relaxed">
-              You are about to authorize a campaign dispatch to <span className="text-slate-800 font-bold">{effectiveRecipients.length} nodes</span>.
-              Estimated fiscal impact: <span className="text-indigo-600 font-black">₹{estimatedCost.toFixed(2)}</span>.
+            <AlertDialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed">
+              You are about to send a campaign to <span className="text-foreground font-bold">{effectiveRecipients.length} customers</span>.
+              Total cost: <span className="text-primary font-bold">₹{estimatedCost.toFixed(2)}</span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="mt-6 p-5 border border-slate-100 rounded-3xl bg-slate-50/50">
@@ -323,12 +323,12 @@ export default function AdminCampaignPage() {
             <p className="text-xs font-medium text-slate-600 leading-relaxed line-clamp-3">\"{shortText(message, 150)}\"</p>
           </div>
           <AlertDialogFooter className="mt-8 gap-3">
-            <AlertDialogCancel className="h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px] border-slate-200">Decline</AlertDialogCancel>
+            <AlertDialogCancel className="h-12 rounded-xl font-semibold text-sm border-border">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={commitSend}
-              className="h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-100"
+              className="h-12 rounded-xl font-semibold text-sm bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
             >
-              Authorize Dispatch
+              Send Now
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

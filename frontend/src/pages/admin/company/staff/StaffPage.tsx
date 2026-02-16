@@ -150,13 +150,13 @@ export default function StaffPage() {
         >
           <div>
             <div className="flex items-center gap-3 mb-2 px-1">
-              <div className="h-10 w-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-200">
+              <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <UserCog className="w-5 h-5" />
               </div>
-              <h1 className="text-3xl font-black text-slate-800 tracking-tight uppercase">Workforce Registry</h1>
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">Staff Management</h1>
             </div>
-            <p className="text-sm font-medium text-slate-400 max-w-lg leading-relaxed px-1">
-              Orchestrate your team operations, manage access credentials, and track performance metrics across all personnel.
+            <p className="text-sm font-medium text-muted-foreground max-w-lg leading-relaxed px-1">
+              Manage your restaurant staff, access roles, and contact information.
             </p>
           </div>
 
@@ -165,8 +165,8 @@ export default function StaffPage() {
             className="flex items-center gap-4 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm"
           >
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Active Personnel</span>
-              <span className="text-sm font-black text-slate-800 tracking-tighter">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-1">Active Staff</span>
+              <span className="text-sm font-bold text-foreground">
                 {activeStaffCount} / {staffList.length} Members
               </span>
             </div>
@@ -188,12 +188,12 @@ export default function StaffPage() {
           className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-xl shadow-slate-200/50"
         >
           <div className="relative flex-1 w-full max-w-[460px] group transition-all">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search staff by name, email, or phone..."
-              className="pl-11 h-12 bg-white/80 border-slate-100 rounded-2xl focus-visible:ring-purple-500 focus-visible:ring-offset-0 shadow-sm transition-all"
+              placeholder="Search staff members..."
+              className="pl-11 h-12 bg-background border-border rounded-xl focus-visible:ring-primary focus-visible:ring-offset-0 shadow-sm transition-all"
             />
           </div>
 
@@ -201,15 +201,15 @@ export default function StaffPage() {
             <Button
               onClick={() => setCredentialsOpen(true)}
               variant="outline"
-              className="h-12 px-6 rounded-2xl border-purple-200 text-purple-600 hover:bg-purple-50 font-bold uppercase tracking-widest text-[11px] shadow-sm transition-all shrink-0 flex-1 md:flex-none"
+              className="h-12 px-6 rounded-xl border-primary/20 text-primary hover:bg-primary/5 font-semibold text-sm shadow-sm transition-all shrink-0 flex-1 md:flex-none"
             >
               <Key className="mr-2 h-4 w-4" /> Edit Credentials
             </Button>
             <Button
               onClick={() => setIsAddOpen(true)}
-              className="h-12 px-6 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-slate-200 transition-all shrink-0 flex-1 md:flex-none"
+              className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm shadow-md transition-all shrink-0 flex-1 md:flex-none"
             >
-              <Plus className="mr-2 h-4 w-4" /> Add Personnel
+              <Plus className="mr-2 h-4 w-4" /> Add Staff
             </Button>
           </div>
         </motion.div>

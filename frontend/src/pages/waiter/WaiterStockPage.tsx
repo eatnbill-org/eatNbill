@@ -55,7 +55,7 @@ export default function WaiterStockPage() {
     if (productsLoading || categoriesLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
@@ -107,7 +107,7 @@ export default function WaiterStockPage() {
                             variant={selectedCategoryId === null ? "default" : "outline"}
                             size="sm"
                             onClick={() => setSelectedCategoryId(null)}
-                            className={`rounded-full px-4 h-8 text-[10px] font-black uppercase tracking-widest ${selectedCategoryId === null ? "bg-orange-500 hover:bg-orange-600 text-white border-none" : "text-slate-500"
+                            className={`rounded-full px-4 h-8 text-[10px] font-bold uppercase tracking-widest ${selectedCategoryId === null ? "bg-primary hover:bg-primary/90 text-white border-none" : "text-slate-500 hover:border-primary/30"
                                 }`}
                         >
                             All
@@ -118,7 +118,7 @@ export default function WaiterStockPage() {
                                 variant={selectedCategoryId === cat.id ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => setSelectedCategoryId(cat.id)}
-                                className={`rounded-full px-4 h-8 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${selectedCategoryId === cat.id ? "bg-orange-500 hover:bg-orange-600 text-white border-none" : "text-slate-500"
+                                className={`rounded-full px-4 h-8 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${selectedCategoryId === cat.id ? "bg-primary hover:bg-primary/90 text-white border-none" : "text-slate-500 hover:border-primary/30"
                                     }`}
                             >
                                 {cat.name}
@@ -149,7 +149,7 @@ export default function WaiterStockPage() {
                                         className="h-full w-full object-cover"
                                     />
                                 ) : (
-                                    <div className="h-full w-full flex items-center justify-center text-gray-400 text-[10px] font-black uppercase">
+                                    <div className="h-full w-full flex items-center justify-center text-gray-400 text-[10px] font-bold uppercase">
                                         No img
                                     </div>
                                 )}
@@ -159,7 +159,7 @@ export default function WaiterStockPage() {
                             <div className="flex-1 min-w-0">
                                 <p className="font-bold text-gray-900 truncate text-sm">{product.name}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-xs text-orange-500 font-black">
+                                    <span className="text-xs text-primary font-bold">
                                         {formatINR(product.price)}
                                     </span>
                                     <span className="text-[10px] text-gray-300">•</span>
@@ -171,7 +171,7 @@ export default function WaiterStockPage() {
 
                             {/* Stock status (read-only for staff) */}
                             <div className="flex flex-col items-end gap-1">
-                                <div className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${isInStock
+                                <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${isInStock
                                     ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                                     : "bg-rose-50 text-rose-600 border border-rose-100"
                                     }`}>
@@ -185,7 +185,7 @@ export default function WaiterStockPage() {
 
             {filteredProducts.length === 0 && (
                 <div className="text-center py-12">
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">No products found</p>
+                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">No products found</p>
                 </div>
             )}
         </div>

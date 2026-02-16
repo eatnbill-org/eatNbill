@@ -225,7 +225,7 @@ export default function WaiterMenuPage() {
     if (productsLoading || tablesLoading) {
         return (
             <div className="flex h-screen items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
@@ -255,7 +255,7 @@ export default function WaiterMenuPage() {
         <div className="bg-slate-50 pb-24 rounded-xl">
             {/* 🔄 Reorder Mode Context Banner */}
             {isReorderMode && existingOrder && (
-                <div className="sticky top-0 z-40 bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg overflow-hidden">
+                <div className="sticky top-0 z-40 bg-gradient-to-r from-emerald-600 to-primary text-white shadow-lg overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                         <RefreshCw className="h-24 w-24 rotate-12" />
                     </div>
@@ -301,12 +301,12 @@ export default function WaiterMenuPage() {
                     <div className="flex items-center gap-3">
                         {/* Left: Search Bar */}
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-orange-500" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
                             <Input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Search menu..."
-                                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500/20 transition-all"
+                                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-primary/20 focus:ring-primary/20 transition-all"
                             />
                         </div>
 
@@ -317,7 +317,7 @@ export default function WaiterMenuPage() {
                                 onValueChange={setSelectedTable}
                                 disabled={isReorderMode} // 🔒 Lock table in reorder mode
                             >
-                                <SelectTrigger className={`h-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500/20 ${isReorderMode ? 'opacity-70 grayscale' : ''}`}>
+                                <SelectTrigger className={`h-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-primary/20 focus:ring-primary/20 ${isReorderMode ? 'opacity-70 grayscale' : ''}`}>
                                     <SelectValue placeholder="Table" />
                                 </SelectTrigger>
                                 <SelectContent align="end" className="rounded-xl">
@@ -345,7 +345,7 @@ export default function WaiterMenuPage() {
                                     type="button"
                                     onClick={() => setActive(cat.name)}
                                     className={`flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all ${active === cat.name
-                                        ? "bg-orange-50 border-2 border-orange-500"
+                                        ? "bg-primary/10 border-2 border-primary"
                                         : "bg-white border-2 border-gray-100 hover:border-gray-200"
                                         }`}
                                 >
@@ -358,7 +358,7 @@ export default function WaiterMenuPage() {
                                     ) : (
                                         <span className="text-2xl">{CATEGORY_ICONS[cat.name] || "🍴"}</span>
                                     )}
-                                    <span className={`text-xs font-medium ${active === cat.name ? "text-orange-600" : "text-gray-600"}`}>
+                                    <span className={`text-xs font-medium ${active === cat.name ? "text-primary" : "text-gray-600"}`}>
                                         {cat.name}
                                     </span>
                                 </button>
@@ -401,7 +401,7 @@ export default function WaiterMenuPage() {
                                     <div className="p-3">
                                         <div className="flex items-start justify-between gap-1">
                                             <h3 className="text-sm font-semibold text-slate-900 line-clamp-1">{product.name}</h3>
-                                            <span className="text-sm font-bold text-orange-500 shrink-0">{formatINR(product.price)}</span>
+                                            <span className="text-sm font-bold text-primary shrink-0">{formatINR(product.price)}</span>
                                         </div>
 
                                         <div className="mt-2">
@@ -410,16 +410,16 @@ export default function WaiterMenuPage() {
                                                     type="button"
                                                     disabled={isOutOfStock}
                                                     onClick={() => add(product.id)}
-                                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-50"
+                                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
                                                 >
                                                     <Plus className="h-4 w-4" />
                                                     <span className="text-xs font-medium">Add</span>
                                                 </button>
                                             ) : (
-                                                <div className="flex items-center justify-between px-2 py-1 rounded-lg border border-orange-200 bg-orange-50">
+                                                <div className="flex items-center justify-between px-2 py-1 rounded-lg border border-primary/20 bg-primary/5 shadow-inner">
                                                     <button type="button" onClick={() => dec(product.id)} className="h-7 w-7 rounded-full bg-white border flex items-center justify-center">−</button>
-                                                    <span className="text-sm font-bold text-orange-600">{qty}</span>
-                                                    <button type="button" onClick={() => add(product.id)} className="h-7 w-7 rounded-full bg-orange-500 text-white flex items-center justify-center">+</button>
+                                                    <span className="text-sm font-bold text-primary">{qty}</span>
+                                                    <button type="button" onClick={() => add(product.id)} className="h-7 w-7 rounded-full bg-primary text-white flex items-center justify-center">+</button>
                                                 </div>
                                             )}
                                         </div>
@@ -445,12 +445,12 @@ export default function WaiterMenuPage() {
                             type="button"
                             onClick={() => setCheckoutOpen(true)}
                             disabled={false}
-                            className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white rounded-2xl py-4 px-6 flex items-center justify-between transition-colors"
+                            className="w-full bg-primary hover:bg-primary/90 disabled:bg-gray-400 text-white rounded-2xl py-4 px-6 flex items-center justify-between transition-colors"
                         >
                             <div className="flex items-center gap-3">
                                 <div className="relative">
                                     <ShoppingCart className="h-6 w-6" />
-                                    <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-white text-orange-500 text-xs font-bold flex items-center justify-center">
+                                    <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-white text-primary text-xs font-bold flex items-center justify-center">
                                         {totalItems}
                                     </span>
                                 </div>

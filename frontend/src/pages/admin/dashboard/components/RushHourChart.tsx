@@ -5,9 +5,9 @@ import { Zap } from "lucide-react";
 
 export function RushHourChart({ data }: { data: any[] }) {
   return (
-    <Card className="rounded-[1.5rem] border-slate-100 shadow-xl shadow-slate-200/50 bg-white/50 backdrop-blur-sm overflow-hidden flex flex-col h-[320px]">
-      <CardHeader className="py-3 border-b border-slate-50">
-        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+    <Card className="rounded-[1.5rem] border border-border shadow-elev-1 bg-card text-card-foreground overflow-hidden flex flex-col h-[320px]">
+      <CardHeader className="py-3 border-b border-border/50">
+        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
           <Zap className="w-3.5 h-3.5 text-orange-500" />
           Propagation
         </CardTitle>
@@ -16,25 +16,25 @@ export function RushHourChart({ data }: { data: any[] }) {
         <div className="h-[220px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ left: -10, right: 20, top: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border)/0.5)" horizontal={false} />
               <YAxis
                 type="category"
                 dataKey="hour"
-                tick={{ fill: "#94a3b8", fontSize: 8, fontWeight: 800 }}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 8, fontWeight: 800 }}
                 axisLine={false}
                 tickLine={false}
                 width={60}
               />
               <XAxis
                 type="number"
-                tick={{ fill: "#94a3b8", fontSize: 8, fontWeight: 800 }}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 8, fontWeight: 800 }}
                 axisLine={false}
                 tickLine={false}
                 hide
               />
               <Tooltip
-                cursor={{ fill: '#f8fafc' }}
-                contentStyle={{ borderRadius: '0.75rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold' }}
+                cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
+                contentStyle={{ borderRadius: '0.75rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold', backgroundColor: 'hsl(var(--popover))', color: 'hsl(var(--popover-foreground))' }}
               />
               <Bar dataKey="orders" radius={[0, 6, 6, 0]} barSize={12}>
                 {data.map((entry, index) => {
@@ -42,7 +42,7 @@ export function RushHourChart({ data }: { data: any[] }) {
                   return (
                     <Cell
                       key={`cell-${index}`}
-                      fill={entry.orders === max && max > 0 ? "#6366f1" : "#e2e8f0"}
+                      fill={entry.orders === max && max > 0 ? "hsl(var(--primary))" : "hsl(var(--muted))"}
                     />
                   );
                 })}

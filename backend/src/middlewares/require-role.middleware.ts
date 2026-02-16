@@ -23,15 +23,22 @@ export function requireRole(...allowed: Role[]) {
   return (req: Request, _res: Response, next: NextFunction) => {
     // Check restaurant-level role first (if restaurant context is active)
     const restaurantRole = req.user?.restaurantRole as Role | undefined;
+    const tenantRole = req.user?.role as Role | undefined;
+
+    console.log(`[RequireRole] Checking roles. User Restaurant Role: ${restaurantRole}, Tenant Role: ${tenantRole}. Allowed: ${allowed.join(', ')}`);
+
     if (restaurantRole && allowed.includes(restaurantRole)) {
+      console.log(`[RequireRole] Granted via Restaurant Role`);
       return next();
     }
 
     // Fallback to tenant-level role
-    const tenantRole = req.user?.role as Role | undefined;
     if (tenantRole && allowed.includes(tenantRole)) {
+      console.log(`[RequireRole] Granted via Tenant Role`);
       return next();
     }
+
+    console.error(`[RequireRole] Access Denied. Required one of: ${allowed.join(', ')}`);
 
     // No matching role found
     return next(new AppError('FORBIDDEN', 'Insufficient permissions', 403));

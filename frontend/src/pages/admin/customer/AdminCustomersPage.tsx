@@ -58,13 +58,13 @@ export default function AdminCustomersPage() {
           >
             <div>
               <div className="flex items-center gap-3 mb-2 px-1">
-                <div className="h-10 w-10 rounded-2xl bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-200">
+                <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                   <Users className="w-5 h-5" />
                 </div>
-                <h1 className="text-3xl font-black text-slate-800 tracking-tight uppercase">Customer Directory</h1>
+                <h1 className="text-3xl font-bold text-foreground tracking-tight">Customers</h1>
               </div>
-              <p className="text-sm font-medium text-slate-400 max-w-lg leading-relaxed px-1">
-                Monitor customer interactions, manage store credits, and analyze spending patterns to drive loyalty and growth.
+              <p className="text-sm font-medium text-muted-foreground max-w-lg leading-relaxed px-1">
+                Manage your customer database, track loyalty, and view order history.
               </p>
             </div>
 
@@ -72,9 +72,9 @@ export default function AdminCustomersPage() {
               whileHover={{ scale: 1.02 }}
               className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm"
             >
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                {data?.data?.length || 0} Strategic Entities
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
+                {data?.data?.length || 0} Total Customers
               </span>
             </motion.div>
           </motion.div>
@@ -110,13 +110,13 @@ export default function AdminCustomersPage() {
         <AlertDialogContent className="max-w-md p-0 overflow-hidden border-none rounded-[2rem] shadow-2xl">
           <div className="p-8 pb-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="h-14 w-14 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+              <div className="h-14 w-14 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
                 <AlertCircle className="w-8 h-8" />
               </div>
               <div>
-                <AlertDialogTitle className="text-xl font-black text-slate-800 tracking-tight uppercase">Permanent Termination</AlertDialogTitle>
-                <AlertDialogDescription className="text-sm font-medium text-slate-400 mt-1">
-                  You are about to remove <span className="font-bold text-slate-600">"{deleteConfirm?.name}"</span>. This action is irreversible and will purge all profile data.
+                <AlertDialogTitle className="text-xl font-bold text-foreground tracking-tight">Delete Customer?</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm font-medium text-muted-foreground mt-1">
+                  You are about to remove <span className="font-bold text-foreground">"{deleteConfirm?.name}"</span>. This action cannot be undone.
                 </AlertDialogDescription>
               </div>
             </div>
@@ -129,22 +129,22 @@ export default function AdminCustomersPage() {
             </div>
           </div>
 
-          <AlertDialogFooter className="p-6 bg-slate-50 flex-col sm:flex-row gap-3">
+          <AlertDialogFooter className="p-6 bg-accent/50 flex-col sm:flex-row gap-3">
             <AlertDialogCancel
               disabled={deleteMutation.isPending}
-              className="mt-0 flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[11px] text-slate-400 border-slate-200 hover:bg-white"
+              className="mt-0 flex-1 h-12 rounded-xl font-semibold text-sm border-border"
             >
-              Retain Record
+              Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-[11px] bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-100 border-none"
+              className="flex-1 h-12 rounded-xl font-semibold text-sm bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-md"
               onClick={(e) => {
                 e.preventDefault();
                 confirmDelete();
               }}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Executing..." : "Confirm Termination"}
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

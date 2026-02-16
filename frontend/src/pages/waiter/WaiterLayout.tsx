@@ -35,7 +35,7 @@ export default function WaiterLayout() {
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                     {/* Left: Restaurant Name */}
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-9 w-9 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600 font-bold overflow-hidden border border-orange-100 shadow-sm shrink-0">
+                        <div className="h-9 w-9 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold overflow-hidden border border-primary/20 shadow-sm shrink-0">
                             {restaurant?.name?.[0] || 'R'}
                         </div>
                         <div className="hidden sm:block min-w-0">
@@ -54,8 +54,8 @@ export default function WaiterLayout() {
                                     key={item.to}
                                     to={item.to}
                                     className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${isActive
-                                            ? "bg-white text-orange-600 shadow-sm ring-1 ring-black/5"
-                                            : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
+                                        ? "bg-white text-primary shadow-sm ring-1 ring-black/5"
+                                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
                                         }`}
                                 >
                                     <Icon className={`h-4 w-4 ${isActive ? 'stroke-[2.5px]' : ''}`} />
@@ -95,14 +95,14 @@ export default function WaiterLayout() {
                             <NavLink
                                 key={item.to}
                                 to={item.to}
-                                className={`flex flex-col items-center gap-1 min-w-[64px] group ${isActive ? "text-orange-600" : "text-slate-400 hover:text-slate-600"
+                                className={`flex flex-col items-center gap-1 min-w-[64px] group ${isActive ? "text-primary" : "text-slate-400 hover:text-slate-600"
                                     }`}
                             >
                                 <div className={`p-2 rounded-2xl transition-all duration-300 ${isActive
-                                        ? "bg-orange-100 translate-y-[-6px] shadow-sm ring-4 ring-white"
-                                        : "bg-transparent group-hover:bg-slate-50"
+                                    ? "bg-primary/10 translate-y-[-6px] shadow-sm ring-4 ring-white"
+                                    : "bg-transparent group-hover:bg-slate-50"
                                     }`}>
-                                    <Icon className={`h-6 w-6 ${isActive ? "fill-orange-600/20 stroke-[2.5px]" : ""}`} />
+                                    <Icon className={`h-6 w-6 ${isActive ? "fill-primary/20 stroke-[2.5px]" : ""}`} />
                                 </div>
                                 <span className={`text-[10px] font-bold transition-all ${isActive ? "translate-y-[-4px]" : ""
                                     }`}>{item.label}</span>

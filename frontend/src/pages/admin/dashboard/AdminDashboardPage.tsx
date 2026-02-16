@@ -142,9 +142,9 @@ export default function AdminDashboardPage() {
 
   if (ordersLoading && (!orders || orders.length === 0)) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center gap-4 bg-slate-50">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Syncing Operations Hub...</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center gap-4 bg-background">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Loading Dashboard...</p>
       </div>
     );
   }
@@ -159,39 +159,39 @@ export default function AdminDashboardPage() {
       >
         <div>
           <div className="flex items-center gap-3 mb-1 px-1">
-            <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200">
+            <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
               <LayoutDashboard className="w-5 h-5" />
             </div>
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight uppercase tracking-tighter">Command Center</h1>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
           </div>
           <div className="px-1 flex flex-col">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-0.5">
               {now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
             </p>
-            <p className="text-2xl font-black text-slate-900 tracking-tighter italic leading-none">
+            <p className="text-2xl font-bold text-foreground tracking-tight leading-none">
               {now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-border shadow-sm">
           <Button
             variant="outline"
             onClick={() => setStockOpen(true)}
-            className="relative h-11 px-5 rounded-xl border-slate-100 font-black uppercase tracking-widest text-[10px] text-slate-500 hover:bg-slate-50 transition-all"
+            className="relative h-11 px-5 rounded-lg border-border font-semibold text-sm text-muted-foreground hover:bg-accent transition-all"
           >
             <Settings2 className="mr-2 h-4 w-4" />
             Manage Stock
             {hasOutOfStock && (
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive/75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive"></span>
               </span>
             )}
           </Button>
           <Button
             onClick={handleNewOrder}
-            className="h-11 px-6 rounded-xl bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-slate-200 transition-all shrink-0"
+            className="h-11 px-6 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm shadow-md transition-all shrink-0"
           >
             <Plus className="mr-2 h-4 w-4" /> New Order
           </Button>

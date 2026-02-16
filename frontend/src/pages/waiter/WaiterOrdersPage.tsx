@@ -32,12 +32,12 @@ import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 // Premium Status configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode; ringClass: string }> = {
     PENDING: { label: "New Order", color: "text-blue-600", bgColor: "bg-blue-50", icon: <Clock className="h-4 w-4" />, ringClass: "ring-blue-100" },
-    CONFIRMED: { label: "Confirmed", color: "text-indigo-600", bgColor: "bg-indigo-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-indigo-100" },
-    PREPARING: { label: "Cooking", color: "text-orange-600", bgColor: "bg-orange-50", icon: <CookingPot className="h-4 w-4" />, ringClass: "ring-orange-100" },
-    READY: { label: "Ready", color: "text-green-600", bgColor: "bg-green-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-green-100" },
-    SERVED: { label: "Served", color: "text-purple-600", bgColor: "bg-purple-50", icon: <Utensils className="h-4 w-4" />, ringClass: "ring-purple-100" },
+    CONFIRMED: { label: "Confirmed", color: "text-sky-600", bgColor: "bg-sky-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-sky-100" },
+    PREPARING: { label: "Cooking", color: "text-primary", bgColor: "bg-primary/10", icon: <CookingPot className="h-4 w-4" />, ringClass: "ring-primary/20" },
+    READY: { label: "Ready", color: "text-emerald-700", bgColor: "bg-emerald-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-emerald-100" },
+    SERVED: { label: "Served", color: "text-indigo-600", bgColor: "bg-indigo-50", icon: <Utensils className="h-4 w-4" />, ringClass: "ring-indigo-100" },
     COMPLETED: { label: "Completed", color: "text-slate-600", bgColor: "bg-slate-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-slate-100" },
-    CANCELLED: { label: "Cancelled", color: "text-red-600", bgColor: "bg-red-50", icon: <UtensilsCrossed className="h-4 w-4" />, ringClass: "ring-red-100" },
+    CANCELLED: { label: "Cancelled", color: "text-rose-600", bgColor: "bg-rose-50", icon: <UtensilsCrossed className="h-4 w-4" />, ringClass: "ring-rose-100" },
 };
 
 // Status flow order
@@ -308,10 +308,10 @@ export default function WaiterOrdersPage() {
                 <div className="flex flex-row items-center gap-3">
                     {/* Left: Search Bar */}
                     <div className="relative flex-1 group">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                         <Input
                             placeholder="Search Order #, Name, Phone..."
-                            className="pl-10 h-11 bg-white border-slate-200 focus:border-orange-500 focus:ring-orange-500/20 rounded-xl transition-all shadow-sm"
+                            className="pl-10 h-11 bg-white border-slate-200 focus:border-primary focus:ring-primary/20 rounded-xl transition-all shadow-sm font-medium"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -320,7 +320,7 @@ export default function WaiterOrdersPage() {
                     {/* Right: Filter Dropdown */}
                     <div className="w-40 md:w-48 shrink-0">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full h-11 bg-white border-slate-200 rounded-xl focus:ring-orange-500/20 shadow-sm">
+                            <SelectTrigger className="w-full h-11 bg-white border-slate-200 rounded-xl focus:ring-primary/20 shadow-sm font-bold text-slate-700">
                                 <SelectValue placeholder="Filter" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-200 shadow-xl" align="end">
@@ -342,15 +342,15 @@ export default function WaiterOrdersPage() {
             {/* Orders Grid */}
             {filteredOrders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-slate-200 shadow-sm animate-in fade-in zoom-in duration-500">
-                    <div className="bg-orange-50 p-6 rounded-full mb-6">
-                        <UtensilsCrossed className="h-10 w-10 text-orange-400" />
+                    <div className="bg-primary/10 p-6 rounded-full mb-6">
+                        <UtensilsCrossed className="h-10 w-10 text-primary" />
                     </div>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">No orders found</h3>
-                    <p className="text-slate-500 text-sm max-w-sm text-center">
+                    <p className="text-slate-500 text-sm max-w-sm text-center font-medium">
                         {searchQuery ? "Try adjusting your search terms or filters" : "There are no active orders at the moment."}
                     </p>
                     {searchQuery && (
-                        <Button variant="link" onClick={() => setSearchQuery("")} className="text-orange-500 font-semibold mt-2">
+                        <Button variant="link" onClick={() => setSearchQuery("")} className="text-primary font-bold mt-2">
                             Clear Filters
                         </Button>
                     )}
@@ -364,7 +364,7 @@ export default function WaiterOrdersPage() {
                         return (
                             <div
                                 key={order.id}
-                                className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-orange-300 transition-all duration-300 flex flex-col overflow-hidden cursor-pointer"
+                                className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-primary/40 transition-all duration-300 flex flex-col overflow-hidden cursor-pointer"
                                 onClick={() => openDetails(order)}
                             >
                                 {/* Status Bar */}
@@ -383,9 +383,9 @@ export default function WaiterOrdersPage() {
                                             </p>
                                         </div>
                                         <div className="text-right ml-3">
-                                            <p className="text-xl font-black text-orange-600">{formatINR(order.total_amount)}</p>
+                                            <p className="text-xl font-bold text-primary tracking-tight">{formatINR(order.total_amount)}</p>
                                             {isPaid && (
-                                                <Badge className="bg-green-100 text-green-700 border-0 px-1.5 h-4 text-[9px] font-bold mt-1">
+                                                <Badge className="bg-emerald-100 text-emerald-700 border-0 px-1.5 h-4 text-[9px] font-bold mt-1">
                                                     PAID
                                                 </Badge>
                                             )}
@@ -592,8 +592,8 @@ export default function WaiterOrdersPage() {
                                                                         <Badge
                                                                             variant="outline"
                                                                             className={`h-5 px-1.5 text-[9px] font-black border-0 transition-all ${isServed ? 'bg-purple-100 text-purple-700 cursor-default' :
-                                                                                    canServe ? 'bg-orange-100 text-orange-700 cursor-pointer hover:bg-orange-200' :
-                                                                                        'bg-blue-50 text-blue-500 cursor-default'
+                                                                                canServe ? 'bg-orange-100 text-orange-700 cursor-pointer hover:bg-orange-200' :
+                                                                                    'bg-blue-50 text-blue-500 cursor-default'
                                                                                 }`}
                                                                             onClick={() => {
                                                                                 if (canServe) {

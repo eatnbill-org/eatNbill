@@ -622,10 +622,19 @@ export async function getAdvancedAnalytics(
   let timeGroup: 'hour' | 'day' | 'month';
 
   if (view === 'daily') {
-    from = new Date(targetDate);
-    from.setHours(0, 0, 0, 0);
-    to = new Date(targetDate);
-    to.setHours(23, 59, 59, 999);
+    const now = new Date();
+    const isToday = targetDate.toDateString() === now.toDateString();
+
+    if (isToday) {
+      // Last 24 hours sliding window
+      from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      to = now;
+    } else {
+      from = new Date(targetDate);
+      from.setHours(0, 0, 0, 0);
+      to = new Date(targetDate);
+      to.setHours(23, 59, 59, 999);
+    }
     timeGroup = 'hour';
   } else if (view === 'monthly') {
     from = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);

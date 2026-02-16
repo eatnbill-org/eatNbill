@@ -64,7 +64,7 @@ export function WaiterCredentialsModal({ open, onOpenChange }: WaiterCredentials
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md p-0 gap-0 overflow-hidden outline-none border-none shadow-2xl">
                 {/* Header */}
-                <div className="p-6 pb-5 border-b border-slate-100 bg-gradient-to-br from-purple-50 to-white relative">
+                <div className="p-6 pb-5 border-b border-slate-100 bg-gradient-to-br from-primary/5 to-white relative">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -75,7 +75,7 @@ export function WaiterCredentialsModal({ open, onOpenChange }: WaiterCredentials
                     </Button>
 
                     <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-200 shrink-0">
+                        <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-md shadow-primary/20 shrink-0">
                             <Shield className="w-5 h-5" />
                         </div>
                         <div>
@@ -108,7 +108,7 @@ export function WaiterCredentialsModal({ open, onOpenChange }: WaiterCredentials
                                         placeholder="e.g. waiters@yourrestaurant.com or +91 9876543210"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="h-11 rounded-xl border-slate-200 focus-visible:ring-purple-500"
+                                        className="h-11 rounded-xl border-slate-200 focus-visible:ring-primary"
                                     />
                                     <p className="text-[10px] text-slate-400 italic">All waiters will use this to log in</p>
                                 </div>
@@ -122,7 +122,7 @@ export function WaiterCredentialsModal({ open, onOpenChange }: WaiterCredentials
                                         placeholder={hasSharedLogin ? "Leave blank to keep current" : "Minimum 8 characters"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="h-11 rounded-xl border-slate-200 focus-visible:ring-purple-500"
+                                        className="h-11 rounded-xl border-slate-200 focus-visible:ring-primary"
                                     />
                                     {!hasSharedLogin && <p className="text-[10px] text-slate-400 italic">Required for new credentials</p>}
                                 </div>
@@ -140,7 +140,7 @@ export function WaiterCredentialsModal({ open, onOpenChange }: WaiterCredentials
                                 <Button
                                     onClick={handleSave}
                                     disabled={setupMutation.isPending}
-                                    className="flex-1 h-11 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold uppercase tracking-widest shadow-lg shadow-purple-100"
+                                    className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest shadow-lg shadow-primary/10"
                                 >
                                     {setupMutation.isPending ? (
                                         <>

@@ -82,12 +82,12 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100">
-              <TableHead className="w-[300px] py-6 pl-8 text-xs font-black uppercase tracking-widest text-slate-400">Customer Identity</TableHead>
-              <TableHead className="w-[180px] py-6 text-xs font-black uppercase tracking-widest text-slate-400">Interaction Status</TableHead>
-              <TableHead className="py-6 text-right text-xs font-black uppercase tracking-widest text-slate-400">Revenue</TableHead>
-              <TableHead className="py-6 text-right text-xs font-black uppercase tracking-widest text-slate-400">Wallet</TableHead>
-              <TableHead className="py-6 text-center text-xs font-black uppercase tracking-widest text-slate-400">Frequency</TableHead>
-              <TableHead className="py-6 pr-8 text-right text-xs font-black uppercase tracking-widest text-slate-400">Actions</TableHead>
+              <TableHead className="w-[300px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-slate-500">Customer</TableHead>
+              <TableHead className="w-[180px] py-6 text-xs font-bold uppercase tracking-wider text-slate-500">Last Visit</TableHead>
+              <TableHead className="py-6 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Total Spent</TableHead>
+              <TableHead className="py-6 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Credit Balance</TableHead>
+              <TableHead className="py-6 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Orders</TableHead>
+              <TableHead className="py-6 pr-8 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

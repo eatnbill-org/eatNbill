@@ -182,7 +182,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
         {/* Close Button UI - Premium Variant */}
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute top-6 right-6 z-[100] h-12 w-12 rounded-2xl bg-indigo-50 hover:bg-indigo-100 flex items-center justify-center text-indigo-500 hover:text-indigo-700 transition-all shadow-sm border border-indigo-100"
+          className="absolute top-6 right-6 z-[100] h-12 w-12 rounded-2xl bg-primary/5 hover:bg-primary/10 flex items-center justify-center text-primary transition-all shadow-sm border border-primary/10"
         >
           <X className="w-6 h-6" />
         </button>
@@ -197,23 +197,23 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
             <div className="col-span-8 flex flex-col p-6 overflow-hidden bg-white">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md rotate-2">
+                  <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-md">
                     <ShoppingBag className="w-5 h-5" />
                   </div>
                   <div>
                     <DialogTitle asChild>
-                      <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase flex items-center gap-1.5">
-                        Order Forge <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      <h2 className="text-xl font-bold text-slate-800 tracking-tight uppercase flex items-center gap-1.5">
+                        Create New Order
                       </h2>
                     </DialogTitle>
-                    <p className="text-[9px] font-black uppercase tracking-[0.1em] text-indigo-400/60">Automated Transaction Terminal</p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">POS Terminal</p>
                   </div>
                 </div>
                 <div className="relative group flex-1 max-w-xs mr-8">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-300" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search product..."
-                    className="pl-11 h-10 bg-slate-50 border-2 border-transparent focus:border-indigo-200 focus:bg-white transition-all shadow-none rounded-xl text-sm font-bold"
+                    placeholder="Search products..."
+                    className="pl-11 h-10 bg-slate-50 border-2 border-transparent focus:border-primary/20 focus:bg-white transition-all shadow-none rounded-xl text-sm font-bold"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -241,14 +241,14 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     variant="ghost"
                     className={cn(
                       "flex flex-col items-center gap-1.5 h-auto py-2.5 px-4 rounded-2xl transition-all min-w-[80px]",
-                      selectedCategoryId === null ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
+                      selectedCategoryId === null ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
                     )}
                     onClick={() => setSelectedCategoryId(null)}
                   >
                     <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border-2 transition-all", selectedCategoryId === null ? "bg-white/20 border-white/30" : "bg-white border-slate-100")}>
-                      <UtensilsCrossed className={cn("w-6 h-6", selectedCategoryId === null ? "text-white" : "text-indigo-600")} />
+                      <UtensilsCrossed className={cn("w-6 h-6", selectedCategoryId === null ? "text-white" : "text-primary")} />
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider">Catalog</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Catalog</span>
                   </Button>
                   {activeCats.map(category => (
                     <Button
@@ -257,7 +257,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                       variant="ghost"
                       className={cn(
                         "flex flex-col items-center gap-1.5 h-auto py-2.5 px-4 rounded-2xl transition-all min-w-[80px]",
-                        selectedCategoryId === category.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
+                        selectedCategoryId === category.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
                       )}
                       onClick={() => setSelectedCategoryId(category.id)}
                     >
@@ -374,30 +374,30 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative group">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
                       <Input
                         value={customerName}
                         onChange={e => setCustomerName(e.target.value)}
                         placeholder="Name"
-                        className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] focus:shadow-[0_8px_20px_-6px_rgba(79,70,229,0.15)] ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 transition-all rounded-xl font-bold px-9 text-xs placeholder:text-slate-300 placeholder:font-medium"
+                        className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] focus:shadow-[0_8px_20px_-6px_rgba(16,185,129,0.15)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary transition-all rounded-xl font-bold px-9 text-xs placeholder:text-slate-300 placeholder:font-medium"
                       />
                     </div>
                     <div className="relative group">
-                      <Tablet className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                      <Tablet className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
                       <Input
                         value={customerPhone}
                         onChange={e => setCustomerPhone(e.target.value)}
                         placeholder="Mobile"
-                        className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] focus:shadow-[0_8px_20px_-6px_rgba(79,70,229,0.15)] ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 transition-all rounded-xl font-bold px-9 text-xs placeholder:text-slate-300 placeholder:font-medium"
+                        className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] focus:shadow-[0_8px_20px_-6px_rgba(16,185,129,0.15)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary transition-all rounded-xl font-bold px-9 text-xs placeholder:text-slate-300 placeholder:font-medium"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative group">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors z-10" />
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors z-10" />
                       <Select value={tableNumber} onValueChange={setTableNumber}>
-                        <SelectTrigger className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 rounded-xl font-bold px-9 text-xs transition-all">
+                        <SelectTrigger className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary rounded-xl font-bold px-9 text-xs transition-all">
                           <SelectValue placeholder="Table" />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-none shadow-2xl p-1">
@@ -410,25 +410,25 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                       </Select>
                     </div>
                     <div className="relative group">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors z-20 pointer-events-none" />
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors z-20 pointer-events-none" />
                       <Input
                         type="time"
                         value={arriveAt}
                         onChange={e => setArriveAt(e.target.value)}
-                        className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-500 rounded-xl font-bold px-10 text-xs transition-all"
+                        className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary rounded-xl font-bold px-10 text-xs transition-all"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Order Summary Manifest - Independent Scroll Area */}
-                <div className="flex-1 flex flex-col min-h-0 bg-white rounded-[1.75rem] p-4 shadow-[0_10px_40px_-15px_rgba(79,70,229,0.08)] border border-indigo-50/50 overflow-hidden">
+                <div className="flex-1 flex flex-col min-h-0 bg-white rounded-[1.75rem] p-4 shadow-[0_10px_40px_-15px_rgba(16,185,129,0.08)] border border-primary/50 overflow-hidden">
                   <div className="flex items-center justify-between mb-3 px-1 shrink-0">
                     <div className="flex items-center gap-2">
-                      <ShoppingBag className="w-3.5 h-3.5 text-indigo-600" />
-                      <p className="text-[10px] font-black uppercase text-slate-800 tracking-widest">Order Summary</p>
+                      <ShoppingBag className="w-3.5 h-3.5 text-primary" />
+                      <p className="text-[10px] font-bold uppercase text-slate-800 tracking-widest">Order Summary</p>
                     </div>
-                    <Badge variant="secondary" className="bg-indigo-50 text-indigo-600 border-none rounded-lg text-[10px] font-black px-2 py-0.5">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-none rounded-lg text-[10px] font-bold px-2 py-0.5">
                       {orderItems.reduce((acc, item) => acc + item.quantity, 0)} ITEMS
                     </Badge>
                   </div>
@@ -453,7 +453,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                             <div className="min-w-0 flex-1 flex flex-col gap-0.5">
                               <p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md">
+                                <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
                                   {item.quantity}x
                                 </span>
                                 <span className="text-[9px] font-bold text-slate-400">@ {formatINR(item.unit_price)}</span>
@@ -486,23 +486,23 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     "w-full h-20 rounded-[1.75rem] shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] transition-all relative overflow-hidden group active:scale-[0.98]",
                     (creating || orderItems.length === 0 || !customerName || !customerPhone)
                       ? "bg-slate-100 text-slate-400"
-                      : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                      : "bg-primary hover:bg-primary/90 text-white"
                   )}
                 >
                   {creating ? (
                     <div className="flex items-center gap-3">
                       <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="text-sm font-black uppercase tracking-widest">Processing...</span>
+                      <span className="text-sm font-bold uppercase tracking-widest">Processing...</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between w-full px-4 h-full relative z-10">
                       <div className="flex flex-col items-start gap-0.5">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Total Payable</span>
-                        <span className="text-2xl font-black tracking-tight">{formatINR(totalAmount)}</span>
+                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50">Total Payable</span>
+                        <span className="text-2xl font-bold tracking-tight">{formatINR(totalAmount)}</span>
                       </div>
                       <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 group-hover:bg-white/20 transition-all">
-                        <span className="text-[11px] font-black uppercase tracking-widest">Confirm Order</span>
-                        <div className="h-6 w-6 rounded-lg bg-white text-indigo-600 flex items-center justify-center shadow-sm">
+                        <span className="text-[11px] font-bold uppercase tracking-widest">Confirm Order</span>
+                        <div className="h-6 w-6 rounded-lg bg-white text-primary flex items-center justify-center shadow-sm">
                           <Check className="w-4 h-4" />
                         </div>
                       </div>

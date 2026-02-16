@@ -344,25 +344,51 @@ export async function deleteStaff(tenantId: string, staffId: string) {
             id: staffId,
             restaurant: { tenant_id: tenantId },
         },
+        include: { user: true },
     });
 
     if (!existing || (existing.role !== 'MANAGER' && existing.role !== 'WAITER')) {
         throw new AppError('STAFF_NOT_FOUND', 'Staff member not found', 404);
     }
 
-    await prisma.restaurantUser.update({
-        where: { id: staffId },
-        data: { is_active: false },
-    });
-
-    if (existing.user_id) {
-        await prisma.user.update({
-            where: { id: existing.user_id },
-            data: { is_active: false },
-        }).catch(() => {
-            // Keep staff delete successful even if linked user update fails.
+    await prisma.$transaction(async (tx) => {
+        // 1. Remove reference from Orders (set waiter_id to null)
+        await tx.order.updateMany({
+            where: { waiter_id: staffId },
+            data: { waiter_id: null },
         });
-    }
+
+        // 2. Delete the RestaurantUser
+        await tx.restaurantUser.delete({
+            where: { id: staffId },
+        });
+
+        // 3. Cleanup User account if not used elsewhere and not an OWNER
+        if (existing.user_id) {
+            // Check if user is OWNER (should not happen for staff typically, but safety first)
+            if (existing.user?.role === 'OWNER') {
+                return;
+            }
+
+            // Check if this User is attached to any other restaurants
+            const otherUsageCount = await tx.restaurantUser.count({
+                where: { user_id: existing.user_id },
+            });
+
+            // If no other links, delete the User account
+            if (otherUsageCount === 0) {
+                // Unlink from AuditLogs to avoid foreign key constraints
+                await tx.auditLog.updateMany({
+                    where: { user_id: existing.user_id },
+                    data: { user_id: null },
+                });
+
+                await tx.user.delete({
+                    where: { id: existing.user_id },
+                });
+            }
+        }
+    });
 
     return { success: true, message: 'Staff member deleted' };
 }

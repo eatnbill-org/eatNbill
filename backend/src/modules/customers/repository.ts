@@ -41,35 +41,52 @@ export async function listCustomers(
     prisma.customer.count({ where }),
   ]);
 
-  // Fetch order statistics for each customer
-  const customersWithStats = await Promise.all(
-    customers.map(async (customer) => {
-      const [orderStats, lastOrder] = await Promise.all([
-        prisma.order.aggregate({
-          where: {
-            customer_id: customer.id,
-            // Removed status filter
-          },
-          _count: { id: true },
-          _sum: { total_amount: true },
-        }),
-        prisma.order.findFirst({
-          where: {
-            customer_id: customer.id,
-          },
-          orderBy: { placed_at: 'desc' },
-          select: { placed_at: true, completed_at: true },
-        }),
-      ]);
+  const customerIds = customers.map(c => c.id);
 
-      return {
-        ...customer,
-        totalOrders: orderStats._count.id || 0,
-        totalSpent: orderStats._sum.total_amount || 0,
-        lastVisit: lastOrder?.placed_at?.toISOString() || lastOrder?.completed_at?.toISOString() || customer.created_at.toISOString(),
-      };
-    })
-  );
+  // Optimize: Fetch all stats in one query using groupBy
+  const orderStats = await prisma.order.groupBy({
+    by: ['customer_id'],
+    where: {
+      customer_id: { in: customerIds },
+    },
+    _count: {
+      id: true,
+    },
+    _sum: {
+      total_amount: true,
+    },
+    _max: {
+      placed_at: true,
+      completed_at: true,
+    },
+  });
+
+  // Map stats to customers
+  const statsMap = new Map(orderStats.map(s => [s.customer_id, s]));
+
+  const customersWithStats = customers.map((customer) => {
+    const stats = statsMap.get(customer.id);
+    const lastPlaced = stats?._max.placed_at;
+    const lastCompleted = stats?._max.completed_at;
+
+    // Determine last visit (max of placed or completed)
+    let lastVisitDate = customer.created_at;
+    if (lastPlaced && lastCompleted) {
+      lastVisitDate = lastPlaced > lastCompleted ? lastPlaced : lastCompleted;
+    } else if (lastPlaced) {
+      lastVisitDate = lastPlaced;
+    } else if (lastCompleted) {
+      lastVisitDate = lastCompleted;
+    }
+
+    return {
+      ...customer,
+      credit_balance: Number(customer.credit_balance),
+      totalOrders: Number(stats?._count.id || 0),
+      totalSpent: Number(stats?._sum.total_amount || 0),
+      lastVisit: lastVisitDate.toISOString(),
+    };
+  });
 
   return {
     data: customersWithStats,

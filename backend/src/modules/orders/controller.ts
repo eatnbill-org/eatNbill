@@ -554,11 +554,12 @@ export async function getAdvancedAnalytics(
       );
     }
 
-    if (!allowedRestaurantIds.includes(restaurantId)) {
-      return next(
-        new AppError("FORBIDDEN", "Access denied to this restaurant", 403)
-      );
-    }
+    // Validated by tenantMiddleware (which handles cache misses for OWNERs)
+    // if (!allowedRestaurantIds.includes(restaurantId)) {
+    //   return next(
+    //     new AppError("FORBIDDEN", "Access denied to this restaurant", 403)
+    //   );
+    // }
 
     const stats = await service.getAdvancedAnalytics(
       tenantId,

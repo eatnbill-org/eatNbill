@@ -84,8 +84,8 @@ export default function CompanyProfilePage() {
     return (
       <div className="container max-w-5xl py-8 flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-          <p className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Synchronizing Profile...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <p className="font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Loading Profile...</p>
         </div>
       </div>
     );
@@ -105,7 +105,7 @@ export default function CompanyProfilePage() {
   }
 
   return (
-    <div className="min-h-full bg-slate-50/50">
+    <div className="min-h-full bg-background">
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -121,13 +121,13 @@ export default function CompanyProfilePage() {
         >
           <div>
             <div className="flex items-center gap-2.5 mb-1.5 px-0.5">
-              <div className="h-8 w-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-100">
+              <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <Store className="w-4 h-4" />
               </div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Enterprise Profile</h1>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Restaurant Profile</h1>
             </div>
-            <p className="text-[13px] font-medium text-slate-400 max-w-lg leading-snug px-0.5">
-              Refine your brand identity and contact protocols to establish market presence.
+            <p className="text-sm font-medium text-muted-foreground max-w-lg leading-snug px-0.5">
+              Manage your restaurant's profile and contact information.
             </p>
           </div>
 
@@ -137,16 +137,16 @@ export default function CompanyProfilePage() {
           >
             <Button
               onClick={handleSave}
-              className="bg-slate-900 hover:bg-black shadow-lg shadow-slate-100 font-bold rounded-xl h-10 px-6 uppercase tracking-widest text-[10px] transition-all"
+              className="bg-primary hover:bg-primary/90 text-white shadow-md font-bold rounded-xl h-10 px-6 uppercase tracking-widest text-[11px] transition-all"
               disabled={isSaving}
             >
               {isSaving ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                  Syncing...
+                  Saving...
                 </>
               ) : (
-                "Commit Changes"
+                "Save Changes"
               )}
             </Button>
           </motion.div>
@@ -170,12 +170,12 @@ export default function CompanyProfilePage() {
             className="space-y-4"
           >
             <div className="flex items-center gap-2.5 mb-4 px-0.5">
-              <div className="h-7 w-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-50">
+              <div className="h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <LayoutGrid className="w-3.5 h-3.5" />
               </div>
-              <h2 className="text-lg font-black text-slate-800 tracking-tight uppercase">Table Infrastructure</h2>
+              <h2 className="text-lg font-bold text-foreground tracking-tight">Tables</h2>
             </div>
-            <div className="bg-white rounded-[1.5rem] p-3 md:p-6 shadow-xl shadow-slate-200/30 border border-slate-100 overflow-hidden">
+            <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-border overflow-hidden">
               <TableManagement slug={restaurant.slug} />
             </div>
           </motion.section>

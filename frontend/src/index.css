@@ -9,118 +9,114 @@
 @layer base {
   :root {
     /* Core */
-    /* warmer off-white */
-    --background: 40 45% 97.5%;
-    --foreground: 156 22% 12%;
+    /* Slightly cooler, cleaner background */
+    --background: 210 25% 98%;
+    --foreground: 215 25% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 156 22% 12%;
+    --card-foreground: 215 25% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 156 22% 12%;
+    --popover-foreground: 215 25% 10%;
 
-    /* Brand */
-    --primary: 154 38% 16%;
-    /* Dark green */
-    --primary-foreground: 40 33% 97%;
+    /* Brand - Emerald Green from Landing Page */
+    --primary: 161 94% 30%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Turmeric (vibrant deep yellow/orange) */
-    --accent: 38 96% 54%;
-    --accent-foreground: 156 22% 12%;
+    /* Accent - Teal/Cyan */
+    --accent: 187 100% 42%;
+    --accent-foreground: 215 25% 10%;
 
-    --secondary: 40 20% 93%;
-    --secondary-foreground: 156 22% 12%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 215 25% 10%;
 
-    --muted: 40 18% 92%;
-    --muted-foreground: 154 14% 38%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --destructive: 3 84% 58%;
-    --destructive-foreground: 40 33% 97%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
 
-    --success: 142 45% 42%;
-    --success-foreground: 40 33% 97%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 20% 98%;
 
-    --warning: 32 95% 54%;
-    --warning-foreground: 156 22% 12%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 215 25% 10%;
 
-    --info: 210 90% 56%;
-    --info-foreground: 40 33% 97%;
+    --info: 199 89% 48%;
+    --info-foreground: 210 20% 98%;
 
     /* Surfaces */
-    --border: 40 12% 86%;
-    --input: 40 12% 86%;
-    --ring: 18 100% 60%;
+    --border: 214 32% 88%;
+    --input: 214 32% 91%;
+    --ring: 161 94% 30%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Sidebar - Updated to light professional theme */
-    --sidebar-background: 40 45% 97.5%;
-    /* Match --background */
-    --sidebar-foreground: 156 22% 12%;
-    /* Match --foreground */
-    --sidebar-primary: 154 38% 16%;
-    /* Match --primary */
-    --sidebar-primary-foreground: 40 33% 97%;
-    --sidebar-accent: 40 18% 92%;
-    /* Match --muted */
-    --sidebar-accent-foreground: 154 38% 16%;
-    --sidebar-border: 40 12% 86%;
-    /* Match --border */
-    --sidebar-ring: 154 38% 16%;
+    /* Sidebar - Matching the new theme */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 10%;
+    --sidebar-primary: 161 94% 30%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 161 94% 30%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 161 94% 30%;
 
     /* Signature visuals */
-    --gradient-brand: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8) 55%, hsl(var(--accent) / 0.9));
-    --gradient-special: linear-gradient(135deg, hsl(24 90% 38%), hsl(20 92% 34%) 45%, hsl(14 92% 32%));
-    --shadow-elev-1: 0 10px 30px -16px hsl(var(--foreground) / 0.35);
-    --shadow-elev-2: 0 18px 60px -30px hsl(var(--foreground) / 0.45);
+    --gradient-brand: linear-gradient(135deg, hsl(161 94% 30%), hsl(160 84% 39%));
+    --gradient-special: linear-gradient(135deg, hsl(187 100% 42%), hsl(161 94% 30%));
+    /* Premium Shadows */
+    --shadow-elev-1: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 6px -1px rgb(0 0 0 / 0.04);
+    --shadow-elev-2: 0 12px 24px -4px rgb(0 0 0 / 0.12), 0 8px 16px -8px rgb(0 0 0 / 0.08);
   }
 
   .dark {
-    --background: 156 22% 8%;
-    --foreground: 40 33% 96%;
+    --background: 222 47% 10%;
+    --foreground: 210 40% 98%;
 
-    --card: 154 28% 10%;
-    --card-foreground: 40 33% 96%;
+    /* Lightened card background for better contrast against page background */
+    --card: 222 47% 14%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 154 28% 10%;
-    --popover-foreground: 40 33% 96%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 18 100% 60%;
-    --primary-foreground: 156 22% 10%;
+    --primary: 161 94% 30%;
+    --primary-foreground: 210 40% 98%;
 
-    --accent: 154 38% 20%;
-    --accent-foreground: 40 33% 96%;
+    --accent: 187 100% 42%;
+    --accent-foreground: 210 40% 98%;
 
-    --secondary: 154 24% 14%;
-    --secondary-foreground: 40 33% 96%;
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 154 24% 14%;
-    --muted-foreground: 40 10% 70%;
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
 
-    --border: 154 22% 18%;
-    --input: 154 22% 18%;
-    --ring: 18 100% 60%;
+    --border: 217 32% 22%;
+    --input: 217 32% 17%;
+    --ring: 161 94% 30%;
 
-    --success: 142 45% 42%;
-    --success-foreground: 40 33% 97%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
 
-    --warning: 32 95% 54%;
-    --warning-foreground: 156 22% 10%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
 
-    --info: 210 90% 56%;
-    --info-foreground: 40 33% 97%;
+    --info: 199 89% 48%;
+    --info-foreground: 210 40% 98%;
 
-    --sidebar-background: 154 30% 9%;
-    --sidebar-foreground: 40 33% 96%;
-    --sidebar-primary: 18 100% 60%;
-    --sidebar-primary-foreground: 156 22% 10%;
-    --sidebar-accent: 154 24% 14%;
-    --sidebar-accent-foreground: 40 33% 96%;
-    --sidebar-border: 154 22% 18%;
-    --sidebar-ring: 18 100% 60%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 161 94% 30%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217 32% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 32% 17%;
+    --sidebar-ring: 161 94% 30%;
 
-    --shadow-elev-1: 0 12px 34px -18px hsl(0 0% 0% / 0.55);
-    --shadow-elev-2: 0 22px 80px -40px hsl(0 0% 0% / 0.65);
+    --shadow-elev-1: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+    --shadow-elev-2: 0 10px 15px -3px rgb(0 0 0 / 0.3);
   }
 }
 
@@ -141,6 +137,7 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+
 
   ::selection {
     background: hsl(var(--accent) / 0.25);
