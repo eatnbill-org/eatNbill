@@ -16,7 +16,7 @@ import OrderConfirmationPage from "./pages/user/OrderConfirmationPage";
 import RestaurantSetupPage from "./pages/restaurant/RestaurantSetupPage";
 import PublicMenuPage from "./pages/customer/PublicMenuPage";
 
-// HEAD PAGES (formerly Staff/Waiter)
+// HEAD PAGES(formerly Staff/Waiter)
 import HeadLayout from "./pages/head/HeadLayout";
 import HeadOrdersPage from "./pages/head/HeadOrdersPage";
 import HeadStockPage from "./pages/head/HeadStockPage";
