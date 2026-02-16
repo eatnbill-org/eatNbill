@@ -3,7 +3,8 @@ import type { OrderStatus, OrderSource, OrderType, PaymentMethod, PaymentStatus,
 
 // UUID validation helper
 const isValidUuid = (uuid: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
-const ACTIVE_DINE_IN_STATUSES: OrderStatus[] = ["PLACED", "CONFIRMED", "PREPARING", "READY", "SERVED"];
+// Only ACTIVE orders are considered active for dine-in (as per schema: ACTIVE, COMPLETED, CANCELLED)
+const ACTIVE_DINE_IN_STATUSES: OrderStatus[] = ["ACTIVE"];
 
 // Types
 export interface CreateOrderData {
@@ -405,6 +406,8 @@ export async function findOrderById(
     },
     include: {
       items: true,
+      table: true,
+      hall: true,
     },
   });
 }
@@ -470,10 +473,9 @@ export async function addItemsToOrder(
       return sum + Number(item.price_snapshot) * item.quantity;
     }, 0);
 
-    // 🟡 Important Fix: Auto-reset status to PREPARING if needed
+    // 🟡 Important Fix: Auto-reset status to ACTIVE if order was completed
     const statusUpdate = shouldResetToPreparing ? {
-      status: 'PREPARING' as const,
-      preparing_at: new Date()
+      status: 'ACTIVE' as const,
     } : {};
 
     const updated = await tx.order.update({
@@ -779,10 +781,10 @@ export async function getGranularRevenueStats(
     }
   });
 
-  const generateLabel = (date: Date) => {
+  const generateLabel = (date: Date): string => {
     if (granularity === 'hourly') return date.toISOString().slice(0, 13) + ":00";
     if (granularity === 'monthly') return date.toISOString().slice(0, 7);
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split('T')[0] || date.toISOString().slice(0, 10);
   };
 
   while (current <= to) {
@@ -846,7 +848,11 @@ export async function listOrders(params: {
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
       where,
-      include: { items: true },
+      include: {
+        items: true,
+        table: true,
+        hall: true,
+      },
       orderBy: { placed_at: "desc" },
       skip: (params.page - 1) * params.limit,
       take: params.limit,
@@ -977,25 +983,6 @@ export async function deleteOrder(
 }
 
 /**
- * Find orders for settlement (PENDING and CREDIT)
- */
-export async function findPendingCreditOrders(tenantId: string, restaurantId: string, customerId: string) {
-  return prisma.order.findMany({
-    where: {
-      tenant_id: tenantId,
-      restaurant_id: restaurantId,
-      customer_id: customerId,
-      payment_method: 'CREDIT',
-      payment_status: 'PENDING',
-      status: 'COMPLETED',
-    },
-    orderBy: {
-      placed_at: 'asc',
-    },
-  });
-}
-
-/**
  * Update multiple orders as paid during settlement
  */
 export async function markOrdersAsPaid(orderIds: string[], paidAt: Date) {
@@ -1018,7 +1005,8 @@ export async function getAdvancedAnalytics(
   restaurantId: string,
   from: Date,
   to: Date,
-  timeGroup: 'hour' | 'day' | 'month'
+  timeGroup: 'hour' | 'day' | 'month',
+  compareWithPrevious: boolean = false
 ) {
   // 1. Revenue & Orders Trend
   // Note: Prisma doesn't support grouping by date parts directly in cross-DB way easily without raw SQL
@@ -1167,6 +1155,91 @@ export async function getAdvancedAnalytics(
   // Real profit = Revenue - Cost
   const totalProfit = totalRevenue - totalCost;
 
+  // 5. Payment Method Breakdown
+  const paymentMethods: any[] = await prisma.$queryRaw`
+    SELECT 
+      "payment_method" as method,
+      COUNT("id") as count,
+      SUM("total_amount") as amount
+    FROM "orders"
+    WHERE 
+      "tenant_id" = ${tenantId}::uuid AND 
+      "restaurant_id" = ${restaurantId}::uuid AND 
+      "status" = 'COMPLETED' AND 
+      "payment_status" = 'PAID' AND
+      "completed_at" >= ${from} AND 
+      "completed_at" <= ${to}
+    GROUP BY "payment_method"
+    ORDER BY amount DESC
+  `;
+
+  // 6. Period Comparison (if requested)
+  let comparison = null;
+  if (compareWithPrevious) {
+    const periodDuration = to.getTime() - from.getTime();
+    const prevFrom = new Date(from.getTime() - periodDuration);
+    const prevTo = new Date(from.getTime() - 1000); // 1 second before current period starts
+
+    const prevStats: any[] = await prisma.$queryRaw`
+      SELECT 
+        SUM("total_amount") as revenue,
+        COUNT("id") as orders
+      FROM "orders"
+      WHERE 
+        "tenant_id" = ${tenantId}::uuid AND 
+        "restaurant_id" = ${restaurantId}::uuid AND 
+        "status" = 'COMPLETED' AND 
+        "payment_status" = 'PAID' AND
+        "completed_at" >= ${prevFrom} AND 
+        "completed_at" <= ${prevTo}
+    `;
+
+    const prevCostResult: any[] = await prisma.$queryRaw`
+      SELECT 
+        COALESCE(SUM(CASE 
+          WHEN oi.cost_snapshot IS NOT NULL THEN oi.cost_snapshot * oi.quantity
+          ELSE 0.00 
+        END), 0.00) as total_cost
+      FROM "orders" o
+      JOIN "order_items" oi ON o.id = oi.order_id
+      WHERE 
+        o.tenant_id = ${tenantId}::uuid AND 
+        o.restaurant_id = ${restaurantId}::uuid AND 
+        o.status = 'COMPLETED' AND 
+        o.payment_status = 'PAID' AND
+        o.completed_at >= ${prevFrom} AND 
+        o.completed_at <= ${prevTo}
+    `;
+
+    const prevRevenue = Number(prevStats[0]?.revenue || 0);
+    const prevOrders = Number(prevStats[0]?.orders || 0);
+    const prevCost = Number(prevCostResult[0]?.total_cost || 0);
+    const prevProfit = prevRevenue - prevCost;
+
+    const calculateGrowth = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    comparison = {
+      revenue: {
+        current: totalRevenue,
+        previous: prevRevenue,
+        growth: calculateGrowth(totalRevenue, prevRevenue)
+      },
+      orders: {
+        current: totalOrders,
+        previous: prevOrders,
+        growth: calculateGrowth(totalOrders, prevOrders)
+      },
+      profit: {
+        current: totalProfit,
+        previous: prevProfit,
+        growth: calculateGrowth(totalProfit, prevProfit)
+      }
+    };
+  }
+
   return {
     trends,
     distribution: categorySales.map(c => ({
@@ -1184,6 +1257,12 @@ export async function getAdvancedAnalytics(
       phone: d.phone,
       amount: Number(d.credit_balance)
     })),
+    paymentMethods: paymentMethods.map(pm => ({
+      method: pm.method,
+      count: Number(pm.count),
+      amount: Number(pm.amount)
+    })),
+    comparison,
     metrics: {
       totalRevenue,
       totalOrders,

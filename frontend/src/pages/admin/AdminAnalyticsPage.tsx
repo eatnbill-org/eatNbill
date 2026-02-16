@@ -1,4 +1,5 @@
 import * as React from "react";
+import "@/styles/print.css";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,6 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAdminOrdersStore } from "@/stores/orders/adminOrders.store";
 import { formatINR } from "@/lib/format";
 import { motion } from "framer-motion";
@@ -23,6 +30,7 @@ import {
 } from "recharts";
 import {
     ArrowUpRight,
+    ArrowDownRight,
     TrendingUp,
     Users,
     ShoppingBag,
@@ -34,7 +42,11 @@ import {
     ChevronRight,
     Layers,
     LayoutGrid,
-    Loader2
+    Loader2,
+    Download,
+    FileText,
+    Printer,
+    GitCompare
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -42,6 +54,8 @@ import { cn } from "@/lib/utils";
 import { getAdvancedAnalytics } from "@/api/analytics";
 import { useQuery } from "@tanstack/react-query";
 import { ComposedChart, Bar, Legend } from "recharts";
+import { PaymentMethodChart } from "@/components/analytics/PaymentMethodChart";
+import { exportToCSV, exportToPDF, printAnalytics } from "@/utils/export-analytics";
 
 type RangeKey = "daily" | "monthly" | "yearly";
 
@@ -53,14 +67,14 @@ export default function AdminAnalyticsPage() {
     const { settleCredit } = useAdminOrdersStore();
     const [view, setView] = React.useState<RangeKey>("daily");
     const [date, setDate] = React.useState<Date | undefined>(new Date());
+    const [compareWithPrevious, setCompareWithPrevious] = React.useState(false);
 
     // --- 1. REMOTE DATA FETCHING ---
     const { data: analyticsData, isLoading, refetch } = useQuery({
-        queryKey: ["advanced-analytics", view, date?.toISOString()],
+        queryKey: ["advanced-analytics", view, date?.toISOString(), compareWithPrevious],
         queryFn: async () => {
             const dateStr = date ? format(date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
-            // @ts-ignore
-            return getAdvancedAnalytics(view, dateStr);
+            return getAdvancedAnalytics(view, dateStr, compareWithPrevious);
         },
         enabled: !!date,
         refetchInterval: 30000,
@@ -77,6 +91,8 @@ export default function AdminAnalyticsPage() {
     const distribution = analyticsData?.distribution || [];
     const products = analyticsData?.products || [];
     const debts = analyticsData?.debts || [];
+    const paymentMethods = analyticsData?.paymentMethods || [];
+    const comparison = analyticsData?.comparison;
 
     // Revenue for conditional rendering
     const revenue = metrics.totalRevenue;
@@ -157,12 +173,6 @@ export default function AdminAnalyticsPage() {
         visible: { y: 0, opacity: 1 }
     };
 
-    return (
-        <div className="flex h-full items-center justify-center bg-background">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-
     // Calculate avg order value
     const avgOrderValue = (metrics.totalOrders || 0) > 0
         ? Math.round((metrics.totalRevenue || 0) / (metrics.totalOrders || 1))
@@ -184,7 +194,7 @@ export default function AdminAnalyticsPage() {
                 variants={containerVariants}
             >
                 {/* --- HEADER SECTION --- */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
                     <motion.div variants={itemVariants}>
                         <div className="flex items-center gap-2.5 mb-1.5 px-0.5">
                             <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
@@ -197,88 +207,189 @@ export default function AdminAnalyticsPage() {
                         </p>
                     </motion.div>
 
-                    <motion.div
-                        variants={itemVariants}
-                        className="flex items-center gap-2 bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-100 shadow-sm"
-                    >
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className="h-9 px-4 text-muted-foreground hover:text-primary font-medium text-sm hover:bg-accent"
-                                >
-                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-indigo-500" />
-                                    {date ? format(date, "PPP") : "Select Date"}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-2xl border-slate-100 shadow-2xl" align="end">
-                                <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-                            </PopoverContent>
-                        </Popover>
-
-                        <div className="h-4 w-px bg-slate-100 mx-1"></div>
-
-                        <Tabs value={view} onValueChange={(v) => setView(v as RangeKey)}>
-                            <TabsList className="h-9 bg-transparent p-0 gap-1">
-                                {["daily", "monthly", "yearly"].map((v) => (
-                                    <TabsTrigger
-                                        key={v}
-                                        value={v}
-                                        className="h-7 px-4 text-xs font-semibold capitalize data-[state=active]:bg-primary data-[state=active]:text-white rounded-md"
+                    <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3">
+                        {/* Export & Compare Buttons */}
+                        <div className="flex gap-2">
+                            <Button
+                                variant={compareWithPrevious ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCompareWithPrevious(!compareWithPrevious)}
+                                className="h-9 px-4 rounded-xl font-medium text-xs no-print"
+                            >
+                                <GitCompare className="mr-2 h-3.5 w-3.5" />
+                                Compare
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-9 px-4 rounded-xl border-slate-200 hover:bg-slate-50 font-medium text-xs no-print"
                                     >
-                                        {v}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
+                                        <Download className="mr-2 h-3.5 w-3.5" />
+                                        Export
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem 
+                                        onClick={() => analyticsData && exportToCSV(analyticsData, view, date || new Date())}
+                                        className="cursor-pointer"
+                                    >
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        Export CSV
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                        onClick={() => analyticsData && exportToPDF(analyticsData, view, date || new Date())}
+                                        className="cursor-pointer"
+                                    >
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        Export PDF
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                        onClick={printAnalytics}
+                                        className="cursor-pointer"
+                                    >
+                                        <Printer className="mr-2 h-4 w-4" />
+                                        Print
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+
+                        {/* Date & View Controls */}
+                        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-100 shadow-sm">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="h-9 px-3 text-muted-foreground hover:text-primary font-medium text-xs hover:bg-accent"
+                                    >
+                                        <CalendarIcon className="mr-2 h-3.5 w-3.5 text-indigo-500" />
+                                        <span className="hidden sm:inline">{date ? format(date, "PPP") : "Select Date"}</span>
+                                        <span className="sm:hidden">{date ? format(date, "MMM d") : "Date"}</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0 rounded-2xl border-slate-100 shadow-2xl" align="end">
+                                    <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+                                </PopoverContent>
+                            </Popover>
+
+                            <div className="h-4 w-px bg-slate-100 mx-1"></div>
+
+                            <Tabs value={view} onValueChange={(v) => setView(v as RangeKey)}>
+                                <TabsList className="h-9 bg-transparent p-0 gap-1">
+                                    {["daily", "monthly", "yearly"].map((v) => (
+                                        <TabsTrigger
+                                            key={v}
+                                            value={v}
+                                            className="h-7 px-3 text-xs font-semibold capitalize data-[state=active]:bg-primary data-[state=active]:text-white rounded-md"
+                                        >
+                                            {v}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                        </div>
                     </motion.div>
                 </div>
 
                 {/* --- 1. KEY PERFORMANCE INDICATORS --- */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     {[
-                        { label: "Total Revenue", value: formatINR(metrics.totalRevenue), icon: DollarSign, trend: "+12.5%", color: "emerald" },
-                        { label: "Total Profit", value: formatINR(metrics.totalProfit), icon: TrendingUp, trend: "35% Margin", color: "emerald" },
-                        { label: "Pending Dues", value: formatINR(udhaarList.reduce((acc: number, curr: any) => acc + curr.amount, 0)), icon: Wallet, trend: `${udhaarList.length} Accounts`, color: "orange" },
-                        { label: "Orders Fulfilled", value: metrics.totalOrders, icon: ShoppingBag, trend: "98% Success", color: "emerald" }
-                    ].map((stat, i) => (
-                        <motion.div key={stat.label} variants={itemVariants}>
-                            <Card className="rounded-[1.5rem] border-none shadow-xl shadow-slate-100/50 bg-white group hover:scale-[1.02] transition-transform">
-                                <CardContent className="p-5">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{stat.label}</p>
-                                            <h3 className="text-xl font-bold text-foreground tracking-tight">{stat.value}</h3>
+                        { 
+                            label: "Total Revenue", 
+                            value: formatINR(metrics.totalRevenue), 
+                            icon: DollarSign, 
+                            comparisonKey: "revenue" as const,
+                            color: "emerald" 
+                        },
+                        { 
+                            label: "Total Profit", 
+                            value: formatINR(metrics.totalProfit), 
+                            icon: TrendingUp, 
+                            comparisonKey: "profit" as const,
+                            color: "emerald" 
+                        },
+                        { 
+                            label: "Pending Dues", 
+                            value: formatINR(debts.reduce((acc: number, curr: any) => acc + curr.amount, 0)), 
+                            icon: Wallet, 
+                            trend: `${debts.length} Accounts`, 
+                            color: "orange",
+                            comparisonKey: null
+                        },
+                        { 
+                            label: "Orders Fulfilled", 
+                            value: metrics.totalOrders, 
+                            icon: ShoppingBag, 
+                            comparisonKey: "orders" as const,
+                            color: "emerald" 
+                        }
+                    ].map((stat, i) => {
+                        const compData = stat.comparisonKey && comparison ? comparison[stat.comparisonKey] : null;
+                        const growth = compData?.growth || 0;
+                        const isPositive = growth >= 0;
+                        const showComparison = compareWithPrevious && compData;
+
+                        return (
+                            <motion.div key={stat.label} variants={itemVariants}>
+                                <Card className="rounded-[1.5rem] border-none shadow-xl shadow-slate-100/50 bg-white group hover:scale-[1.02] transition-transform page-break-avoid">
+                                    <CardContent className="p-4 sm:p-5">
+                                        <div className="flex justify-between items-start mb-3 sm:mb-4">
+                                            <div className="space-y-1 flex-1 min-w-0">
+                                                <p className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wide truncate">{stat.label}</p>
+                                                <h3 className="text-lg sm:text-xl font-bold text-foreground tracking-tight truncate">{stat.value}</h3>
+                                                {showComparison && (
+                                                    <p className="text-[9px] sm:text-[10px] text-muted-foreground">
+                                                        Prev: {typeof stat.value === 'number' ? compData.previous : formatINR(compData.previous)}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className={cn("p-2 sm:p-2.5 rounded-xl transition-colors flex-shrink-0", {
+                                                "bg-emerald-50 text-emerald-600": stat.color === "emerald",
+                                                "bg-orange-50 text-orange-600": stat.color === "orange",
+                                            })}>
+                                                <stat.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                            </div>
                                         </div>
-                                        <div className={cn("p-2.5 rounded-xl transition-colors", {
-                                            "bg-indigo-50 text-indigo-600": stat.color === "indigo",
-                                            "bg-emerald-50 text-emerald-600": stat.color === "emerald",
-                                            "bg-orange-50 text-orange-600": stat.color === "orange",
-                                            "bg-purple-50 text-purple-600": stat.color === "purple",
-                                        })}>
-                                            <stat.icon className="h-4 w-4" />
+                                        <div className="flex items-center gap-1.5">
+                                            {showComparison ? (
+                                                <>
+                                                    <span className={cn("text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5", {
+                                                        "bg-emerald-50 text-emerald-600": isPositive,
+                                                        "bg-red-50 text-red-600": !isPositive,
+                                                    })}>
+                                                        {isPositive ? (
+                                                            <ArrowUpRight className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                                                        ) : (
+                                                            <ArrowDownRight className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                                                        )}
+                                                        {Math.abs(growth).toFixed(1)}%
+                                                    </span>
+                                                    <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">vs Previous</span>
+                                                </>
+                                            ) : stat.trend ? (
+                                                <>
+                                                    <span className={cn("text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md", {
+                                                        "bg-emerald-50 text-emerald-600": stat.color === "emerald",
+                                                        "bg-orange-50 text-orange-600": stat.color === "orange",
+                                                    })}>
+                                                        {stat.trend}
+                                                    </span>
+                                                </>
+                                            ) : null}
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md", {
-                                            "bg-emerald-50 text-emerald-600": stat.color === "emerald",
-                                            "bg-orange-50 text-orange-600": stat.color === "orange",
-                                        })}>
-                                            <ArrowUpRight className="h-2.5 w-2.5 inline mr-0.5" />
-                                            {stat.trend}
-                                        </span>
-                                        <span className="text-[10px] font-medium text-muted-foreground">vs Last Period</span>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    ))}
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        );
+                    })}
                 </div>
 
                 {/* --- 2. DATA VISUALIZATION LAYER --- */}
-                <div className="grid gap-6 md:grid-cols-7">
+                <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-7">
 
-                    <motion.div className="md:col-span-4" variants={itemVariants}>
+                    <motion.div className="lg:col-span-4" variants={itemVariants}>
                         <Card className="rounded-[2rem] border-none shadow-2xl shadow-slate-200/40 bg-white overflow-hidden">
                             <CardHeader className="p-8 pb-2">
                                 <div className="flex items-center gap-2 mb-1">
@@ -358,8 +469,8 @@ export default function AdminAnalyticsPage() {
                         </Card>
                     </motion.div>
 
-                    <motion.div className="md:col-span-3" variants={itemVariants}>
-                        <Card className="rounded-[2rem] border-none shadow-2xl shadow-slate-200/40 bg-white overflow-hidden h-full">
+                    <motion.div className="lg:col-span-3" variants={itemVariants}>
+                        <Card className="rounded-[2rem] border-none shadow-2xl shadow-slate-200/40 bg-white overflow-hidden h-full page-break-avoid">
                             <CardHeader className="p-8 pb-4">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -470,6 +581,13 @@ export default function AdminAnalyticsPage() {
                         </Card>
                     </motion.div>
                 </div>
+
+                {/* --- PAYMENT METHODS SECTION --- */}
+                {paymentMethods.length > 0 && (
+                    <motion.div variants={itemVariants} className="page-break-avoid">
+                        <PaymentMethodChart data={paymentMethods} />
+                    </motion.div>
+                )}
 
                 {/* --- 3. RECEIVABLE RECOVERY --- */}
                 <div className="grid gap-8">

@@ -13,4 +13,6 @@ export {
   fetchOrderById,
   updateOrderItemStatus,
   toggleProductAvailability,
+  updateOrderItem,
+  removeOrderItem,
 } from './head-api';

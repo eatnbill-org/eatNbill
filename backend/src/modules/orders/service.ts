@@ -3,6 +3,8 @@ import { Decimal } from "@prisma/client/runtime/library";
 import * as repository from "./repository";
 import { AppError } from "../../middlewares/error.middleware";
 import { updateCustomerStats, updateCustomerCredit } from "../customers/repository";
+import { prisma } from "../../utils/prisma";
+import type { Prisma } from "@prisma/client";
 
 // Input types
 export interface CreatePublicOrderInput {
@@ -92,11 +94,13 @@ export async function placePublicOrder(
   // Determine table/order details
   let tableId: string | undefined;
   let hallId: string | undefined;
+  let resolvedTableNumber = input.table_number;
   let orderType: OrderType = input.source === "QR" ? "DINE_IN" : "TAKEAWAY";
 
   if (table) {
     tableId = table.id;
     hallId = table.hall_id;
+    resolvedTableNumber = table.table_number;
     orderType = "DINE_IN";
   }
 
@@ -118,7 +122,7 @@ export async function placePublicOrder(
     customer_id: customer.id,
     customer_name: input.customer_name,
     customer_phone: input.customer_phone,
-    table_number: input.table_number,
+    table_number: resolvedTableNumber,
     notes: input.notes,
     source: input.source as OrderSource,
     order_type: orderType,
@@ -632,7 +636,8 @@ export async function getAdvancedAnalytics(
   tenantId: string,
   restaurantId: string,
   view: 'daily' | 'monthly' | 'yearly',
-  date: string
+  date: string,
+  compareWithPrevious: boolean = false
 ) {
   const targetDate = new Date(date);
   let from: Date;
@@ -664,7 +669,7 @@ export async function getAdvancedAnalytics(
     timeGroup = 'month';
   }
 
-  return repository.getAdvancedAnalytics(tenantId, restaurantId, from, to, timeGroup);
+  return repository.getAdvancedAnalytics(tenantId, restaurantId, from, to, timeGroup, compareWithPrevious);
 }
 
 /**
@@ -732,7 +737,7 @@ export async function settleCredit(
   }
 
   // Execute settlement in a transaction
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Update customer balance
     const updatedCustomer = await tx.customer.update({
       where: { id: customerId },

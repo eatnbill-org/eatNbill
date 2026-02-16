@@ -30,16 +30,54 @@ export interface AnalyticsProduct {
     revenue: number;
 }
 
+export interface PaymentMethod {
+    method: string;
+    count: number;
+    amount: number;
+}
+
+export interface PeriodComparison {
+    revenue: {
+        current: number;
+        previous: number;
+        growth: number;
+    };
+    orders: {
+        current: number;
+        previous: number;
+        growth: number;
+    };
+    profit: {
+        current: number;
+        previous: number;
+        growth: number;
+    };
+}
+
 export interface AdvancedAnalyticsResponse {
     trends: AnalyticsTrend[];
     distribution: AnalyticsDistribution[];
     products: AnalyticsProduct[];
     debts: AnalyticsDebt[];
+    paymentMethods: PaymentMethod[];
+    comparison: PeriodComparison | null;
     metrics: AnalyticsMetrics;
 }
 
-export const getAdvancedAnalytics = async (view: string, date: string): Promise<AdvancedAnalyticsResponse> => {
-    const response = await apiClient.get<AdvancedAnalyticsResponse>(`/orders/advanced-analytics?view=${view}&date=${date}`);
+export const getAdvancedAnalytics = async (
+    view: string, 
+    date: string, 
+    compareWithPrevious: boolean = false
+): Promise<AdvancedAnalyticsResponse> => {
+    const params = new URLSearchParams({
+        view,
+        date,
+        ...(compareWithPrevious && { compareWithPrevious: 'true' })
+    });
+    
+    const response = await apiClient.get<AdvancedAnalyticsResponse>(
+        `/orders/advanced-analytics?${params.toString()}`
+    );
 
     if (response.error) {
         throw new Error(response.error.message || 'Failed to fetch analytics data');

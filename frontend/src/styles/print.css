@@ -1,0 +1,150 @@
+/* Print Styles for Analytics Dashboard */
+
+@media print {
+    /* Hide interactive elements */
+    button,
+    .no-print,
+    [role="button"],
+    input,
+    select,
+    textarea {
+        display: none !important;
+    }
+
+    /* Reset page margins */
+    @page {
+        margin: 1cm;
+        size: A4 portrait;
+    }
+
+    /* Reset body styles */
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 12pt;
+    }
+
+    /* Container adjustments */
+    .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Card styles */
+    .card,
+    [class*="card"] {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+        page-break-inside: avoid;
+        margin-bottom: 1rem !important;
+    }
+
+    /* Ensure charts are visible */
+    svg {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Hide shadows and fancy backgrounds */
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        background: white !important;
+    }
+
+    /* Preserve important backgrounds and colors */
+    [style*="background-color"],
+    .bg-primary,
+    .bg-emerald-500,
+    .bg-orange-500 {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* Page breaks */
+    .page-break-before {
+        page-break-before: always;
+    }
+
+    .page-break-after {
+        page-break-after: always;
+    }
+
+    .page-break-avoid {
+        page-break-inside: avoid;
+    }
+
+    /* Headers */
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* Tables */
+    table {
+        page-break-inside: auto;
+    }
+
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tfoot {
+        display: table-footer-group;
+    }
+
+    /* Links */
+    a {
+        text-decoration: none;
+        color: black !important;
+    }
+
+    /* Grid layouts - make them flow vertically */
+    .grid {
+        display: block !important;
+    }
+
+    .grid > * {
+        margin-bottom: 1rem;
+    }
+
+    /* Typography adjustments */
+    .text-muted-foreground {
+        color: #6b7280 !important;
+    }
+
+    .text-foreground {
+        color: #1f2937 !important;
+    }
+
+    /* Print header info */
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .print-header h1 {
+        font-size: 24pt;
+        margin-bottom: 0.5rem;
+    }
+
+    .print-header .metadata {
+        font-size: 10pt;
+        color: #6b7280;
+    }
+
+    /* Ensure content doesn't overflow */
+    * {
+        max-width: 100%;
+        overflow: visible !important;
+    }
+}

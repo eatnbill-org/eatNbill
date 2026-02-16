@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom"; // For menu page redirect
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
 import { useNotificationStore } from "@/stores/notifications.store";
 import { useHeadAuth } from "@/hooks/use-head-auth";
-import { fetchStaffOrders, fetchProducts, addOrderItems } from "@/lib/staff-api";
+import { fetchStaffOrders, fetchProducts, addOrderItems, updateOrderItem, removeOrderItem } from "@/lib/staff-api";
 import { formatINR, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +108,14 @@ export default function HeadOrdersPage() {
 
     const orders = ordersResponse?.data || [];
     const products = productsResponse?.products || [];
+    const getOrderTableNumber = React.useCallback(
+        (order: any) => order?.table?.table_number || order?.table_number || null,
+        []
+    );
+    const getOrderHallName = React.useCallback(
+        (order: any) => order?.hall?.name || order?.table?.hall?.name || null,
+        []
+    );
 
     // Filter orders
     const filteredOrders = React.useMemo(() => {
@@ -124,7 +133,7 @@ export default function HeadOrdersPage() {
                 o.order_number?.toLowerCase().includes(q) ||
                 o.customer_name?.toLowerCase().includes(q) ||
                 o.customer_phone?.includes(q) ||
-                o.table?.table_number?.toLowerCase().includes(q) ||
+                getOrderTableNumber(o)?.toLowerCase().includes(q) ||
                 o.total_amount?.toString().includes(q)
             );
         }
@@ -133,7 +142,7 @@ export default function HeadOrdersPage() {
         return result.sort((a: any, b: any) =>
             new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
         );
-    }, [orders, statusFilter, searchQuery]);
+    }, [orders, statusFilter, searchQuery, getOrderTableNumber]);
 
     // Active orders count
     const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
@@ -564,7 +573,11 @@ export default function HeadOrdersPage() {
                                             <MapPin className="h-4 w-4 text-orange-600" />
                                             <p className="text-[10px] uppercase tracking-wider text-orange-700 font-bold">Location</p>
                                         </div>
-                                        <p className="font-bold text-slate-900 text-base">{selectedOrder.table ? `Table ${selectedOrder.table.table_number}` : 'Takeaway'}</p>
+                                        <p className="font-bold text-slate-900 text-base">
+                                            {selectedOrder.order_type === 'DINE_IN'
+                                                ? `Table ${getOrderTableNumber(selectedOrder) || 'N/A'}${getOrderHallName(selectedOrder) ? ` - ${getOrderHallName(selectedOrder)}` : ''}`
+                                                : 'Takeaway'}
+                                        </p>
                                         <p className="text-sm text-slate-600 mt-0.5">{selectedOrder.source || 'In-House'}</p>
                                     </div>
                                 </div>

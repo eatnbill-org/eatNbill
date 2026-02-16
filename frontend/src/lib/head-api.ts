@@ -495,3 +495,70 @@ export async function toggleProductAvailability(productId: string, isAvailable: 
 
     return response.json();
 }
+
+/**
+ * Update order item (quantity or notes)
+ */
+export async function updateOrderItem(orderId: string, itemId: string, payload: { quantity?: number; notes?: string }) {
+    const token = getStaffToken();
+    const restaurantId = getRestaurantId();
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath(`orders/${orderId}/items/${itemId}`), {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update order item');
+    }
+
+    return response.json();
+}
+
+/**
+ * Remove/delete order item
+ */
+export async function removeOrderItem(orderId: string, itemId: string) {
+    const token = getStaffToken();
+    const restaurantId = getRestaurantId();
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath(`orders/${orderId}/items/${itemId}`), {
+        method: 'DELETE',
+        headers,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to remove order item');
+    }
+
+    return response.json();
+}

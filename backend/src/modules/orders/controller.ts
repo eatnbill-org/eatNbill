@@ -44,7 +44,8 @@ export async function placePublicOrder(
       );
     }
 
-    const tableId = typeof tableParam === 'string' ? tableParam : undefined;
+    // Prefer explicit query table when present, otherwise keep body table_id.
+    const tableId = typeof tableParam === "string" ? tableParam : parsed.data.table_id;
 
     const order = await service.placePublicOrder(restaurant_slug, {
       ...parsed.data,
@@ -547,7 +548,11 @@ export async function getAdvancedAnalytics(
   try {
     const { tenantId, allowedRestaurantIds } = req.user!;
     const restaurantId = req.restaurantId;
-    const { view, date } = req.query as { view: 'daily' | 'monthly' | 'yearly'; date: string };
+    const { view, date, compareWithPrevious } = req.query as { 
+      view: 'daily' | 'monthly' | 'yearly'; 
+      date: string;
+      compareWithPrevious?: string;
+    };
 
     if (!restaurantId) {
       return next(
@@ -566,7 +571,8 @@ export async function getAdvancedAnalytics(
       tenantId,
       restaurantId,
       view || 'daily',
-      date || new Date().toISOString()
+      date || new Date().toISOString(),
+      compareWithPrevious === 'true'
     );
 
     return res.json({
