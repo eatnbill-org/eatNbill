@@ -48,10 +48,7 @@ export const updatePaymentSchema = z.object({
 // Update order status
 export const updateOrderStatusSchema = z.object({
   status: z.enum([
-    "CONFIRMED",
-    "PREPARING",
-    "READY",
-    "SERVED",
+    "ACTIVE",
     "COMPLETED",
     "CANCELLED",
   ]),
@@ -61,7 +58,7 @@ export const updateOrderStatusSchema = z.object({
 // Query params for listing orders
 export const listOrdersQuerySchema = z.object({
   status: z
-    .enum(["PLACED", "CONFIRMED", "PREPARING", "READY", "COMPLETED", "CANCELLED"])
+    .enum(["ACTIVE", "COMPLETED", "CANCELLED"])
     .optional(),
   from_date: z.string().datetime().optional(),
   to_date: z.string().datetime().optional(),

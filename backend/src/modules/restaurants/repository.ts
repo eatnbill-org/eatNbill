@@ -433,7 +433,7 @@ export async function getDashboardAnalytics(tenantId: string, restaurantId: stri
       tenant_id: tenantId,
       restaurant_id: restaurantId,
       status: {
-        in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'],
+        in: ['ACTIVE'],
       },
     },
   });
@@ -446,7 +446,7 @@ export async function getDashboardAnalytics(tenantId: string, restaurantId: stri
       orders: {
         some: {
           status: {
-            in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'],
+            in: ['ACTIVE'],
           },
         },
       },

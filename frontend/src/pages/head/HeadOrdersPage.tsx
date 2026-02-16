@@ -1,9 +1,10 @@
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom"; // For menu page redirect
-import { createClient } from "@supabase/supabase-js";
-import { useStaffAuth } from "@/hooks/use-staff-auth";
-import { fetchStaffOrders, updateOrderStatus, fetchProducts, addOrderItems, updateOrderItemStatus } from "@/lib/staff-api";
+import { useRealtimeStore } from "@/stores/realtime/realtime.store";
+import { useNotificationStore } from "@/stores/notifications.store";
+import { useHeadAuth } from "@/hooks/use-head-auth";
+import { fetchStaffOrders, fetchProducts, addOrderItems } from "@/lib/staff-api";
 import { formatINR, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,28 +23,24 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import {
-    Check, Clock, CookingPot, Utensils, UtensilsCrossed,
-    IndianRupee, Plus, RefreshCw, MapPin, Loader2, Search, ArrowRight, User
+    IndianRupee, Plus, RefreshCw, MapPin, Loader2, Search, ArrowRight, User, X,
+    Clock,
+    UtensilsCrossed,
+    Check,
+    Utensils
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 
-// Premium Status configuration
+// Simplified Status configuration
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode; ringClass: string }> = {
-    PENDING: { label: "New Order", color: "text-blue-600", bgColor: "bg-blue-50", icon: <Clock className="h-4 w-4" />, ringClass: "ring-blue-100" },
-    CONFIRMED: { label: "Confirmed", color: "text-sky-600", bgColor: "bg-sky-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-sky-100" },
-    PREPARING: { label: "Cooking", color: "text-primary", bgColor: "bg-primary/10", icon: <CookingPot className="h-4 w-4" />, ringClass: "ring-primary/20" },
-    READY: { label: "Ready", color: "text-emerald-700", bgColor: "bg-emerald-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-emerald-100" },
-    SERVED: { label: "Served", color: "text-indigo-600", bgColor: "bg-indigo-50", icon: <Utensils className="h-4 w-4" />, ringClass: "ring-indigo-100" },
+    ACTIVE: { label: "Active", color: "text-blue-600", bgColor: "bg-blue-50", icon: <Clock className="h-4 w-4" />, ringClass: "ring-blue-100" },
     COMPLETED: { label: "Completed", color: "text-slate-600", bgColor: "bg-slate-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-slate-100" },
     CANCELLED: { label: "Cancelled", color: "text-rose-600", bgColor: "bg-rose-50", icon: <UtensilsCrossed className="h-4 w-4" />, ringClass: "ring-rose-100" },
 };
 
-// Status flow order
-const STATUS_FLOW: string[] = ["PENDING", "CONFIRMED", "PREPARING", "READY", "SERVED", "COMPLETED"];
-
-export default function WaiterOrdersPage() {
+export default function HeadOrdersPage() {
     const queryClient = useQueryClient();
     const navigate = useNavigate(); // For redirecting to menu page
     const [statusFilter, setStatusFilter] = React.useState<string>("all");
@@ -61,47 +58,28 @@ export default function WaiterOrdersPage() {
     // Search state
     const [searchQuery, setSearchQuery] = React.useState("");
 
-    const { restaurant } = useStaffAuth();
+    const { restaurant } = useHeadAuth();
 
     // Subscribe to realtime updates
     React.useEffect(() => {
-        if (localStorage.getItem('disable_realtime') === 'true') {
-            return;
-        }
-        const token = localStorage.getItem('staff_token') || localStorage.getItem('waiter_token');
-        if (!restaurant?.id || !token) return;
+        if (!restaurant?.id) return;
 
-        const client = createClient(
-            import.meta.env.VITE_SUPABASE_URL,
-            import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                },
+        // Use centralized realtime store
+        const unsubscribe = useRealtimeStore.getState().subscribeToRestaurantOrders(
+            restaurant.id,
+            (update: any) => {
+                // Invalidate and refetch orders when any change happens
+                queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+
+                // Trigger QR notification popup for new QR orders
+                if (update?.eventType === 'INSERT' && update?.order?.source === 'QR') {
+                    useNotificationStore.getState().addNotification(update.order);
+                }
             }
         );
 
-        const channel = client
-            .channel(`staff-orders-${restaurant.id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'orders',
-                    filter: `restaurant_id=eq.${restaurant.id}`,
-                },
-                () => {
-                    // Invalidate and refetch orders when any change happens
-                    queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
-                }
-            )
-            .subscribe();
-
         return () => {
-            channel.unsubscribe();
+            if (unsubscribe) unsubscribe();
         };
     }, [restaurant?.id, queryClient]);
 
@@ -148,45 +126,11 @@ export default function WaiterOrdersPage() {
         );
     }, [orders, statusFilter, searchQuery]);
 
-    // Active (non-completed) orders count
-    const activeOrdersCount = orders.filter((o: any) => o.status !== "COMPLETED" && o.status !== "CANCELLED").length;
+    // Active orders count
+    const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
 
-    // Get next status in flow
-    const getNextStatus = (current: string): string | null => {
-        const idx = STATUS_FLOW.indexOf(current);
-        if (idx === -1 || idx >= STATUS_FLOW.length - 1) return null;
-        return STATUS_FLOW[idx + 1];
-    };
-
-    // Status update mutation
-    const statusMutation = useMutation({
-        mutationFn: ({ orderId, status }: { orderId: string; status: string }) =>
-            updateOrderStatus(orderId, status),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
-            toast.success('Order status updated!');
-        },
-        onError: (error: any) => {
-            toast.error(error.message || 'Failed to update status');
-        }
-    });
-
-    const handleUpdateStatus = (orderId: string, newStatus: string) => {
-        statusMutation.mutate({ orderId, status: newStatus });
-    };
-
-    // Item-wise status update mutation
-    const itemMutation = useMutation({
-        mutationFn: ({ orderId, itemId, status }: { orderId: string; itemId: string; status: string }) =>
-            updateOrderItemStatus(orderId, itemId, status),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
-            toast.success('Item status updated!');
-        },
-        onError: (error: any) => {
-            toast.error(error.message || 'Failed to update item status');
-        }
-    });
+    // Active orders count
+    // const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
 
     // Helper to open details
     const openDetails = (order: any) => {
@@ -456,35 +400,48 @@ export default function WaiterOrdersPage() {
                                         </div>
                                     </div>
 
-                                    {/* Footer: Status Badge & Reorder Button */}
+                                    {/* Footer: Status Badge & Action Buttons */}
                                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                                         <Badge variant="outline" className={`${config.bgColor} ${config.color} border-0 px-2.5 py-1 text-[10px] font-bold flex items-center gap-1.5 rounded-lg`}>
                                             {config.icon}
                                             {config.label}
                                         </Badge>
 
-                                        {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="h-8 px-3 rounded-lg border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 text-xs font-semibold"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    // Check if order is paid
-                                                    if (order.payment_status === 'PAID') {
-                                                        toast.error('Cannot add items to a paid order');
-                                                        return;
-                                                    }
-
-                                                    // Redirect to menu page with reorder context
-                                                    const tableId = order.table_id || 'TAKEAWAY';
-                                                    navigate(`/staff/menu/${order.id}?table=${tableId}`);
-                                                }}
-                                            >
-                                                <Plus className="h-3.5 w-3.5 mr-1" />
-                                                Add Items
-                                            </Button>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 px-3 rounded-lg border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 text-xs font-semibold"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (order.payment_status === 'PAID') {
+                                                            toast.error('Cannot add items to a paid order');
+                                                            return;
+                                                        }
+                                                        const tableId = order.table_id || 'TAKEAWAY';
+                                                        navigate(`/head/menu/${order.id}?table=${tableId}`);
+                                                    }}
+                                                >
+                                                    <Plus className="h-3.5 w-3.5 mr-1" />
+                                                    Add Items
+                                                </Button>
+                                            )}
+                                            {order.payment_status !== 'PAID' && order.status !== 'CANCELLED' && (
+                                                <Button
+                                                    size="sm"
+                                                    className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedOrder(order);
+                                                        setPaymentDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <IndianRupee className="h-3.5 w-3.5 mr-1" />
+                                                    Mark Paid
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -570,40 +527,13 @@ export default function WaiterOrdersPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="bg-white">
-                                                    {selectedOrder.items?.slice().sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item: any) => {
-                                                        const isServed = item.status === 'SERVED';
-
-                                                        // Determine item status label
-                                                        let displayStatus = 'New';
-                                                        if (isServed) displayStatus = 'SERVED';
-                                                        else if (item.status === 'REORDER') displayStatus = 'RE-ORDER';
-                                                        else if (selectedOrder.status === 'PREPARING') displayStatus = 'COOKING';
-                                                        else if (selectedOrder.status === 'READY') displayStatus = 'READY';
-                                                        else if (item.status === 'PENDING' || !item.status) displayStatus = 'PENDING';
-
-                                                        // Can serve if not already served
-                                                        const canServe = !isServed && selectedOrder.status !== 'PENDING' && selectedOrder.status !== 'CONFIRMED';
-
-                                                        return (
+                                                    {selectedOrder.items?.slice()
+                                                        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                                        .map((item: any) => (
                                                             <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                                                                 <td className="py-3 px-4">
                                                                     <div className="flex items-center gap-2">
                                                                         <p className="font-semibold text-slate-900">{item.name_snapshot || item.product?.name || 'Item'}</p>
-                                                                        <Badge
-                                                                            variant="outline"
-                                                                            className={`h-5 px-1.5 text-[9px] font-black border-0 transition-all ${isServed ? 'bg-purple-100 text-purple-700 cursor-default' :
-                                                                                canServe ? 'bg-orange-100 text-orange-700 cursor-pointer hover:bg-orange-200' :
-                                                                                    'bg-blue-50 text-blue-500 cursor-default'
-                                                                                }`}
-                                                                            onClick={() => {
-                                                                                if (canServe) {
-                                                                                    itemMutation.mutate({ orderId: selectedOrder.id, itemId: item.id, status: 'SERVED' });
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            {displayStatus}
-                                                                            {canServe && <span className="ml-1 text-[7px] opacity-70 underline decoration-dotted">(Serve)</span>}
-                                                                        </Badge>
                                                                     </div>
                                                                     {item.notes && <p className="text-xs text-slate-500 italic mt-0.5">Note: {item.notes}</p>}
                                                                 </td>
@@ -616,8 +546,7 @@ export default function WaiterOrdersPage() {
                                                                     {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
                                                                 </td>
                                                             </tr>
-                                                        );
-                                                    })}
+                                                        ))}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -635,49 +564,18 @@ export default function WaiterOrdersPage() {
                             {/* Modal Footer - Action Buttons */}
                             <div className="p-5 md:p-6 border-t border-slate-200 bg-slate-50 space-y-3 sticky bottom-0">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {/* Status Update Button */}
-                                    {getNextStatus(selectedOrder.status) && getNextStatus(selectedOrder.status) !== "COMPLETED" && (
-                                        <Button
-                                            className="bg-slate-900 text-white hover:bg-black rounded-xl h-11 font-bold shadow-lg"
-                                            onClick={() => {
-                                                handleUpdateStatus(selectedOrder.id, getNextStatus(selectedOrder.status)!);
-                                                setDetailsDialogOpen(false);
-                                            }}
-                                        >
-                                            <Check className="h-4 w-4 mr-2" />
-                                            Mark {STATUS_CONFIG[getNextStatus(selectedOrder.status)!]?.label}
-                                        </Button>
-                                    )}
-
-                                    {/* Complete Order Button */}
-                                    {selectedOrder.payment_status === 'PAID' && selectedOrder.status !== "COMPLETED" && (
-                                        <Button
-                                            className="bg-green-600 hover:bg-green-700 text-white rounded-xl h-11 font-bold shadow-lg"
-                                            onClick={() => {
-                                                handleUpdateStatus(selectedOrder.id, "COMPLETED");
-                                                setDetailsDialogOpen(false);
-                                            }}
-                                        >
-                                            <Check className="h-4 w-4 mr-2" />
-                                            Complete Order
-                                        </Button>
-                                    )}
-
-                                    {/* 🎨 Creative Solution: Redirect to Menu Page for Better UX */}
+                                    {/* Add More Items Button */}
                                     {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
                                         <Button
                                             variant="outline"
-                                            className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 rounded-xl h-11 font-semibold"
+                                            className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 rounded-xl h-11 font-semibold"
                                             onClick={() => {
-                                                // Check if order is paid
                                                 if (selectedOrder.payment_status === 'PAID') {
                                                     toast.error('Cannot add items to a paid order');
                                                     return;
                                                 }
-
-                                                // Redirect to menu page with reorder context
                                                 const tableId = selectedOrder.table_id || 'TAKEAWAY';
-                                                navigate(`/staff/menu/${selectedOrder.id}?table=${tableId}`);
+                                                navigate(`/head/menu/${selectedOrder.id}?table=${tableId}`);
                                                 setDetailsDialogOpen(false);
                                             }}
                                         >
@@ -686,7 +584,18 @@ export default function WaiterOrdersPage() {
                                         </Button>
                                     )}
 
-
+                                    {/* Mark Paid Button */}
+                                    {selectedOrder.payment_status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && (
+                                        <Button
+                                            className="bg-slate-900 hover:bg-black text-white rounded-xl h-11 font-bold shadow-lg"
+                                            onClick={() => {
+                                                setPaymentDialogOpen(true);
+                                            }}
+                                        >
+                                            <IndianRupee className="h-4 w-4 mr-2" />
+                                            Mark Paid
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         </>
@@ -716,7 +625,7 @@ export default function WaiterOrdersPage() {
                     </DialogHeader>
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
-                        {products.filter((p: any) => p.is_available).map((product: any) => {
+                        {products.filter((p: any) => p.is_active).map((product: any) => {
                             const qty = reorderCart[product.id] ?? 0;
 
                             return (

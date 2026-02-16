@@ -9,7 +9,7 @@ import type { OrderItem, Product } from "@/types/demo";
 import { formatINR, clamp } from "@/lib/format";
 import CheckoutDialog from "@/pages/user/CheckoutDialog";
 import ProductDetailModal from "@/pages/user/ProductDetailModal";
-import { Search, Plus, ShoppingCart, MapPin, Loader2, RefreshCw } from "lucide-react";
+import { Search, Plus, Minus, ShoppingCart, MapPin, Loader2, RefreshCw, Check, X } from "lucide-react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import {
     Select,
@@ -44,8 +44,8 @@ const mapApiProductToDemo = (p: any, categoryName: string): Product => ({
     name: p.name,
     price: parseFloat(p.price),
     category: categoryName,
-    imageUrl: p.images?.[0]?.public_url || undefined,
-    outOfStock: !p.is_available && !p.is_active, // heuristic
+    imageUrl: undefined, // ❌ NO IMAGES as per plan
+    outOfStock: !p.is_active,
     costPrice: p.costprice ? parseFloat(p.costprice) : undefined,
     isVeg: p.is_veg,
     discount_percent: p.discount_percent ? parseFloat(p.discount_percent) : undefined,
@@ -55,7 +55,7 @@ function toOrderItem(p: Product, qty: number): OrderItem {
     return { id: p.id, name: p.name, price: p.price, qty };
 }
 
-export default function WaiterMenuPage() {
+export default function HeadMenuPage() {
     const { categories, fetchCategories } = useCategoriesStore();
     const navigate = useNavigate();
     const { orderId } = useParams(); // Get orderId from path segments
@@ -192,7 +192,7 @@ export default function WaiterMenuPage() {
                 toast.success("Items added to order successfully!");
                 setCart({});
                 setCheckoutOpen(false);
-                navigate("/waiter/orders");
+                navigate("/head/orders");
             } else {
                 // 🆕 Create new order
                 const tableId =
@@ -214,7 +214,7 @@ export default function WaiterMenuPage() {
                 toast.success("Order placed successfully!");
                 setCart({});
                 setCheckoutOpen(false);
-                navigate("/waiter/orders");
+                navigate("/head/orders");
             }
         } catch (error: any) {
             console.error("Failed to process order:", error);
@@ -281,7 +281,7 @@ export default function WaiterMenuPage() {
                                     size="sm"
                                     variant="ghost"
                                     className="text-white hover:bg-white/20 h-8 text-xs font-bold rounded-lg"
-                                    onClick={() => navigate('/waiter/orders')}
+                                    onClick={() => navigate('/head/orders')}
                                 >
                                     Cancel
                                 </Button>
@@ -335,44 +335,37 @@ export default function WaiterMenuPage() {
             </div>
 
             <main className="px-4">
-                {/* Category Tabs */}
+                {/* 🆕 Simplified Category Tabs (Names Only) */}
                 {displayCategories.length > 0 && (
-                    <div className="py-4 -mx-4 px-4 overflow-x-auto scrollbar-hide">
-                        <div className="flex gap-3 w-max">
+                    <div className="py-2 -mx-4 px-4 overflow-x-auto scrollbar-hide bg-white border-b border-slate-100">
+                        <div className="flex gap-2 w-max py-1">
                             {displayCategories.map((cat) => (
                                 <button
                                     key={cat.name}
                                     type="button"
                                     onClick={() => setActive(cat.name)}
-                                    className={`flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all ${active === cat.name
-                                        ? "bg-primary/10 border-2 border-primary"
-                                        : "bg-white border-2 border-gray-100 hover:border-gray-200"
+                                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap shadow-sm ${active === cat.name
+                                        ? "bg-primary text-white scale-105"
+                                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                                         }`}
                                 >
-                                    {cat.image ? (
-                                        <img
-                                            src={cat.image}
-                                            alt={cat.name}
-                                            className="w-8 h-8 object-cover rounded-full"
-                                        />
-                                    ) : (
-                                        <span className="text-2xl">{CATEGORY_ICONS[cat.name] || "🍴"}</span>
-                                    )}
-                                    <span className={`text-xs font-medium ${active === cat.name ? "text-primary" : "text-gray-600"}`}>
-                                        {cat.name}
-                                    </span>
+                                    {cat.name}
                                 </button>
                             ))}
                         </div>
                     </div>
                 )}
 
-
-
                 {/* Products Grid */}
-                <section>
-                    <h2 className="text-base font-bold text-slate-900 mb-3">All Products</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <section className="mt-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">{active} Menu</h2>
+                        <Badge variant="outline" className="text-[10px] font-bold border-slate-200">
+                            {filteredProducts.length} items
+                        </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {filteredProducts.map((product: Product) => {
                             const qty = cart[product.id.toString()] ?? 0;
                             const isOutOfStock = Boolean(product.outOfStock);
@@ -380,50 +373,64 @@ export default function WaiterMenuPage() {
                             return (
                                 <div
                                     key={product.id}
-                                    className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow"
+                                    onClick={() => !isOutOfStock && add(product.id)}
+                                    className={`relative bg-white rounded-2xl p-4 shadow-sm border-2 transition-all active:scale-95 cursor-pointer flex flex-col justify-between h-36 ${qty > 0
+                                        ? "border-primary ring-1 ring-primary/20 bg-primary/[0.02]"
+                                        : "border-slate-100 hover:border-slate-200"
+                                        } ${isOutOfStock ? "opacity-60 grayscale cursor-not-allowed" : ""}`}
                                 >
-                                    <button
-                                        type="button"
-                                        className="relative w-full aspect-square overflow-hidden"
-                                        onClick={() => {
-                                            setSelectedProduct(product);
-                                            setProductModalOpen(true);
-                                        }}
-                                    >
-                                        <img src={product.imageUrl || "/placeholder-dish.jpg"} alt={product.name} className="h-full w-full object-cover" />
-                                        {isOutOfStock && (
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                <span className="text-xs font-bold text-white bg-red-500 px-2 py-1 rounded">OUT</span>
-                                            </div>
-                                        )}
-                                    </button>
-
-                                    <div className="p-3">
+                                    {/* Item Info */}
+                                    <div className="space-y-1">
                                         <div className="flex items-start justify-between gap-1">
-                                            <h3 className="text-sm font-semibold text-slate-900 line-clamp-1">{product.name}</h3>
-                                            <span className="text-sm font-bold text-primary shrink-0">{formatINR(product.price)}</span>
-                                        </div>
-
-                                        <div className="mt-2">
-                                            {qty === 0 ? (
-                                                <button
-                                                    type="button"
-                                                    disabled={isOutOfStock}
-                                                    onClick={() => add(product.id)}
-                                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-                                                >
-                                                    <Plus className="h-4 w-4" />
-                                                    <span className="text-xs font-medium">Add</span>
-                                                </button>
-                                            ) : (
-                                                <div className="flex items-center justify-between px-2 py-1 rounded-lg border border-primary/20 bg-primary/5 shadow-inner">
-                                                    <button type="button" onClick={() => dec(product.id)} className="h-7 w-7 rounded-full bg-white border flex items-center justify-center">−</button>
-                                                    <span className="text-sm font-bold text-primary">{qty}</span>
-                                                    <button type="button" onClick={() => add(product.id)} className="h-7 w-7 rounded-full bg-primary text-white flex items-center justify-center">+</button>
+                                            <h3 className="text-sm font-bold text-slate-900 leading-tight line-clamp-2">
+                                                {product.name}
+                                            </h3>
+                                            {product.isVeg !== undefined && (
+                                                <div className={`shrink-0 w-3 h-3 rounded-sm border flex items-center justify-center ${product.isVeg ? "border-green-600" : "border-red-600"}`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${product.isVeg ? "bg-green-600" : "bg-red-600"}`} />
                                                 </div>
                                             )}
                                         </div>
+                                        <span className="text-sm font-black text-primary block mt-1">
+                                            {formatINR(product.price)}
+                                        </span>
                                     </div>
+
+                                    {/* Action Area */}
+                                    <div className="flex items-center justify-between mt-auto">
+                                        {isOutOfStock ? (
+                                            <Badge variant="destructive" className="text-[10px] font-bold px-2 py-0 h-5">OUT OF STOCK</Badge>
+                                        ) : qty === 0 ? (
+                                            <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-colors border border-slate-100">
+                                                <Plus className="h-4 w-4" />
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-3 bg-white rounded-xl border border-primary/20 p-1 shadow-sm w-full justify-between" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); dec(product.id); }}
+                                                    className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center active:bg-rose-100 transition-colors"
+                                                >
+                                                    <Minus className="h-4 w-4" />
+                                                </button>
+                                                <span className="text-sm font-black text-primary">{qty}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); add(product.id); }}
+                                                    className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center active:bg-primary/90 shadow-sm shadow-primary/20"
+                                                >
+                                                    <Plus className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Selection Glow */}
+                                    {qty > 0 && (
+                                        <div className="absolute top-2 right-2 flex items-center justify-center h-5 w-5 bg-primary rounded-full shadow-lg shadow-primary/30 animate-in zoom-in-50 duration-200">
+                                            <Check className="h-3 w-3 text-white stroke-[4px]" />
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -485,6 +492,7 @@ export default function WaiterMenuPage() {
                 onOpenChange={setCheckoutOpen}
                 items={items}
                 tableId={selectedTable}
+                tables={tablesList}
                 isWaiterMode={true}
                 reorderContext={isReorderMode && existingOrder ? {
                     orderNumber: existingOrder.order_number,
@@ -493,6 +501,7 @@ export default function WaiterMenuPage() {
                     currentTotal: existingOrder.total_amount
                 } : undefined}
                 onSubmit={handlePlaceOrder}
+                onTableChange={(tableId) => setSelectedTable(tableId)}
             />
 
             <style>{`

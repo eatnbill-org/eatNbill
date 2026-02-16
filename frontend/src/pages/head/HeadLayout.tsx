@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ClipboardList, UtensilsCrossed, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import QROrderNotification from "@/components/QROrderNotification";
+import { useNotificationStore } from "@/stores/notifications.store";
 import {
     Dialog,
     DialogContent,
@@ -10,14 +12,18 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { useStaffAuth } from "@/hooks/use-waiter-auth";
+import { useStaffAuth } from "@/hooks/use-head-auth";
+
+import { LayoutGrid, Package } from "lucide-react";
 
 const NAV_ITEMS = [
-    { to: "/waiter/orders", label: "Orders", icon: ClipboardList },
-    { to: "/waiter/menu", label: "Menu", icon: UtensilsCrossed },
+    { to: "/head/orders", label: "Orders", icon: ClipboardList },
+    { to: "/head/menu", label: "Menu", icon: UtensilsCrossed },
+    { to: "/head/tables", label: "Tables", icon: LayoutGrid },
+    { to: "/head/stock", label: "Stock", icon: Package },
 ];
 
-export default function WaiterLayout() {
+export default function HeadLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const { staff, restaurant, logout } = useStaffAuth();
@@ -40,7 +46,7 @@ export default function WaiterLayout() {
                         </div>
                         <div className="hidden sm:block min-w-0">
                             <h1 className="font-bold text-slate-900 text-sm truncate">{restaurant?.name || 'Restaurant'}</h1>
-                            <p className="text-[10px] text-slate-500 font-medium">Wait Staff Portal</p>
+                            <p className="text-[10px] text-slate-500 font-medium">Head Portal</p>
                         </div>
                     </div>
 
@@ -136,6 +142,29 @@ export default function WaiterLayout() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Real-time QR Order Notification Popup */}
+            <NotificationWrapper />
         </div>
+    );
+}
+
+function NotificationWrapper() {
+    const navigate = useNavigate();
+    const { current, dismissNotification } = useNotificationStore();
+
+    const handleViewDetails = (order: any) => {
+        // Navigate to orders page
+        navigate('/head/orders');
+        // Dismiss popup
+        dismissNotification();
+    };
+
+    return (
+        <QROrderNotification
+            order={current}
+            onDismiss={dismissNotification}
+            onViewDetails={handleViewDetails}
+        />
     );
 }

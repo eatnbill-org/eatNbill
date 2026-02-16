@@ -3,10 +3,7 @@ import type { OrderStatus, Prisma } from "@prisma/client";
 
 // Active order statuses for KDS display
 export const KDS_ACTIVE_STATUSES: OrderStatus[] = [
-  "PLACED",
-  "CONFIRMED",
-  "PREPARING",
-  "READY",
+  "ACTIVE",
 ];
 
 // Types
@@ -169,10 +166,7 @@ export async function getOrderCountsByStatus(
 
   // Initialize all active statuses with 0
   const result: Record<string, number> = {
-    PLACED: 0,
-    CONFIRMED: 0,
-    PREPARING: 0,
-    READY: 0,
+    ACTIVE: 0,
   };
 
   for (const count of counts) {

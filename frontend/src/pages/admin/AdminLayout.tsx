@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import QROrderNotification from "@/components/QROrderNotification";
+import { useNotificationStore } from "@/stores/notifications.store";
+import { useAdminOrdersStore } from "@/stores/orders/adminOrders.store";
 import DemoModeBar from "@/components/DemoModeBar";
 import {
   SidebarProvider,
@@ -379,7 +382,33 @@ export default function AdminLayout() {
             </div>
           </SidebarInset>
         </SidebarProvider>
+
+        {/* Real-time QR Order Notification Popup */}
+        <NotificationWrapper />
       </div>
     </div>
+  );
+}
+
+function NotificationWrapper() {
+  const navigate = useNavigate();
+  const { current, dismissNotification } = useNotificationStore();
+  const { fetchOrders } = useAdminOrdersStore();
+
+  const handleViewDetails = (order: any) => {
+    // Refresh orders to make sure the new one is there
+    fetchOrders();
+    // Navigate to orders page
+    navigate('/admin/orders');
+    // Dismiss popup
+    dismissNotification();
+  };
+
+  return (
+    <QROrderNotification
+      order={current}
+      onDismiss={dismissNotification}
+      onViewDetails={handleViewDetails}
+    />
   );
 }

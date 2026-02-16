@@ -66,12 +66,9 @@ import {
 import { cn } from '@/lib/utils';
 
 const STATUS_COLORS: Record<string, string> = {
-  PLACED: 'bg-blue-500',
-  CONFIRMED: 'bg-purple-500',
-  PREPARING: 'bg-orange-500',
-  READY: 'bg-green-500',
-  COMPLETED: 'bg-gray-500',
-  CANCELLED: 'bg-red-500',
+  ACTIVE: 'bg-blue-500',      // Order is ongoing
+  COMPLETED: 'bg-gray-500',   // Payment done, order complete
+  CANCELLED: 'bg-red-500',    // Order cancelled
 };
 
 type FilterPeriod = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' | 'CUSTOM';

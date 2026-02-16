@@ -198,7 +198,7 @@ model Order {
   external_metadata Json?
   notes             String?
   total_amount      Decimal          @db.Decimal(10, 2)
-  status            OrderStatus      @default(PLACED)
+  status            OrderStatus      @default(ACTIVE)
   source            OrderSource      @default(QR)
   order_type        OrderType        @default(DINE_IN)
   payment_method    PaymentMethod?
@@ -335,13 +335,9 @@ enum TenantStatus {
 }
 
 enum OrderStatus {
-  PLACED
-  CONFIRMED
-  PREPARING
-  READY
-  SERVED
-  COMPLETED
-  CANCELLED
+  ACTIVE      // Order is ongoing, table is occupied
+  COMPLETED   // Payment done, table is free
+  CANCELLED   // Order was cancelled
 }
 
 enum OrderSource {

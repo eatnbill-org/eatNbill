@@ -16,7 +16,7 @@ interface RestaurantData {
     slug: string;
 }
 
-export function useStaffAuth() {
+export function useHeadAuth() {
     const navigate = useNavigate();
     const [staff, setStaff] = useState<StaffData | null>(null);
     const [restaurant, setRestaurant] = useState<RestaurantData | null>(null);
@@ -59,5 +59,7 @@ export function useStaffAuth() {
     return { staff, restaurant, logout, isLoading };
 }
 
-// Backward-compatible export alias
-export const useWaiterAuth = useStaffAuth;
+// Backward-compatible export aliases
+export const useStaffAuth = useHeadAuth;
+export const useWaiterAuth = useHeadAuth;
+

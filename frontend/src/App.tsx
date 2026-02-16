@@ -16,11 +16,12 @@ import OrderConfirmationPage from "./pages/user/OrderConfirmationPage";
 import RestaurantSetupPage from "./pages/restaurant/RestaurantSetupPage";
 import PublicMenuPage from "./pages/customer/PublicMenuPage";
 
-// STAFF PAGES
-import StaffLayout from "./pages/waiter/WaiterLayout";
-import StaffOrdersPage from "./pages/waiter/WaiterOrdersPage";
-import StaffStockPage from "./pages/waiter/WaiterStockPage";
-import StaffMenuPage from "./pages/waiter/WaiterMenuPage";
+// HEAD PAGES (formerly Staff/Waiter)
+import HeadLayout from "./pages/head/HeadLayout";
+import HeadOrdersPage from "./pages/head/HeadOrdersPage";
+import HeadStockPage from "./pages/head/HeadStockPage";
+import HeadMenuPage from "./pages/head/HeadMenuPage";
+import HeadTablesPage from "./pages/head/HeadTablesPage";
 import ManagerLayout from "./pages/manager/ManagerLayout";
 import ManagerDashboardPage from "./pages/manager/ManagerDashboardPage";
 import ManagerOrdersPage from "./pages/manager/ManagerOrdersPage";
@@ -75,19 +76,25 @@ const App = () => (
               <Route path="/order/:orderId" element={<OrderConfirmationPage />} />
 
 
-              {/* STAFF PANEL */}
-              <Route path="/staff" element={<StaffLayout />}>
+              {/* HEAD PANEL (formerly Staff/Waiter) */}
+              <Route path="/head" element={<HeadLayout />}>
                 <Route index element={<Navigate to="orders" replace />} />
-                <Route path="orders" element={<StaffOrdersPage />} />
-                <Route path="menu" element={<StaffMenuPage />} />
-                <Route path="menu/:orderId" element={<StaffMenuPage />} />
-                <Route path="stock" element={<StaffStockPage />} />
+                <Route path="orders" element={<HeadOrdersPage />} />
+                <Route path="menu" element={<HeadMenuPage />} />
+                <Route path="menu/:orderId" element={<HeadMenuPage />} />
+                <Route path="tables" element={<HeadTablesPage />} />
+                <Route path="stock" element={<HeadStockPage />} />
               </Route>
-              {/* REDIRECTS FOR LEGACY WAITERS PATHS */}
-              <Route path="/waiter" element={<Navigate to="/staff/orders" replace />} />
-              <Route path="/waiter/orders" element={<Navigate to="/staff/orders" replace />} />
-              <Route path="/waiter/menu" element={<Navigate to="/staff/menu" replace />} />
-              <Route path="/waiter/stock" element={<Navigate to="/staff/stock" replace />} />
+              {/* BACKWARD COMPATIBILITY: Redirect /staff and /waiter to /head */}
+              <Route path="/staff" element={<Navigate to="/head/orders" replace />} />
+              <Route path="/staff/orders" element={<Navigate to="/head/orders" replace />} />
+              <Route path="/staff/menu" element={<Navigate to="/head/menu" replace />} />
+              <Route path="/staff/menu/:orderId" element={<Navigate to="/head/menu" replace />} />
+              <Route path="/staff/stock" element={<Navigate to="/head/stock" replace />} />
+              <Route path="/waiter" element={<Navigate to="/head/orders" replace />} />
+              <Route path="/waiter/orders" element={<Navigate to="/head/orders" replace />} />
+              <Route path="/waiter/menu" element={<Navigate to="/head/menu" replace />} />
+              <Route path="/waiter/stock" element={<Navigate to="/head/stock" replace />} />
 
               {/* RESTAURANT SETUP */}
               <Route path="/restaurant/setup" element={<RestaurantSetupPage />} />

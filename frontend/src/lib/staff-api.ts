@@ -10,4 +10,5 @@ export {
   fetchTables,
   fetchOrderById,
   updateOrderItemStatus,
-} from './waiter-api';
+  toggleProductAvailability,
+} from './head-api';

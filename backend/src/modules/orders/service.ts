@@ -28,7 +28,7 @@ export interface CreateInternalOrderInput {
 }
 
 export interface UpdateOrderStatusInput {
-  status: Exclude<OrderStatus, "PLACED">;
+  status: OrderStatus;
   cancel_reason?: string;
 }
 
@@ -40,16 +40,8 @@ export interface ListOrdersInput {
   limit: number;
 }
 
-// Valid status transitions
-const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PLACED: ["CONFIRMED", "CANCELLED"],
-  CONFIRMED: ["PREPARING", "CANCELLED"],
-  PREPARING: ["READY", "CANCELLED"],
-  READY: ["SERVED", "COMPLETED", "CANCELLED"],
-  SERVED: ["COMPLETED", "CANCELLED"],
-  COMPLETED: [],
-  CANCELLED: [],
-};
+// ✅ Simplified: No complex status transitions needed
+// Orders can only be: ACTIVE → COMPLETED or ACTIVE → CANCELLED
 
 /**
  * Place a public order (no auth, via restaurant slug)
@@ -261,12 +253,19 @@ export async function updateOrderStatus(
     throw new AppError("NOT_FOUND", "Order not found", 404);
   }
 
-  // Validate status transition
-  const allowedTransitions = STATUS_TRANSITIONS[order.status];
-  if (!allowedTransitions.includes(input.status)) {
+  // ✅ Simplified validation: Only allow transitions from ACTIVE
+  if (order.status === "COMPLETED") {
     throw new AppError(
       "VALIDATION_ERROR",
-      `Cannot transition from ${order.status} to ${input.status}`,
+      "Cannot modify a completed order",
+      400
+    );
+  }
+
+  if (order.status === "CANCELLED") {
+    throw new AppError(
+      "VALIDATION_ERROR",
+      "Cannot modify a cancelled order",
       400
     );
   }
@@ -331,10 +330,9 @@ export async function addItemsToOrder(
     );
   }
 
-  // 🟡 Important Fix #1: Auto-transition status to PREPARING if order is READY/SERVED
-  const shouldResetToPreparing = order.status === "READY" || order.status === "SERVED";
+  // ✅ No need to reset status - simplified system
 
-  const updated = await repository.addItemsToOrder(orderId, items, shouldResetToPreparing);
+  const updated = await repository.addItemsToOrder(orderId, items, false);
   if (!updated) {
     throw new AppError("NOT_FOUND", "Order not found", 404);
   }

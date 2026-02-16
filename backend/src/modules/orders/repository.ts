@@ -197,7 +197,7 @@ export async function createOrder(
         total_amount: total,
         source: data.source,
         order_type: data.order_type ?? 'DINE_IN',
-        status: "PLACED",
+        status: "ACTIVE",
         external_order_id: data.external_order_id,
         external_metadata: data.external_metadata as Prisma.InputJsonValue,
         items: {
@@ -554,7 +554,7 @@ export async function findOpenOrderByTable(
       tenant_id: tenantId,
       restaurant_id: restaurantId,
       table_id: tableId,
-      status: { in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'] },
+      status: 'ACTIVE', // ✅ Simplified: Only ACTIVE orders are "open"
     },
     include: {
       items: true,
@@ -809,46 +809,11 @@ export async function updateOrderStatus(
   // Build update data with appropriate timestamp
   const updateData: Prisma.OrderUpdateInput = { status: newStatus };
 
-  switch (newStatus) {
-    case "CONFIRMED":
-      updateData.confirmed_at = new Date();
-      break;
-    case "PREPARING":
-      updateData.preparing_at = new Date();
-      break;
-    case "READY":
-      updateData.ready_at = new Date();
-      break;
-    case "COMPLETED":
-      updateData.completed_at = new Date();
-      break;
-    case "CANCELLED":
-      updateData.cancelled_at = new Date();
-      updateData.cancel_reason = cancelReason;
-      break;
-  }
-
-  // Update items status if order is being SERVED
-  if (newStatus === "SERVED") {
-    await prisma.orderItem.updateMany({
-      where: { order_id: orderId },
-      data: { status: "SERVED" }
-    });
-  }
-
-  // Validate all items are served before completing
   if (newStatus === "COMPLETED") {
-    const unservedItems = await prisma.orderItem.findMany({
-      where: {
-        order_id: orderId,
-        status: { not: "SERVED" }
-      }
-    });
-
-    if (unservedItems.length > 0) {
-      const itemNames = unservedItems.map(i => i.name_snapshot).join(", ");
-      throw new Error(`Order cannot be completed. Items not served yet: ${itemNames}`);
-    }
+    updateData.completed_at = new Date();
+  } else if (newStatus === "CANCELLED") {
+    updateData.cancelled_at = new Date();
+    updateData.cancel_reason = cancelReason;
   }
 
   return prisma.order.update({

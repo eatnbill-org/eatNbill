@@ -24,6 +24,7 @@
 import { create } from 'zustand';
 import { apiClient } from '@/lib/api-client';
 import { useRealtimeStore } from '../realtime/realtime.store';
+import { useNotificationStore } from '../notifications.store';
 import type {
   ApiError,
   Order,
@@ -143,9 +144,7 @@ export const useAdminOrdersStore = create<AdminOrdersState>((set, get) => ({
   },
 
   activeOrders: () => {
-    return get().orders.filter((o) =>
-      !['COMPLETED', 'CANCELLED'].includes(o.status)
-    );
+    return get().orders.filter((o) => o.status === 'ACTIVE');
   },
 
   // ----------------------------------------------------------
@@ -678,6 +677,11 @@ export const useAdminOrdersStore = create<AdminOrdersState>((set, get) => ({
           set((state) => ({
             orders: [order, ...state.orders],
           }));
+
+          // Trigger notification if it's a QR order
+          if (order.source === 'QR') {
+            useNotificationStore.getState().addNotification(order);
+          }
 
           // Refresh stats
           get().fetchStats();

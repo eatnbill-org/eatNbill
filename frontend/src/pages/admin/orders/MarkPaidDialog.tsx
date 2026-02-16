@@ -169,69 +169,55 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                         ) : (
                             <div className="space-y-5">
                                 {!isCreditView ? (
-                                    order.items && order.items.some((item: any) => item.status !== 'SERVED' && item.status !== 'CANCELLED') ? (
-                                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 flex items-start gap-3">
-                                            <div className="bg-orange-100 p-1.5 rounded-full text-orange-600 mt-0.5">
-                                                <AlertCircle className="h-4 w-4" />
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="space-y-4"
+                                    >
+                                        <div className="space-y-2.5">
+                                            <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Select Method</Label>
+                                            <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
+                                                <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-white focus:ring-slate-900/5 shadow-sm transition-all text-sm font-bold">
+                                                    <SelectValue placeholder="How was it paid?" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl border-slate-200 p-1 shadow-2xl">
+                                                    {PAYMENT_METHODS.map((pm) => (
+                                                        <SelectItem
+                                                            key={pm.value}
+                                                            value={pm.value}
+                                                            className="rounded-xl focus:bg-slate-50 py-3"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={cn("p-1.5 rounded-lg", pm.bgColor, pm.color)}>
+                                                                    <pm.icon className="h-4 w-4" />
+                                                                </div>
+                                                                <span className="font-bold text-slate-700">{pm.label}</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="relative py-2">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <span className="w-full border-t border-slate-100" />
                                             </div>
-                                            <div>
-                                                <h4 className="text-sm font-bold text-orange-900">Cannot Settle Order</h4>
-                                                <p className="text-[11px] text-orange-800 mt-1 leading-relaxed">
-                                                    There are <strong>{order.items.filter((i: any) => i.status !== 'SERVED' && i.status !== 'CANCELLED').length} items</strong> not yet served or cancelled. All items must be processed before payment.
-                                                </p>
+                                            <div className="relative flex justify-center">
+                                                <span className="bg-white px-4 text-[10px] uppercase font-black tracking-widest text-slate-300">Alternate</span>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className="space-y-4"
+
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() => setIsCreditView(true)}
+                                            className="w-full h-12 rounded-2xl border border-orange-100 bg-orange-50/30 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 transition-all font-bold gap-2"
                                         >
-                                            <div className="space-y-2.5">
-                                                <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Select Method</Label>
-                                                <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-                                                    <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-white focus:ring-slate-900/5 shadow-sm transition-all text-sm font-bold">
-                                                        <SelectValue placeholder="How was it paid?" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-2xl border-slate-200 p-1 shadow-2xl">
-                                                        {PAYMENT_METHODS.map((pm) => (
-                                                            <SelectItem
-                                                                key={pm.value}
-                                                                value={pm.value}
-                                                                className="rounded-xl focus:bg-slate-50 py-3"
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className={cn("p-1.5 rounded-lg", pm.bgColor, pm.color)}>
-                                                                        <pm.icon className="h-4 w-4" />
-                                                                    </div>
-                                                                    <span className="font-bold text-slate-700">{pm.label}</span>
-                                                                </div>
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div className="relative py-2">
-                                                <div className="absolute inset-0 flex items-center">
-                                                    <span className="w-full border-t border-slate-100" />
-                                                </div>
-                                                <div className="relative flex justify-center">
-                                                    <span className="bg-white px-4 text-[10px] uppercase font-black tracking-widest text-slate-300">Alternate</span>
-                                                </div>
-                                            </div>
-
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                onClick={() => setIsCreditView(true)}
-                                                className="w-full h-12 rounded-2xl border border-orange-100 bg-orange-50/30 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 transition-all font-bold gap-2"
-                                            >
-                                                <UserPlus className="h-4 w-4" />
-                                                Record as Customer Credit
-                                            </Button>
-                                        </motion.div>
-                                    )
+                                            <UserPlus className="h-4 w-4" />
+                                            Record as Customer Credit
+                                        </Button>
+                                    </motion.div>
                                 ) : (
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}

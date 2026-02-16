@@ -109,15 +109,11 @@ export async function getKdsDashboard(
   return {
     orders: ordersDisplay,
     counts: {
-      placed: counts.PLACED ?? 0,
-      confirmed: counts.CONFIRMED ?? 0,
-      preparing: counts.PREPARING ?? 0,
-      ready: counts.READY ?? 0,
-      total_active:
-        (counts.PLACED ?? 0) +
-        (counts.CONFIRMED ?? 0) +
-        (counts.PREPARING ?? 0) +
-        (counts.READY ?? 0),
+      placed: counts.ACTIVE ?? 0,
+      confirmed: 0,
+      preparing: 0,
+      ready: 0,
+      total_active: counts.ACTIVE ?? 0,
     },
     settings: settingsDisplay,
     server_time: new Date().toISOString(),

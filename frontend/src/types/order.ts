@@ -10,12 +10,9 @@
 // ============================================================
 
 export type OrderStatus =
-  | 'PLACED'       // Order received (initial state)
-  | 'CONFIRMED'    // Order confirmed by staff
-  | 'PREPARING'    // Kitchen is preparing
-  | 'READY'        // Ready for pickup/serve
-  | 'COMPLETED'    // Order completed
-  | 'CANCELLED';   // Order cancelled
+  | 'ACTIVE'       // Order is ongoing, table is occupied
+  | 'COMPLETED'    // Payment done, table is free
+  | 'CANCELLED';   // Order was cancelled
 
 export type OrderSource =
   | 'QR'       // QR code scan
@@ -321,20 +318,12 @@ export interface RealtimeOrderUpdate {
 // ============================================================
 
 export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PLACED: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['READY', 'CANCELLED'],
-  READY: ['COMPLETED', 'CANCELLED'],
+  ACTIVE: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],  // Terminal state
   CANCELLED: [],  // Terminal state
 };
 
-export const ACTIVE_ORDER_STATUSES: OrderStatus[] = [
-  'PLACED',
-  'CONFIRMED',
-  'PREPARING',
-  'READY',
-];
+export const ACTIVE_ORDER_STATUSES: OrderStatus[] = ['ACTIVE'];
 
 export const TERMINAL_STATUSES: OrderStatus[] = ['COMPLETED', 'CANCELLED'];
 

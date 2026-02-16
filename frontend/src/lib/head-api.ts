@@ -395,3 +395,36 @@ export async function updateOrderItemStatus(orderId: string, itemId: string, sta
 
     return response.json();
 }
+/**
+ * Toggle product availability (In Stock / Out of Stock)
+ */
+export async function toggleProductAvailability(productId: string, isAvailable: boolean) {
+    const token = getStaffToken();
+    const restaurantId = getRestaurantId();
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    const response = await fetch(getPath(`products/${productId}`), {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ isAvailable: isAvailable }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update availability');
+    }
+
+    return response.json();
+}

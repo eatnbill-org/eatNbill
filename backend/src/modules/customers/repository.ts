@@ -444,9 +444,8 @@ export async function getOrdersByPhone(
         customer_phone: phone,
         OR: [
           { status: 'COMPLETED' },
-          { status: 'PLACED' },
-          { status: 'PREPARING' },
-          { status: 'READY' },
+          { status: 'ACTIVE' },
+          { status: 'CANCELLED' },
         ],
       },
       orderBy: { created_at: 'desc' },
@@ -485,9 +484,8 @@ export async function getOrdersByPhone(
         customer_phone: phone,
         OR: [
           { status: 'COMPLETED' },
-          { status: 'PLACED' },
-          { status: 'PREPARING' },
-          { status: 'READY' },
+          { status: 'ACTIVE' },
+          { status: 'CANCELLED' },
         ],
       },
     }),
