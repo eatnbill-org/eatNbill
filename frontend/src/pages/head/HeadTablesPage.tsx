@@ -36,6 +36,7 @@ export default function HeadTablesPage() {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const { restaurant } = useHeadAuth();
+    const connectionMode = useRealtimeStore((state) => state.connectionMode);
     const [searchQuery, setSearchQuery] = React.useState("");
     const [selectedTable, setSelectedTable] = React.useState<any | null>(null);
     const [detailsOpen, setDetailsOpen] = React.useState(false);
@@ -54,16 +55,25 @@ export default function HeadTablesPage() {
         return () => { if (unsubscribe) unsubscribe(); };
     }, [restaurant?.id, queryClient]);
 
+    React.useEffect(() => {
+        if (connectionMode === 'realtime') {
+            queryClient.invalidateQueries({ queryKey: ['head-tables-status'] });
+            queryClient.invalidateQueries({ queryKey: ['head-orders-for-tables'] });
+        }
+    }, [connectionMode, queryClient]);
+
     // Fetch Tables
     const { data: tablesResponse, isLoading: tablesLoading } = useQuery({
         queryKey: ['head-tables-status'],
         queryFn: fetchTables,
+        refetchInterval: connectionMode === 'polling' ? 5000 : false,
     });
 
     // Fetch Active Orders
     const { data: ordersResponse, isLoading: ordersLoading } = useQuery({
         queryKey: ['head-orders-for-tables'],
         queryFn: fetchStaffOrders,
+        refetchInterval: connectionMode === 'polling' ? 5000 : false,
     });
 
     const tables = React.useMemo(() => {

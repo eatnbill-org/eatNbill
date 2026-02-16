@@ -6,7 +6,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAdminOrdersStore } from '@/stores/orders';
+import { useRealtimeStore } from '@/stores/realtime/realtime.store';
 import { useAuth } from '@/hooks/use-auth';
+import { useRestaurantStore } from '@/stores/restaurant/restaurant.store';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -75,7 +78,10 @@ type FilterPeriod = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' | 'CUSTOM';
 
 export default function AdminOrdersPage() {
   const { user } = useAuth();
+  const { restaurant, fetchRestaurant } = useRestaurantStore();
   const location = useLocation();
+  const connectionMode = useRealtimeStore((state) => state.connectionMode);
+  const realtimeConnected = useRealtimeStore((state) => state.isConnected);
   const {
     orders,
     loading,
@@ -84,7 +90,6 @@ export default function AdminOrdersPage() {
     fetchStats,
     subscribeToOrders,
     unsubscribe,
-    realtimeConnected,
     pagination,
     filters,
   } = useAdminOrdersStore();
@@ -118,16 +123,27 @@ export default function AdminOrdersPage() {
   };
 
   useEffect(() => {
-    if (user?.allowed_restaurant_ids?.[0]) {
-      const restaurantId = user.allowed_restaurant_ids[0];
-      subscribeToOrders(restaurantId);
+    if (!restaurant) {
+      fetchRestaurant();
+    }
+  }, [restaurant, fetchRestaurant]);
+
+  const activeRestaurantId =
+    restaurant?.id ||
+    apiClient.getRestaurantId() ||
+    user?.allowed_restaurant_ids?.[0] ||
+    null;
+
+  useEffect(() => {
+    if (activeRestaurantId) {
+      subscribeToOrders(activeRestaurantId);
       handleRefresh();
     }
 
     return () => {
       unsubscribe();
     };
-  }, [user]);
+  }, [activeRestaurantId]);
 
   const handleRefresh = () => {
     let start: Date, end: Date;
@@ -159,6 +175,24 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     handleRefresh();
   }, [period, selectedDate]);
+
+  useEffect(() => {
+    if (!activeRestaurantId) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      handleRefresh();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [activeRestaurantId, period, selectedDate, pagination?.limit]);
+
+  useEffect(() => {
+    if (connectionMode === 'realtime') {
+      handleRefresh();
+    }
+  }, [connectionMode]);
 
   const filteredOrders = useMemo(() => {
     let result = [...orders];
@@ -205,6 +239,12 @@ export default function AdminOrdersPage() {
               <span className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 Live
+              </span>
+            )}
+            {!realtimeConnected && (
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                Syncing (5s)
               </span>
             )}
             <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold opacity-70">

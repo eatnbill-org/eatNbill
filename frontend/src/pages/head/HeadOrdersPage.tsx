@@ -43,6 +43,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: str
 export default function HeadOrdersPage() {
     const queryClient = useQueryClient();
     const navigate = useNavigate(); // For redirecting to menu page
+    const connectionMode = useRealtimeStore((state) => state.connectionMode);
+    const realtimeConnected = useRealtimeStore((state) => state.isConnected);
     const [statusFilter, setStatusFilter] = React.useState<string>("all");
     const [selectedOrder, setSelectedOrder] = React.useState<any | null>(null);
     const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
@@ -83,10 +85,17 @@ export default function HeadOrdersPage() {
         };
     }, [restaurant?.id, queryClient]);
 
+    React.useEffect(() => {
+        if (connectionMode === 'realtime') {
+            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+        }
+    }, [connectionMode, queryClient]);
+
     // Fetch orders from API
     const { data: ordersResponse, isLoading } = useQuery({
         queryKey: ['staff-orders'],
         queryFn: fetchStaffOrders,
+        refetchInterval: connectionMode === 'polling' ? 5000 : false,
     });
 
     // Fetch products for reorder dialog
@@ -297,6 +306,19 @@ export default function HeadOrdersPage() {
         <div className="space-y-6 max-w-7xl mx-auto">
             {/* Header Controls: Search (Left) & Filter (Right) */}
             <div className="sticky top-0 bg-slate-50 z-20 py-3 -mx-4 px-4 md:mx-0 md:px-0">
+                <div className="mb-2 flex items-center gap-2">
+                    {realtimeConnected ? (
+                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                            Live
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                            Syncing (5s)
+                        </span>
+                    )}
+                </div>
                 <div className="flex flex-row items-center gap-3">
                     {/* Left: Search Bar */}
                     <div className="relative flex-1 group">

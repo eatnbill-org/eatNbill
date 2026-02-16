@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useAdminOrdersStore } from "@/stores/orders";
+import { useRealtimeStore } from "@/stores/realtime/realtime.store";
 import { useProductsStore } from "@/stores/products";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { Plus, Settings2, LayoutDashboard, Loader2 } from "lucide-react";
@@ -8,6 +9,7 @@ import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
+import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
 
 // Split Components
 import { DashboardHeader } from "./components/DashboardHeader";
@@ -36,6 +38,8 @@ import { startOfDay, endOfDay } from 'date-fns';
 export default function AdminDashboardPage() {
   useOnboarding();
   const { user } = useAuth();
+  const { restaurant, fetchRestaurant } = useRestaurantStore();
+  const connectionMode = useRealtimeStore((state) => state.connectionMode);
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -55,23 +59,37 @@ export default function AdminDashboardPage() {
   const [now, setNow] = React.useState(new Date());
   const [showProfit, setShowProfit] = React.useState(false);
 
-  // Initial Fetch & Realtime Subscription
   React.useEffect(() => {
-    const { shiftStart, shiftEnd } = getOperationalRange();
+    if (!restaurant) {
+      fetchRestaurant();
+    }
+  }, [restaurant, fetchRestaurant]);
 
+  const activeRestaurantId =
+    restaurant?.id ||
+    apiClient.getRestaurantId() ||
+    user?.allowed_restaurant_ids?.[0] ||
+    null;
+
+  const refreshOrderWidgets = React.useCallback(() => {
+    const { shiftStart, shiftEnd } = getOperationalRange();
     fetchOrders({
       from_date: shiftStart.toISOString(),
       to_date: shiftEnd.toISOString(),
-      limit: 100 // Reduced from 1000 for better performance
+      limit: 100,
     });
-
-    fetchProducts();
     fetchStats();
     fetchRevenue();
+  }, [fetchOrders, fetchStats, fetchRevenue]);
 
-    const restaurantId = user?.allowed_restaurant_ids?.[0];
-    if (restaurantId) {
-      subscribeToOrders(restaurantId);
+  // Initial Fetch & Realtime Subscription
+  React.useEffect(() => {
+    refreshOrderWidgets();
+
+    fetchProducts();
+
+    if (activeRestaurantId) {
+      subscribeToOrders(activeRestaurantId);
     }
 
     const clockId = setInterval(() => setNow(new Date()), 1000);
@@ -79,7 +97,25 @@ export default function AdminDashboardPage() {
       clearInterval(clockId);
       unsubscribe();
     };
-  }, [fetchOrders, fetchProducts, fetchStats, fetchRevenue, subscribeToOrders, unsubscribe, user]);
+  }, [activeRestaurantId, fetchProducts, refreshOrderWidgets, subscribeToOrders, unsubscribe]);
+
+  React.useEffect(() => {
+    if (connectionMode !== 'polling') {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      refreshOrderWidgets();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [connectionMode, refreshOrderWidgets]);
+
+  React.useEffect(() => {
+    if (connectionMode === 'realtime') {
+      refreshOrderWidgets();
+    }
+  }, [connectionMode, refreshOrderWidgets]);
 
   // Derived Data for the current shift
   const shiftOrders = React.useMemo(() => {

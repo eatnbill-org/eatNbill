@@ -124,6 +124,26 @@ const initialState = {
   unsubscribeRealtime: null,
 };
 
+function sortOrdersByUpdatedAtDesc(orders: Order[]) {
+  return [...orders].sort(
+    (a, b) =>
+      new Date(b.updated_at || b.created_at).getTime() -
+      new Date(a.updated_at || a.created_at).getTime()
+  );
+}
+
+function upsertOrderById(orders: Order[], nextOrder: Order) {
+  const existingIndex = orders.findIndex((order) => order.id === nextOrder.id);
+
+  if (existingIndex === -1) {
+    return sortOrdersByUpdatedAtDesc([nextOrder, ...orders]);
+  }
+
+  const updated = [...orders];
+  updated[existingIndex] = nextOrder;
+  return sortOrdersByUpdatedAtDesc(updated);
+}
+
 // ============================================================
 // STORE IMPLEMENTATION
 // ============================================================
@@ -673,10 +693,12 @@ export const useAdminOrdersStore = create<AdminOrdersState>((set, get) => ({
         const { eventType, order } = update;
 
         if (eventType === 'INSERT') {
-          // New order created
+          // Upsert avoids duplicate rows during reconnect/poll overlap
           set((state) => ({
-            orders: [order, ...state.orders],
+            orders: upsertOrderById(state.orders, order),
           }));
+          // Always normalize with server response so admin list reflects newest order immediately
+          void get().fetchOrders(get().filters);
 
           // Trigger notification if it's a QR order
           if (order.source === 'QR') {
@@ -686,10 +708,11 @@ export const useAdminOrdersStore = create<AdminOrdersState>((set, get) => ({
           // Refresh stats
           get().fetchStats();
         } else if (eventType === 'UPDATE') {
-          // Order updated
           set((state) => ({
-            orders: state.orders.map((o) => (o.id === order.id ? order : o)),
+            orders: upsertOrderById(state.orders, order),
           }));
+          // Keep list in sync with backend sorting/filter state
+          void get().fetchOrders(get().filters);
 
           // Refresh stats if status changed
           if (update.oldOrder?.status !== order.status) {
