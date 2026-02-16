@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logoutStaffSession } from '@/lib/staff-session';
 
 interface StaffData {
     id: string;
@@ -40,19 +41,14 @@ export function useHeadAuth() {
             }
         } catch (error) {
             console.error('Failed to parse staff data:', error);
-            logout();
+            void logout();
         }
 
         setIsLoading(false);
     }, [navigate]);
 
-    const logout = () => {
-        localStorage.removeItem('staff_token');
-        localStorage.removeItem('staff_data');
-        localStorage.removeItem('staff_restaurant');
-        localStorage.removeItem('waiter_token');
-        localStorage.removeItem('waiter_data');
-        localStorage.removeItem('waiter_restaurant');
+    const logout = async () => {
+        await logoutStaffSession();
         navigate('/auth/login');
     };
 
@@ -62,4 +58,3 @@ export function useHeadAuth() {
 // Backward-compatible export aliases
 export const useStaffAuth = useHeadAuth;
 export const useWaiterAuth = useHeadAuth;
-

@@ -125,6 +125,7 @@ export async function staffLogoutController(_req: Request, res: Response, next: 
     
     return res.json(result);
   } catch (error) {
+    clearAuthCookies(res);
     return next(error as Error);
   }
 }

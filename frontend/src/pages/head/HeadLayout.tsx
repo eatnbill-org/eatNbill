@@ -29,8 +29,8 @@ export default function HeadLayout() {
     const { staff, restaurant, logout } = useStaffAuth();
     const [logoutOpen, setLogoutOpen] = useState(false);
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         toast.success("Logged out successfully");
     };
 

@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, User, ChefHat } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
+import { clearStaffSessionStorage, saveStaffSession } from "@/lib/staff-session";
 
 // Google OAuth - COMMENTED OUT
 // const GoogleIcon = () => (
@@ -66,6 +68,11 @@ export default function LoginPage() {
 
     try {
       if (position === "staff") {
+        // Ensure previous staff/waiter session context cannot leak into this login
+        clearStaffSessionStorage();
+        apiClient.clearAuth();
+        apiClient.resetAuthState();
+
         // Staff login via custom API
         const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
         // Remove trailing slash if present in baseUrl to avoid double slashes, 
@@ -90,13 +97,10 @@ export default function LoginPage() {
           throw new Error(data.message || data.error || 'Login failed');
         }
 
-        // Store staff session; keep legacy waiter keys for compatibility
-        localStorage.setItem('staff_token', data.token || data.accessToken || '');
-        localStorage.setItem('staff_data', JSON.stringify(data.staff));
-        localStorage.setItem('staff_restaurant', JSON.stringify(data.restaurant));
-        localStorage.setItem('waiter_token', data.token || data.accessToken || '');
-        localStorage.setItem('waiter_data', JSON.stringify(data.staff));
-        localStorage.setItem('waiter_restaurant', JSON.stringify(data.restaurant));
+        // Store canonical staff session and refresh API client context
+        saveStaffSession(data);
+        apiClient.setRestaurantId(data.restaurant?.id || null);
+        apiClient.setTenantId(data.restaurant?.tenantId || null);
 
         toast.success(`Welcome, ${data.staff?.name || 'Staff'}!`);
         if (data.staff?.role === 'MANAGER') {

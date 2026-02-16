@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useRealtimeStore } from "@/stores/realtime";
 import { useAdminOrdersStore } from "@/stores/orders";
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
+import { logoutStaffSession } from "@/lib/staff-session";
 
 const NAV_ITEMS = [
   { to: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -82,22 +83,7 @@ export default function ManagerLayout() {
   }, [navigate, restaurant, fetchRestaurant]);
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('staff_token') || localStorage.getItem('waiter_token');
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/v1/auth/staff/logout`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch {
-      // ignore
-    }
-
-    localStorage.removeItem('staff_token');
-    localStorage.removeItem('staff_data');
-    localStorage.removeItem('staff_restaurant');
-    localStorage.removeItem('waiter_token');
-    localStorage.removeItem('waiter_data');
-    localStorage.removeItem('waiter_restaurant');
+    await logoutStaffSession();
     toast.success("Logged out successfully");
     navigate('/auth/login');
   };

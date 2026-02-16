@@ -309,6 +309,12 @@ class ApiClient {
     this.restaurantId = null;
     this.tenantId = null;
     this.authFailed = false; // Reset auth failed flag
+    localStorage.removeItem('staff_token');
+    localStorage.removeItem('staff_data');
+    localStorage.removeItem('staff_restaurant');
+    localStorage.removeItem('waiter_token');
+    localStorage.removeItem('waiter_data');
+    localStorage.removeItem('waiter_restaurant');
     // Note: Cookies will be cleared by backend on logout
   }
 
