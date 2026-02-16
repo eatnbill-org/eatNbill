@@ -136,6 +136,8 @@ type Props = {
   tableId?: string | null;
   tables?: any[]; // Available tables list for waiter mode
   isWaiterMode?: boolean; // Waiter mode doesn't auto-fill from storage
+  orderType?: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
+  customerFieldsOptional?: boolean;
   reorderContext?: {
     orderNumber: string;
     customerName: string;
@@ -184,7 +186,9 @@ export default function CheckoutDialog({ open, onOpenChange, items, tableId, tab
 
   const total = items.reduce((s, i) => s + i.qty * i.price, 0);
 
-  const canSubmit = name.trim().length >= 2 && normalizedPhone.length >= 10 && items.length > 0;
+  const canSubmit = customerFieldsOptional
+    ? items.length > 0
+    : name.trim().length >= 2 && normalizedPhone.length >= 10 && items.length > 0;
 
   const handleTableChange = (value: string) => {
     setSelectedTableLocal(value);
@@ -243,14 +247,14 @@ export default function CheckoutDialog({ open, onOpenChange, items, tableId, tab
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-400" />
-                  Full Name
+                  Full Name {customerFieldsOptional ? "(optional)" : ""}
                 </label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-400" />
-                  Phone Number
+                  Phone Number {customerFieldsOptional ? "(optional)" : ""}
                 </label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91-XXXXXXXXXX" inputMode="tel" />
               </div>

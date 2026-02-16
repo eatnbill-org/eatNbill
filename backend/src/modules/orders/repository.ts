@@ -3,6 +3,7 @@ import type { OrderStatus, OrderSource, OrderType, PaymentMethod, PaymentStatus,
 
 // UUID validation helper
 const isValidUuid = (uuid: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+const ACTIVE_DINE_IN_STATUSES: OrderStatus[] = ["PLACED", "CONFIRMED", "PREPARING", "READY", "SERVED"];
 
 // Types
 export interface CreateOrderData {
@@ -10,6 +11,7 @@ export interface CreateOrderData {
   restaurant_id: string;
   table_id?: string | null;
   hall_id?: string | null;
+  waiter_id?: string | null;
   customer_id?: string | null;
   customer_name: string;
   customer_phone: string;
@@ -187,6 +189,7 @@ export async function createOrder(
         restaurant_id: data.restaurant_id,
         table_id: data.table_id ?? null,
         hall_id: data.hall_id ?? null,
+        waiter_id: data.waiter_id ?? null,
         customer_id: data.customer_id ?? null,
         order_number: orderNumber,
         customer_name: data.customer_name,
@@ -220,6 +223,13 @@ export async function createOrder(
         items: true,
       },
     });
+
+    if (order.order_type === "DINE_IN" && order.table_id) {
+      await tx.restaurantTable.update({
+        where: { id: order.table_id },
+        data: { table_status: "OCCUPIED" },
+      });
+    }
 
     return order;
   }, {
@@ -266,7 +276,7 @@ export async function updateOrderPayment(
   if (!isValidUuid(orderId)) return null;
   const isPaid = data.payment_status === 'PAID';
   const now = new Date();
-  return prisma.order.update({
+  const updated = await prisma.order.update({
     where: { id: orderId },
     data: {
       payment_method: data.payment_method as any,
@@ -283,6 +293,65 @@ export async function updateOrderPayment(
     },
     include: { items: true },
   });
+
+  if (updated.table_id) {
+    await syncTableStatus(updated.table_id);
+  }
+
+  return updated;
+}
+
+export async function findRestaurantStaffByUserId(restaurantId: string, userId: string) {
+  if (!isValidUuid(restaurantId) || !isValidUuid(userId)) return null;
+  return prisma.restaurantUser.findFirst({
+    where: {
+      restaurant_id: restaurantId,
+      user_id: userId,
+      is_active: true,
+      role: { in: ["OWNER", "MANAGER", "WAITER"] },
+    },
+    select: { id: true },
+  });
+}
+
+export async function syncTableStatus(tableId: string) {
+  if (!isValidUuid(tableId)) return;
+
+  const table = await prisma.restaurantTable.findUnique({
+    where: { id: tableId },
+    select: { id: true, table_status: true },
+  });
+
+  if (!table) return;
+
+  const activeCount = await prisma.order.count({
+    where: {
+      table_id: tableId,
+      order_type: "DINE_IN",
+      status: { in: ACTIVE_DINE_IN_STATUSES },
+    },
+  });
+
+  if (activeCount > 0) {
+    if (table.table_status !== "OCCUPIED") {
+      await prisma.restaurantTable.update({
+        where: { id: tableId },
+        data: { table_status: "OCCUPIED" },
+      });
+    }
+    return;
+  }
+
+  if (table.table_status === "RESERVED") {
+    return;
+  }
+
+  if (table.table_status !== "AVAILABLE") {
+    await prisma.restaurantTable.update({
+      where: { id: tableId },
+      data: { table_status: "AVAILABLE" },
+    });
+  }
 }
 
 /**
@@ -816,11 +885,17 @@ export async function updateOrderStatus(
     updateData.cancel_reason = cancelReason;
   }
 
-  return prisma.order.update({
+  const updated = await prisma.order.update({
     where: { id: orderId },
     data: updateData,
     include: { items: true },
   });
+
+  if (updated.table_id) {
+    await syncTableStatus(updated.table_id);
+  }
+
+  return updated;
 }
 
 /**
@@ -889,10 +964,16 @@ export async function deleteOrder(
   if (!existing) return null;
 
   // Hard delete the order (cascade will delete order items)
-  return prisma.order.delete({
+  const deleted = await prisma.order.delete({
     where: { id: orderId },
     include: { items: true },
   });
+
+  if (deleted.table_id) {
+    await syncTableStatus(deleted.table_id);
+  }
+
+  return deleted;
 }
 
 /**

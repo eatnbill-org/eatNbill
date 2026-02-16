@@ -98,6 +98,12 @@ export const updateTableSchema = z
   })
   .strict();
 
+export const updateTableStatusSchema = z
+  .object({
+    table_status: z.enum(["AVAILABLE", "RESERVED"]),
+  })
+  .strict();
+
 export const createRestaurantUserSchema = z
   .object({
     user_id: z.string().uuid(),

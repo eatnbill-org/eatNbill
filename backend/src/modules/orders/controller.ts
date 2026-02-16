@@ -96,7 +96,8 @@ export async function createInternalOrder(
     const order = await service.createInternalOrder(
       tenantId,
       restaurantId,
-      parsed.data
+      parsed.data,
+      req.user?.userId
     );
 
     return res.status(201).json({

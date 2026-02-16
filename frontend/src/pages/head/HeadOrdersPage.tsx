@@ -132,6 +132,54 @@ export default function HeadOrdersPage() {
     // Active orders count
     // const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
 
+    const updateItemMutation = useMutation({
+        mutationFn: ({ orderId, itemId, payload }: { orderId: string; itemId: string; payload: { quantity?: number; notes?: string } }) =>
+            updateOrderItem(orderId, itemId, payload),
+        onSuccess: (response: any) => {
+            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+            const updatedOrder = response?.data || response;
+            if (updatedOrder?.id && selectedOrder?.id === updatedOrder.id) {
+                setSelectedOrder(updatedOrder);
+            }
+            toast.success('Order item updated');
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Failed to update item');
+        }
+    });
+
+    const removeItemMutation = useMutation({
+        mutationFn: ({ orderId, itemId }: { orderId: string; itemId: string }) =>
+            removeOrderItem(orderId, itemId),
+        onSuccess: (response: any) => {
+            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+            const updatedOrder = response?.data || response;
+            if (updatedOrder?.id && selectedOrder?.id === updatedOrder.id) {
+                setSelectedOrder(updatedOrder);
+            }
+            toast.success('Item removed from order');
+        },
+        onError: (error: any) => {
+            toast.error(error.message || 'Failed to remove item');
+        }
+    });
+
+    const canEditDineInItems = (order: any) =>
+        order?.order_type === 'DINE_IN' &&
+        order?.payment_status !== 'PAID' &&
+        order?.status !== 'COMPLETED' &&
+        order?.status !== 'CANCELLED';
+
+    const handleEditNote = (orderId: string, item: any) => {
+        const nextNote = window.prompt('Edit item note', item.notes || '');
+        if (nextNote === null) return;
+        updateItemMutation.mutate({
+            orderId,
+            itemId: item.id,
+            payload: { notes: nextNote.trim() || undefined },
+        });
+    };
+
     // Helper to open details
     const openDetails = (order: any) => {
         setSelectedOrder(order);

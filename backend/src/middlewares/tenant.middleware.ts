@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from './error.middleware';
 import { prisma } from '../utils/prisma';
+import type { Role } from './require-role.middleware';
 
 export async function tenantMiddleware(req: Request, _res: Response, next: NextFunction) {
   if (!req.user) {
@@ -63,6 +64,9 @@ export async function tenantMiddleware(req: Request, _res: Response, next: NextF
     // NO restaurant ID header provided - auto-set for OWNER/MANAGER users if they have exactly one restaurant
     if ((req.user.role === 'OWNER' || req.user.role === 'MANAGER') && req.user.allowedRestaurantIds.length > 0) {
       const restaurantId = req.user.allowedRestaurantIds[0];
+      if (!restaurantId) {
+        return next(new AppError('FORBIDDEN', 'No accessible restaurant found', 403));
+      }
       console.log(`[TenantMiddleware] Auto-setting Restaurant ID: ${restaurantId}`);
       req.restaurantId = restaurantId;
 

@@ -22,6 +22,7 @@ import {
   updateProfile,
   updateSlug,
   updateSettings,
+  updateTableStatusInfo,
   updateTableInfo,
   updateThemeSettings,
   updateUser,
@@ -42,6 +43,7 @@ import {
   updateRestaurantThemeSchema,
   updateRestaurantUserSchema,
   updateTableSchema,
+  updateTableStatusSchema,
 } from './schema';
 
 function requireContext(req: Request) {
@@ -412,6 +414,33 @@ export async function updateTableController(req: Request, res: Response, next: N
       return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
     }
     const table = await updateTableInfo(user.tenantId, user.userId, req.params.id as string, parsed.data);
+    return res.json({ data: table });
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function updateTableStatusController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = req.user?.restaurantRole;
+    if (role !== 'OWNER' && role !== 'MANAGER' && role !== 'WAITER') {
+      throw new AppError('FORBIDDEN', 'Staff role required', 403);
+    }
+
+    const { user, restaurantId } = requireContext(req);
+    const parsed = updateTableStatusSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
+    }
+
+    const table = await updateTableStatusInfo(
+      user.tenantId,
+      user.userId,
+      restaurantId,
+      req.params.id as string,
+      parsed.data.table_status
+    );
+
     return res.json({ data: table });
   } catch (error) {
     return next(error as Error);

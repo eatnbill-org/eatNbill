@@ -8,6 +8,8 @@ export {
   addOrderItems,
   createOrder,
   fetchTables,
+  fetchHalls,
+  updateTableStatus,
   fetchOrderById,
   updateOrderItemStatus,
   toggleProductAvailability,

@@ -127,9 +127,10 @@ export interface CreatePublicOrderPayload {
 }
 
 export interface CreateOrderPayload {
-  customer_name: string;
-  customer_phone: string;
+  customer_name?: string;
+  customer_phone?: string;
   table_id?: string;
+  hall_id?: string;
   table_number?: string;
   order_type: OrderType;
   notes?: string;

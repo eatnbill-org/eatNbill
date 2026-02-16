@@ -21,6 +21,7 @@ import {
   updateSlugController,
   updateSettingsController,
   updateTableController,
+  updateTableStatusController,
   updateThemeController,
   getDashboardController,
 } from './controller';
@@ -249,6 +250,7 @@ export function restaurantRoutes() {
   router.post('/tables', createTableController);
   router.post('/tables/bulk', bulkCreateTablesController);
   router.patch('/tables/:id', updateTableController);
+  router.patch('/tables/:id/status', updateTableStatusController);
   router.delete('/tables/:id', deleteTableController);
 
   // QR code generation

@@ -15,6 +15,7 @@ export interface RestaurantTable {
     table_number: string;
     seats: number;
     is_active: boolean;
+    table_status: 'AVAILABLE' | 'RESERVED' | 'OCCUPIED';
     created_at: string;
     hall?: {
         id: string;

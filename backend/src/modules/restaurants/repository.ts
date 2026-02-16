@@ -357,6 +357,30 @@ export async function updateTable(
   });
 }
 
+export async function updateTableStatus(
+  tableId: string,
+  tableStatus: 'AVAILABLE' | 'RESERVED'
+) {
+  return prisma.restaurantTable.update({
+    where: { id: tableId },
+    data: {
+      table_status: tableStatus,
+    },
+    include: { hall: true },
+  });
+}
+
+export async function hasActiveDineInOrdersForTable(tableId: string) {
+  const count = await prisma.order.count({
+    where: {
+      table_id: tableId,
+      order_type: 'DINE_IN',
+      status: { in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED'] },
+    },
+  });
+  return count > 0;
+}
+
 export async function deleteTable(tableId: string) {
   return prisma.restaurantTable.delete({
     where: { id: tableId },

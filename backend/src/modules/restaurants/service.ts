@@ -21,6 +21,7 @@ import {
   getRestaurantSettings,
   getRestaurantThemeSettings,
   getTableWithHall,
+  hasActiveDineInOrdersForTable,
   listHalls,
   listRestaurantUsers,
   listTables,
@@ -29,6 +30,7 @@ import {
   updateRestaurantProfile,
   updateRestaurantUser,
   updateTable,
+  updateTableStatus,
   upsertRestaurantSettings,
   upsertRestaurantThemeSettings,
   getDashboardAnalytics,
@@ -398,6 +400,32 @@ export async function updateTableInfo(
   return table;
 }
 
+export async function updateTableStatusInfo(
+  tenantId: string,
+  userId: string,
+  restaurantId: string,
+  tableId: string,
+  tableStatus: 'AVAILABLE' | 'RESERVED'
+) {
+  const table = await getTableWithHall(restaurantId, tableId);
+  if (!table) {
+    throw new AppError('NOT_FOUND', 'Table not found', 404);
+  }
+
+  if (tableStatus === 'AVAILABLE') {
+    const hasActiveOrders = await hasActiveDineInOrdersForTable(tableId);
+    if (hasActiveOrders) {
+      throw new AppError('VALIDATION_ERROR', 'Table has active dine-in order', 400);
+    }
+  }
+
+  const updatedTable = await updateTableStatus(tableId, tableStatus);
+  await createAuditLog(tenantId, userId, 'UPDATE', 'RESTAURANT_TABLE_STATUS', tableId, {
+    table_status: tableStatus,
+  });
+  return updatedTable;
+}
+
 export async function removeTable(
   tenantId: string,
   userId: string,
@@ -648,4 +676,3 @@ export async function uploadRestaurantLogo(
 
   return publicUrl;
 }
-
