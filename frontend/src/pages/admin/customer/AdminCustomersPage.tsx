@@ -49,7 +49,7 @@ export default function AdminCustomersPage() {
     <>
 
       <div className="min-h-full bg-slate-50/50">
-        <div className="container py-10 space-y-8 no-scrollbar max-w-7xl mx-auto">
+        <div className="container py-6 sm:py-10 space-y-6 sm:space-y-8 no-scrollbar max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
           {/* Main Title Section */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -61,7 +61,7 @@ export default function AdminCustomersPage() {
                 <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                   <Users className="w-5 h-5" />
                 </div>
-                <h1 className="text-3xl font-bold text-foreground tracking-tight">Customers</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Customers</h1>
               </div>
               <p className="text-sm font-medium text-muted-foreground max-w-lg leading-relaxed px-1">
                 Manage your customer database, track loyalty, and view order history.
@@ -70,7 +70,7 @@ export default function AdminCustomersPage() {
 
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm"
+              className="flex w-full sm:w-auto items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm"
             >
               <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none">

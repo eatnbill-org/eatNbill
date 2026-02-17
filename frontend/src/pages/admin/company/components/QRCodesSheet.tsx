@@ -268,7 +268,7 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
       <SheetContent className="w-full sm:max-w-5xl overflow-y-auto border-l border-slate-100 bg-slate-50/30 backdrop-blur-xl p-0 shadow-2xl">
         <style>{`@media print { body * { visibility: hidden !important; } #printable-qr, #printable-qr * { visibility: visible !important; } #printable-qr { position: absolute; left: 0; top: 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px; background: white; } .no-print { display: none !important; } .print-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; box-shadow: none !important; } }`}</style>
 
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 py-6 no-print">
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 no-print">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <SheetHeader className="space-y-0">
               <div className="flex items-center gap-2 mb-1">
@@ -280,12 +280,12 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-0.5">Hall, Table and Live Links</p>
             </SheetHeader>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setDeleteOpen(true)}
-                className="h-10 rounded-xl px-4 border-rose-200 text-rose-600 font-bold uppercase tracking-widest text-[9px] hover:bg-rose-50 transition-all shadow-sm"
+                className="h-10 rounded-xl px-4 border-rose-200 text-rose-600 font-bold uppercase tracking-widest text-[9px] hover:bg-rose-50 transition-all shadow-sm w-full sm:w-auto"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-2" />
                 Delete QRs
@@ -295,7 +295,7 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
                 size="sm"
                 onClick={handleRegenerateAll}
                 disabled={regenerating}
-                className="h-10 rounded-xl px-4 border-slate-200 text-slate-500 font-bold uppercase tracking-widest text-[9px] hover:bg-slate-50 transition-all shadow-sm"
+                className="h-10 rounded-xl px-4 border-slate-200 text-slate-500 font-bold uppercase tracking-widest text-[9px] hover:bg-slate-50 transition-all shadow-sm w-full sm:w-auto"
               >
                 <RefreshCw className={cn("w-3.5 h-3.5 mr-2 text-primary", regenerating && "animate-spin")} />
                 {regenerating ? "Syncing..." : "Regenerate All"}
@@ -304,7 +304,7 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="relative">
@@ -336,7 +336,7 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
                       initial={{ opacity: 0, scale: 0.98 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: idx * 0.04 }}
-                      className="print-card group relative bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all"
+                      className="print-card group relative bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all"
                     >
                       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#0f766e_1px,transparent_1px)] [background-size:12px_12px] rounded-2xl" />
 
@@ -345,7 +345,7 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
                         <h3 className="text-xl font-black tracking-tight text-slate-900 text-center mt-1">Welcome</h3>
 
                         {qrCode ? (
-                          <div className="grid grid-cols-[150px,1fr] gap-4 mt-4 items-start">
+                          <div className="grid grid-cols-1 sm:grid-cols-[150px,1fr] gap-4 mt-4 items-start">
                             <div className="mx-auto w-[150px] h-[150px] p-2 bg-slate-50 rounded-xl border border-slate-100">
                               <img src={qrCode.qr_png_url} alt={`QR for ${tableNumber}`} className="w-full h-full object-contain" />
                             </div>
@@ -366,7 +366,7 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
                                   <LinkIcon className="w-4 h-4 text-primary" />
                                   <span className="text-sm font-semibold">Live Link</span>
                                 </div>
-                                <p className="text-xs text-slate-500 break-all line-clamp-3">{liveLink || "-"}</p>
+                                <p className="text-xs text-slate-500 break-all line-clamp-3 sm:line-clamp-2">{liveLink || "-"}</p>
                               </div>
 
                               <div className="flex flex-wrap gap-2 no-print">
@@ -412,7 +412,7 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
         </div>
 
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-rose-700">
                 <AlertTriangle className="h-5 w-5" />
@@ -463,14 +463,14 @@ export function QRCodesSheet({ open, onOpenChange, tables, storeName, slug, onDe
                   <p className="text-xs font-semibold text-slate-600">
                     Delete by numeric table range (uses trailing number, e.g. `table-12`)
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <Input
                       type="number"
                       placeholder="Start"
                       value={rangeStart}
                       onChange={(e) => setRangeStart(e.target.value)}
                     />
-                    <span className="text-sm text-slate-500">to</span>
+                    <span className="text-sm text-slate-500 text-center">to</span>
                     <Input
                       type="number"
                       placeholder="End"

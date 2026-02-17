@@ -171,14 +171,14 @@ export default function AdminCampaignPage() {
   return (
     <div className="min-h-full bg-slate-50/50">
       <motion.div
-        className="container py-8 space-y-8 no-scrollbar max-w-7xl mx-auto px-4 md:px-8"
+        className="container py-6 sm:py-8 space-y-6 sm:space-y-8 no-scrollbar max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
 
         {/* --- HEADER --- */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
           <motion.div variants={itemVariants}>
             <div className="flex items-center gap-2.5 mb-1.5 px-0.5">
               <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
@@ -192,7 +192,7 @@ export default function AdminCampaignPage() {
           </motion.div>
 
           {/* Business Health Matrix style Stats */}
-          <motion.div variants={itemVariants} className="flex gap-3 overflow-x-auto no-scrollbar pb-2 md:pb-0">
+          <motion.div variants={itemVariants} className="flex gap-3 overflow-x-auto no-scrollbar pb-2 md:pb-0 w-full md:w-auto">
             {[
               { label: "Available Credits", value: "₹2,450", icon: Wallet, color: "text-emerald-600", bg: "bg-emerald-50" },
               { label: "Spent this Month", value: "₹450", icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
@@ -336,7 +336,7 @@ export default function AdminCampaignPage() {
 
       {/* Full Preview Modal */}
       <Dialog open={fullPreviewOpen} onOpenChange={setFullPreviewOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-[420px] rounded-[2rem] sm:rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
           <div className="p-8 pb-4">
             <DialogHeader>
               <DialogTitle className="text-sm font-black text-slate-800 uppercase tracking-widest text-center">Protocol Preview</DialogTitle>

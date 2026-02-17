@@ -102,11 +102,11 @@ export default function HeadStockPage() {
             {/* Header */}
             <div className="flex flex-col gap-4 px-1">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Stock Management</h1>
+                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Stock Management</h1>
                     <p className="text-slate-500 text-sm font-medium">Quickly toggle item availability</p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total</p>
                         <p className="text-lg font-black text-slate-900">{stats.total}</p>

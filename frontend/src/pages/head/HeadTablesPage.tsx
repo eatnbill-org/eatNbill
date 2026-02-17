@@ -117,7 +117,7 @@ export default function HeadTablesPage() {
             {/* Header section */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-1">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Tables Status</h1>
+                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Tables Status</h1>
                     <p className="text-slate-500 text-sm font-medium">Monitor and manage table occupancy</p>
                 </div>
 
@@ -133,7 +133,7 @@ export default function HeadTablesPage() {
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                         <Users className="h-6 w-6" />
@@ -164,8 +164,8 @@ export default function HeadTablesPage() {
                             : "border-slate-50 hover:border-emerald-100"
                             }`}
                     >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                                 <div className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center shadow-sm ${table.isOccupied
                                     ? "bg-rose-50 text-rose-600 border border-rose-100"
                                     : "bg-emerald-50 text-emerald-600 border border-emerald-100"
@@ -174,9 +174,9 @@ export default function HeadTablesPage() {
                                     <span className="text-lg font-black leading-none">{table.table_number || table.name}</span>
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-slate-900">{table.hall?.name || "Main Hall"}</h3>
+                                        <h3 className="font-bold text-slate-900 truncate">{table.hall?.name || "Main Hall"}</h3>
                                         <Badge variant={table.isOccupied ? "destructive" : "secondary"} className="text-[10px] font-bold px-2 py-0 h-5">
                                             {table.isOccupied ? "OCCUPIED" : "AVAILABLE"}
                                         </Badge>
@@ -190,19 +190,19 @@ export default function HeadTablesPage() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
                                 {table.isOccupied ? (
                                     <>
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-10 w-10 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100"
+                                            className="h-10 w-10 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 shrink-0"
                                             onClick={() => handleViewOrder(table)}
                                         >
                                             <Eye className="h-5 w-5" />
                                         </Button>
                                         <Button
-                                            className="h-10 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs gap-2"
+                                            className="h-10 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs gap-2 flex-1 sm:flex-initial"
                                             onClick={() => handleAddItems(table.currentOrder.id, table.id)}
                                         >
                                             <Plus className="h-4 w-4" />
@@ -211,7 +211,7 @@ export default function HeadTablesPage() {
                                     </>
                                 ) : (
                                     <Button
-                                        className="h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs gap-2"
+                                        className="h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs gap-2 w-full sm:w-auto"
                                         onClick={() => handleNewOrder(table.id)}
                                     >
                                         <Plus className="h-4 w-4" />
@@ -247,7 +247,7 @@ export default function HeadTablesPage() {
 
             {/* Order Details Modal */}
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-                <DialogContent className="max-w-md w-[95vw] rounded-[2.5rem] p-0 overflow-hidden border-none transition-all duration-300">
+                <DialogContent className="max-w-md w-[95vw] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-hidden border-none transition-all duration-300">
                     {selectedTable?.currentOrder && (
                         <div className="flex flex-col h-full bg-slate-50">
                             {/* Modal Header */}

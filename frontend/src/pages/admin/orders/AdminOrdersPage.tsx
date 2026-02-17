@@ -230,10 +230,10 @@ export default function AdminOrdersPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-transparent p-4 sm:p-6 space-y-6 overflow-y-auto no-scrollbar">
+    <div className="min-h-full bg-transparent p-3 sm:p-6 space-y-6 overflow-y-auto no-scrollbar">
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Orders</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Orders</h1>
           <div className="flex items-center gap-2 mt-1">
             {realtimeConnected && (
               <span className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">
@@ -253,7 +253,7 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="flex items-center bg-muted/30 p-1 rounded-lg border self-end sm:self-auto">
+        <div className="flex w-full sm:w-auto items-center bg-muted/30 p-1 rounded-lg border self-end sm:self-auto overflow-x-auto">
           {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as FilterPeriod[]).map((p) => (
             <Button
               key={p}
@@ -353,7 +353,7 @@ export default function AdminOrdersPage() {
 
       <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[920px]">
             <TableHeader className="bg-muted/50 border-b border-border">
               <TableRow className="hover:bg-transparent border-none">
                 <TableHead className="w-[100px] text-[11px] uppercase tracking-wider font-bold text-muted-foreground pl-6 h-12">Order ID</TableHead>

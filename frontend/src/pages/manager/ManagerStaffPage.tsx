@@ -42,14 +42,14 @@ export default function ManagerStaffPage() {
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Staff Directory</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase">Staff Directory</h1>
             <p className="text-xs text-slate-500">View staff roster and manage waiter credentials</p>
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Staff</p>
           <p className="text-3xl font-black text-slate-900 mt-2">{staff.length}</p>
@@ -61,11 +61,11 @@ export default function ManagerStaffPage() {
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end">
+      <div className="flex justify-stretch sm:justify-end">
         <Button
           onClick={() => setCredentialsOpen(true)}
           variant="outline"
-          className="h-11 px-6 rounded-xl border-purple-200 text-purple-600 hover:bg-purple-50 font-bold uppercase tracking-widest text-[10px] shadow-sm"
+          className="h-11 px-6 rounded-xl border-purple-200 text-purple-600 hover:bg-purple-50 font-bold uppercase tracking-widest text-[10px] shadow-sm w-full sm:w-auto"
         >
           <Key className="mr-2 h-4 w-4" /> Edit Credentials
         </Button>
@@ -82,14 +82,14 @@ export default function ManagerStaffPage() {
         ) : (
           <div className="divide-y divide-slate-100">
             {staff.map((s) => (
-              <div key={s.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-3">
+              <div key={s.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md">
                     {s.name?.charAt(0).toUpperCase() || "?"}
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">{s.name || "Unnamed"}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="font-bold text-slate-900 truncate">{s.name || "Unnamed"}</p>
+                    <p className="text-xs text-slate-500 truncate">
                       {s.role} • {s.phone || "—"} {s.email ? `• ${s.email}` : ""}
                     </p>
                   </div>

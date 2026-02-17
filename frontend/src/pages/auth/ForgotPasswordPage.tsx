@@ -174,8 +174,8 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-3 sm:p-4">
+      <Card className="w-full max-w-md shadow-sm">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-between">
             <Link
@@ -186,7 +186,7 @@ export default function ForgotPasswordPage() {
               Back to login
             </Link>
           </div>
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-xl sm:text-2xl font-bold">
             {currentStep === 'email' && "Reset password"}
             {currentStep === 'otp' && "Verify code"}
             {currentStep === 'password' && "Create new password"}
