@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QROrderNotification from "@/components/QROrderNotification";
 import { useNotificationStore } from "@/stores/notifications.store";
-import { useRealtimeStore } from "@/stores/realtime/realtime.store";
+import { useRealtimeStore, type QROrderPayload } from "@/stores/realtime/realtime.store";
 import { playOrderSound } from "@/lib/sound-notification";
+import { fetchOrderById } from "@/lib/head-api";
 import {
     Dialog,
     DialogContent,
@@ -31,6 +32,7 @@ export default function HeadLayout() {
     const { staff, restaurant, logout } = useStaffAuth();
     const [logoutOpen, setLogoutOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const notifiedQrOrderIds = useRef<Set<string>>(new Set());
 
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
@@ -58,21 +60,59 @@ export default function HeadLayout() {
     useEffect(() => {
         if (!restaurant?.id) return;
 
+        const handleQrNotification = async (
+            orderId: string,
+            fallback?: Partial<{ order_number: string; customer_name: string; table_number: string; total_amount: number }>
+        ) => {
+            if (!orderId || notifiedQrOrderIds.current.has(orderId)) return;
+            notifiedQrOrderIds.current.add(orderId);
+
+            playOrderSound('QR');
+
+            try {
+                const response = await fetchOrderById(orderId);
+                const fullOrder = response?.data;
+                if (fullOrder?.id) {
+                    useNotificationStore.getState().addNotification(fullOrder);
+                    return;
+                }
+            } catch {
+                // Fall through to minimal payload.
+            }
+
+            useNotificationStore.getState().addNotification({
+                id: orderId,
+                source: 'QR',
+                order_number: fallback?.order_number || orderId.slice(-4).toUpperCase(),
+                customer_name: fallback?.customer_name || 'Customer',
+                table_number: fallback?.table_number || null,
+                total_amount: Number(fallback?.total_amount || 0),
+                items: [],
+            } as any);
+        };
+
         const unsubscribe = useRealtimeStore.getState().subscribeToRestaurantOrders(
             restaurant.id,
-            (update: any) => {
+            async (update: any) => {
                 if (update?.eventType !== 'INSERT' || !update?.order) return;
 
                 // Global waiter popup + sound for customer QR orders on all /head/* pages.
                 if (update.order.source === 'QR') {
-                    playOrderSound('QR');
-                    useNotificationStore.getState().addNotification(update.order);
+                    await handleQrNotification(update.order.id, update.order);
                 }
+            }
+        );
+
+        const unsubscribePending = useRealtimeStore.getState().subscribeToPendingOrders(
+            restaurant.id,
+            async (payload: QROrderPayload) => {
+                await handleQrNotification(payload.order_id, payload);
             }
         );
 
         return () => {
             if (unsubscribe) unsubscribe();
+            if (unsubscribePending) unsubscribePending();
         };
     }, [restaurant?.id]);
 
