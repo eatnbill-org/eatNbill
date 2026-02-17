@@ -5,6 +5,7 @@ import CustomerLayout from "./CustomerLayout";
 import type { PublicProduct } from "@/types/product";
 import { renderCustomerTheme } from "@/lib/customer-theme-renderer";
 import { normalizeCustomerTheme } from "@/lib/customer-theme-presets";
+import { CustomerLayoutSkeleton } from "@/components/ui/skeleton";
 
 export default function CustomerEntry() {
   const { state } = useDemoStore();
@@ -45,12 +46,7 @@ export default function CustomerEntry() {
   if (loading) {
     return (
       <CustomerLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">Loading menu...</p>
-          </div>
-        </div>
+        <CustomerLayoutSkeleton />
       </CustomerLayout>
     );
   }

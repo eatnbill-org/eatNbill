@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Store, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
+import { FormSkeleton } from "@/components/ui/skeleton";
 
 // Import Modular Components
 import { BrandIdentity } from "./components/BrandIdentity";
@@ -82,11 +83,8 @@ export default function CompanyProfilePage() {
 
   if (loading && !restaurant) {
     return (
-      <div className="container max-w-5xl py-8 flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          <p className="font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Loading Profile...</p>
-        </div>
+      <div className="container max-w-5xl py-8">
+        <FormSkeleton rows={8} />
       </div>
     );
   }

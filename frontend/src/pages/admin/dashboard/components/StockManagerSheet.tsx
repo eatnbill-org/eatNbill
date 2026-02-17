@@ -4,10 +4,11 @@ import { Switch } from "@/components/ui/switch";
 import { useProductsStore } from "@/stores/products";
 import { useCategoriesStore } from "@/stores/categories";
 import { formatINR } from "@/lib/format";
-import { Package, Search, AlertCircle, Loader2, Tag } from "lucide-react";
+import { Package, Search, AlertCircle, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ListSkeleton } from "@/components/ui/skeleton";
 
 interface StockManagerSheetProps {
   open: boolean;
@@ -101,9 +102,8 @@ export function StockManagerSheet({ open, onOpenChange }: StockManagerSheetProps
 
         <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4 bg-white">
           {loading && products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3 opacity-50">
-              <Loader2 className="w-8 h-8 animate-spin" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Accessing Catalog...</p>
+            <div className="p-2">
+              <ListSkeleton rows={5} />
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3 opacity-50">

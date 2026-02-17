@@ -1,8 +1,9 @@
 import * as React from "react";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-import { Users, Loader2, Key } from "lucide-react";
+import { Users, Key } from "lucide-react";
 import { WaiterCredentialsModal } from "@/pages/admin/company/staff/components/WaiterCredentialsModal";
+import { ListSkeleton } from "@/components/ui/skeleton";
 
 type Staff = {
   id: string;
@@ -73,9 +74,8 @@ export default function ManagerStaffPage() {
       {/* Staff List */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         {loading ? (
-          <div className="py-12 flex flex-col items-center justify-center space-y-3">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
-            <p className="text-xs text-slate-400 font-bold uppercase">Loading...</p>
+          <div className="p-4">
+            <ListSkeleton rows={5} />
           </div>
         ) : staff.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-sm">No staff found.</div>

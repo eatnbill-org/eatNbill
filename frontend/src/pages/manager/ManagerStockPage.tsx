@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Loader2, Package } from "lucide-react";
+import { Search, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useCategoriesStore } from "@/stores/categories";
+import { TableSkeleton } from "@/components/ui/skeleton";
 
 export default function ManagerStockPage() {
   const { products, fetchProducts, updateProduct, loading } = useProductsStore();
@@ -51,11 +52,7 @@ export default function ManagerStockPage() {
   };
 
   if (loading && products.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-      </div>
-    );
+    return <TableSkeleton rows={8} />;
   }
 
   const activeCount = products.filter(p => p.is_active).length;

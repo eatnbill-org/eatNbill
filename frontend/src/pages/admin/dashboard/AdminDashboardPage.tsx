@@ -3,7 +3,7 @@ import { useAdminOrdersStore } from "@/stores/orders";
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
 import { useProductsStore } from "@/stores/products";
 import { useOnboarding } from "@/hooks/use-onboarding";
-import { Plus, Settings2, LayoutDashboard, Loader2 } from "lucide-react";
+import { Plus, Settings2, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -23,6 +23,7 @@ import { ActivityFeed } from "./components/ActivityFeed";
 import { RevenueSourceSplit } from "./components/RevenueSourceSplit";
 import { UnpaidBillsCard } from "./components/UnpaidBillsCard";
 import { ActiveStaffCard } from "./components/ActiveStaffCard";
+import { DashboardStatsSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 
 const getOperationalRange = () => {
   const now = new Date();
@@ -178,9 +179,9 @@ export default function AdminDashboardPage() {
 
   if (ordersLoading && (!orders || orders.length === 0)) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center gap-4 bg-background">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Loading Dashboard...</p>
+      <div className="space-y-6 py-4">
+        <DashboardStatsSkeleton />
+        <TableSkeleton rows={6} />
       </div>
     );
   }

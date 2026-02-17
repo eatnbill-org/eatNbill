@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AuthLayoutSkeleton } from "@/components/ui/skeleton";
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -164,16 +164,6 @@ export default function AuthCallbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Completing sign in...</CardTitle>
-          <CardDescription>Please wait while we authenticate you</CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </CardContent>
-      </Card>
-    </div>
+    <AuthLayoutSkeleton />
   );
 }
