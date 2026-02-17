@@ -37,7 +37,7 @@ export function PublicCart() {
     if (!isCartOpen) {
         if (items.length === 0) return null;
         return (
-            <div className="fixed bottom-6 right-6 z-50">
+            <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
                 <Button
                     onClick={() => setCartOpen(true)}
                     className="h-14 w-14 shadow-2xl relative p-0 transition-transform hover:scale-105 active:scale-95"
@@ -76,13 +76,13 @@ export function PublicCart() {
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ fontFamily: 'var(--theme-font)' }}>
-            <Card className="w-full max-w-lg h-[90vh] sm:h-auto sm:max-h-[80vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300"
+            <Card className="w-full max-w-lg h-[92vh] sm:h-auto sm:max-h-[80vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 rounded-t-2xl sm:rounded-2xl"
                 style={{
                     borderRadius: 'var(--theme-radius)',
                     borderColor: 'var(--theme-primary)'
                 }}
             >
-                <CardHeader className="flex flex-row items-center justify-between border-b px-6 py-4"
+                <CardHeader className="flex flex-row items-center justify-between border-b px-4 sm:px-6 py-4"
                     style={{ backgroundColor: 'var(--theme-secondary)', color: 'var(--theme-primary)' }}
                 >
                     <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -96,7 +96,7 @@ export function PublicCart() {
 
                 <CardContent className="flex-1 overflow-y-auto p-0">
                     {!showCheckout ? (
-                        <div className="p-6 space-y-4">
+                        <div className="p-4 sm:p-6 space-y-4">
                             {items.length === 0 ? (
                                 <div className="text-center py-10 text-gray-500">
                                     <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-20" />
@@ -127,7 +127,7 @@ export function PublicCart() {
                             )}
                         </div>
                     ) : (
-                        <div className="p-6 space-y-6">
+                        <div className="p-4 sm:p-6 space-y-6">
                             <div className="text-center">
                                 <div className="h-16 w-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <User className="h-8 w-8" />
@@ -165,7 +165,7 @@ export function PublicCart() {
                     )}
                 </CardContent>
 
-                <CardFooter className="flex flex-col gap-3 p-6 border-t bg-gray-50">
+                <CardFooter className="flex flex-col gap-3 p-4 sm:p-6 border-t bg-gray-50">
                     <div className="flex justify-between w-full text-lg font-bold">
                         <span>Total</span>
                         <span>{formatINR(total)}</span>
@@ -192,7 +192,7 @@ export function PublicCart() {
                             {customerInfo ? 'Place Order' : 'Checkout'}
                         </Button>
                     ) : (
-                        <div className="grid grid-cols-2 gap-3 w-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                             <Button variant="outline" className="h-14 border-2"
                                 style={{ borderRadius: 'var(--theme-radius)', borderColor: 'var(--theme-primary)', color: 'var(--theme-primary)' }}
                                 onClick={() => setShowCheckout(false)}

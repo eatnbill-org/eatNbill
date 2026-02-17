@@ -15,7 +15,8 @@ interface StaffTableProps {
 
 export function StaffTable({ staff, onDelete, onEdit, onToggleStatus, onRowClick }: StaffTableProps) {
   return (
-    <Table>
+    <div className="overflow-x-auto">
+    <Table className="min-w-[900px]">
       <TableHeader>
         <TableRow className="bg-gray-50 hover:bg-gray-50">
           <TableHead className="w-[250px]">Staff</TableHead>
@@ -108,5 +109,6 @@ export function StaffTable({ staff, onDelete, onEdit, onToggleStatus, onRowClick
         )}
       </TableBody>
     </Table>
+    </div>
   );
 }

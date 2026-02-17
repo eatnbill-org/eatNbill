@@ -71,7 +71,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="container max-w-5xl py-4 space-y-6 pb-20 no-scrollbar">
+    <div className="container max-w-5xl py-4 sm:py-6 space-y-6 pb-20 no-scrollbar px-3 sm:px-4 lg:px-6">
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
         <div>
@@ -79,7 +79,7 @@ export default function AdminSettingsPage() {
             <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
               <Smartphone className="w-5 h-5" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Menu Settings</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Menu Settings</h1>
           </div>
           <p className="text-sm font-medium text-muted-foreground">Customize the appearance of your digital menu for customers.</p>
         </div>
@@ -110,7 +110,7 @@ export default function AdminSettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {themes.map((t) => (
               <div
                 key={t.id}

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
 import { useHeadAuth } from "@/hooks/use-head-auth";
 import { fetchTables, fetchStaffOrders } from "@/lib/head-api";
@@ -26,6 +26,7 @@ import {
     Phone,
     Calendar,
     Receipt,
+    Check,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -37,7 +38,8 @@ export default function HeadTablesPage() {
     const navigate = useNavigate();
     const { restaurant } = useHeadAuth();
     const connectionMode = useRealtimeStore((state) => state.connectionMode);
-    const [searchQuery, setSearchQuery] = React.useState("");
+    // Search state from layout context
+    const { headerSearch } = useOutletContext<{ headerSearch: string }>();
     const [selectedTable, setSelectedTable] = React.useState<any | null>(null);
     const [detailsOpen, setDetailsOpen] = React.useState(false);
     const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
@@ -91,8 +93,8 @@ export default function HeadTablesPage() {
     }, [tablesResponse, ordersResponse]);
 
     const filteredTables = tables.filter((t: any) =>
-        t.table_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.hall?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+        t.table_number?.toLowerCase().includes(headerSearch.toLowerCase()) ||
+        t.hall?.name?.toLowerCase().includes(headerSearch.toLowerCase())
     );
 
     if (tablesLoading || ordersLoading) {
@@ -113,130 +115,64 @@ export default function HeadTablesPage() {
     };
 
     return (
-        <div className="space-y-6 pb-20">
-            {/* Header section */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-1">
-                <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Tables Status</h1>
-                    <p className="text-slate-500 text-sm font-medium">Monitor and manage table occupancy</p>
+        <div className="space-y-6 pb-24 max-w-7xl mx-auto">
+            {/* High-Density Stats Row */}
+            <div className="flex gap-2">
+                <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-3">
+                    <Users className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xl font-black text-emerald-700">{tables.filter(t => !t.isOccupied).length}</span>
+                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Available</span>
                 </div>
-
-                <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Search tables..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 h-11 rounded-2xl border-slate-200 bg-white"
-                    />
+                <div className="bg-rose-50 px-4 py-2 rounded-2xl border border-rose-100 flex items-center gap-3">
+                    <MapPin className="h-4 w-4 text-rose-600" />
+                    <span className="text-xl font-black text-rose-700">{tables.filter(t => t.isOccupied).length}</span>
+                    <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Occupied</span>
                 </div>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                        <Users className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available</p>
-                        <p className="text-xl font-black text-slate-900">{tables.filter(t => !t.isOccupied).length}</p>
-                    </div>
-                </div>
-                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
-                        <MapPin className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Occupied</p>
-                        <p className="text-xl font-black text-slate-900">{tables.filter(t => t.isOccupied).length}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* List View */}
-            <div className="space-y-3">
+            {/* 2-Column High-Density Grid */}
+            <div className="grid grid-cols-2 gap-3 pb-24">
                 {filteredTables.map((table: any) => (
                     <div
                         key={table.id}
-                        className={`bg-white rounded-3xl p-4 border-2 transition-all ${table.isOccupied
-                            ? "border-rose-100 shadow-sm"
+                        onClick={() => table.isOccupied ? handleViewOrder(table) : handleNewOrder(table.id)}
+                        className={`bg-white rounded-[2rem] p-3 border-2 transition-all flex flex-col justify-between aspect-square active:scale-95 cursor-pointer ${table.isOccupied
+                            ? "border-rose-100 shadow-sm bg-rose-50/20"
                             : "border-slate-50 hover:border-emerald-100"
                             }`}
                     >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className={`h-14 w-14 rounded-2xl flex flex-col items-center justify-center shadow-sm ${table.isOccupied
-                                    ? "bg-rose-50 text-rose-600 border border-rose-100"
-                                    : "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                                    }`}>
-                                    <span className="text-[10px] font-black uppercase tracking-tighter opacity-70">Table</span>
-                                    <span className="text-lg font-black leading-none">{table.table_number || table.name}</span>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-slate-900">{table.hall?.name || "Main Hall"}</h3>
-                                        <Badge variant={table.isOccupied ? "destructive" : "secondary"} className="text-[10px] font-bold px-2 py-0 h-5">
-                                            {table.isOccupied ? "OCCUPIED" : "AVAILABLE"}
-                                        </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-slate-400 text-xs font-medium">
-                                        <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {table.seats || 4} seats</span>
-                                        {table.isOccupied && table.currentOrder && (
-                                            <span className="flex items-center gap-1 text-rose-500"><Clock className="h-3 w-3" /> {new Date(table.currentOrder.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                        )}
-                                    </div>
-                                </div>
+                        <div className="flex-1 flex flex-col items-center justify-center text-center">
+                            <div className={`h-12 w-12 rounded-2xl flex items-center justify-center mb-2 shadow-sm ${table.isOccupied
+                                ? "bg-rose-50 text-rose-600 border border-rose-100"
+                                : "bg-emerald-50 text-emerald-600 border border-emerald-100 bg-emerald-50/50"
+                                }`}>
+                                <span className="text-xl font-black leading-none">{table.table_number || table.name.replace('Table ', '')}</span>
                             </div>
-
-                            <div className="flex items-center gap-2">
-                                {table.isOccupied ? (
-                                    <>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-10 w-10 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100"
-                                            onClick={() => handleViewOrder(table)}
-                                        >
-                                            <Eye className="h-5 w-5" />
-                                        </Button>
-                                        <Button
-                                            className="h-10 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs gap-2"
-                                            onClick={() => handleAddItems(table.currentOrder.id, table.id)}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                            Add
-                                        </Button>
-                                    </>
-                                ) : (
-                                    <Button
-                                        className="h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs gap-2"
-                                        onClick={() => handleNewOrder(table.id)}
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        New Order
-                                    </Button>
-                                )}
-                            </div>
+                            <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-widest line-clamp-1">{table.hall?.name || "Main"}</h3>
+                            {table.isOccupied && table.currentOrder ? (
+                                <div className="mt-1 flex items-center gap-1 text-rose-500 font-bold text-[8px] uppercase">
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {new Date(table.currentOrder.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            ) : (
+                                <div className="mt-1 flex items-center gap-1 text-emerald-500 font-bold text-[8px] uppercase">
+                                    <Check className="h-2.5 w-2.5" />
+                                    Ready
+                                </div>
+                            )}
                         </div>
 
-                        {table.isOccupied && table.currentOrder && (
-                            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center">
-                                        <User className="h-3 w-3 text-slate-500" />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-600">{table.currentOrder.customer_name || "Walk-in"}</span>
-                                </div>
-                                <span className="text-sm font-black text-slate-900">{formatINR(table.currentOrder.total_amount)}</span>
+                        {/* Minimal Action Badge */}
+                        <div className="flex items-center justify-center">
+                            <div className={`h-6 w-6 rounded-full flex items-center justify-center ${table.isOccupied ? 'bg-rose-500' : 'bg-slate-900'} text-white shadow-sm`}>
+                                {table.isOccupied ? <Eye className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                             </div>
-                        )}
+                        </div>
                     </div>
                 ))}
 
                 {filteredTables.length === 0 && (
-                    <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-slate-200">
+                    <div className="col-span-full text-center py-12 bg-white rounded-3xl border border-dashed border-slate-200">
                         <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
                             <Search className="h-6 w-6 text-slate-300" />
                         </div>
@@ -247,7 +183,7 @@ export default function HeadTablesPage() {
 
             {/* Order Details Modal */}
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-                <DialogContent className="max-w-md w-[95vw] rounded-[2.5rem] p-0 overflow-hidden border-none transition-all duration-300">
+                <DialogContent className="max-w-md w-[95vw] rounded-2xl sm:rounded-[2.5rem] p-0 overflow-hidden border-none transition-all duration-300">
                     {selectedTable?.currentOrder && (
                         <div className="flex flex-col h-full bg-slate-50">
                             {/* Modal Header */}

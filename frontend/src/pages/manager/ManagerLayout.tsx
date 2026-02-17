@@ -98,14 +98,14 @@ export default function ManagerLayout() {
           pathname={location.pathname}
         />
         <SidebarInset className="bg-slate-50 flex flex-col flex-1 min-w-0 transition-all duration-300 ease-in-out">
-          <div className="max-w-7xl mx-auto px-4 py-6 w-full">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 w-full">
             <Outlet />
           </div>
         </SidebarInset>
       </SidebarProvider>
 
       <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[95vw] sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Log out</DialogTitle>
           </DialogHeader>

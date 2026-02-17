@@ -104,6 +104,49 @@ export const updateTableStatusSchema = z
   })
   .strict();
 
+export const deleteTableQRCodesSchema = z
+  .object({
+    mode: z.enum(['ALL', 'HALL', 'RANGE', 'SELECTED']),
+    hall_id: z.string().uuid().optional(),
+    range_start: z.number().int().positive().optional(),
+    range_end: z.number().int().positive().optional(),
+    table_ids: z.array(z.string().uuid()).optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.mode === 'HALL' && !data.hall_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'hall_id is required when mode is HALL',
+        path: ['hall_id'],
+      });
+    }
+
+    if (data.mode === 'RANGE') {
+      if (typeof data.range_start !== 'number' || typeof data.range_end !== 'number') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'range_start and range_end are required when mode is RANGE',
+          path: ['range_start'],
+        });
+      } else if (data.range_start > data.range_end) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'range_start must be less than or equal to range_end',
+          path: ['range_start'],
+        });
+      }
+    }
+
+    if (data.mode === 'SELECTED' && (!data.table_ids || data.table_ids.length === 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'table_ids is required when mode is SELECTED',
+        path: ['table_ids'],
+      });
+    }
+  });
+
 export const createRestaurantUserSchema = z
   .object({
     user_id: z.string().uuid(),

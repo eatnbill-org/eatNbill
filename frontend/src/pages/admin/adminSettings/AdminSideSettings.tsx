@@ -65,7 +65,7 @@ export default function AdminSideSettings() {
     );
 
     return (
-        <div className="container max-w-5xl py-4 space-y-6 pb-20 no-scrollbar">
+        <div className="container max-w-5xl py-4 sm:py-6 space-y-6 pb-20 no-scrollbar px-3 sm:px-4 lg:px-6">
             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
                 <div>
@@ -73,7 +73,7 @@ export default function AdminSideSettings() {
                         <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200">
                             <Settings2 className="w-5 h-5" />
                         </div>
-                        <h1 className="text-3xl font-black text-slate-800 tracking-tighter uppercase">Admin Controls</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter uppercase">Admin Controls</h1>
                     </div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Global system preferences & UI configuration</p>
                 </div>
@@ -177,7 +177,7 @@ export default function AdminSideSettings() {
 
                     {/* 3. SECURITY (PIN) */}
                     <Card className="shadow-sm border-l-4 border-l-blue-600">
-                        <CardContent className="pt-4 flex items-center justify-between">
+                        <CardContent className="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2 text-blue-700 font-semibold">
                                     <ShieldCheck className="w-4 h-4" /> Security PIN

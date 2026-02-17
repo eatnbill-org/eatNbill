@@ -55,19 +55,19 @@ export default function ManagerCustomersPage() {
   return (
     <div className="space-y-4">
       {/* Header with Stats */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200">
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Customer Directory</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase">Customer Directory</h1>
             <p className="text-xs text-slate-500">View customer information (Read-Only)</p>
           </div>
         </div>
 
         {/* Compact Stats */}
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-2 shadow-sm">
+        <div className="bg-white rounded-xl border border-slate-200 px-4 py-2 shadow-sm w-full sm:w-auto">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Customers</p>
           <p className="text-2xl font-black text-slate-900">{customers.length}</p>
         </div>
@@ -95,7 +95,7 @@ export default function ManagerCustomersPage() {
             {filtered.map((c) => (
               <div
                 key={c.id}
-                className="p-4 flex items-center justify-between gap-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                className="p-4 flex items-center justify-between gap-3 sm:gap-4 hover:bg-slate-50 cursor-pointer transition-colors"
                 onClick={() => setSelectedCustomer(c)}
               >
                 <div className="flex items-center gap-3">
@@ -148,10 +148,10 @@ function CustomerProfileModal({ customer, onClose }: { customer: Customer | null
 
   return (
     <Dialog open={Boolean(customer)} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-6xl p-0 gap-0 overflow-hidden outline-none border-none shadow-2xl h-[90vh] bg-slate-50">
+      <DialogContent className="max-w-[95vw] sm:max-w-6xl p-0 gap-0 overflow-hidden outline-none border-none shadow-2xl h-[90vh] bg-slate-50">
         <div className="flex h-full min-h-0 relative">
           {/* LEFT SIDEBAR - READ ONLY */}
-          <div className="w-[300px] bg-white border-r flex flex-col h-full shadow-lg z-10 overflow-hidden relative">
+          <div className="hidden md:flex w-[300px] bg-white border-r flex-col h-full shadow-lg z-10 overflow-hidden relative">
             <div className="absolute top-0 left-0 w-full h-32 bg-indigo-50/50 pointer-events-none" />
 
             {/* Profile Header - Read Only */}
@@ -243,9 +243,9 @@ function CustomerProfileModal({ customer, onClose }: { customer: Customer | null
               <X className="h-5 w-5 text-slate-400" />
             </Button>
 
-            <div className="p-8 pb-4 relative z-10 flex flex-col flex-1 min-h-0">
+            <div className="p-4 sm:p-6 lg:p-8 pb-4 relative z-10 flex flex-col flex-1 min-h-0">
               <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col">
-                <div className="bg-slate-50/80 backdrop-blur-md border-b border-slate-100 px-8 py-4 flex items-center justify-between shrink-0">
+                <div className="bg-slate-50/80 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                   <div className="flex items-center gap-3">
                     <ShoppingBag className="w-4 h-4 text-slate-400" />
                     <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Transaction History</h3>

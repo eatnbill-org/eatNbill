@@ -10,6 +10,7 @@ import {
   deleteTableController,
   generateTableQrController,
   regenerateAllQrController,
+  deleteTableQRCodesController,
   setupRestaurantController,
   getProfileController,
   getSettingsController,
@@ -256,6 +257,7 @@ export function restaurantRoutes() {
   // QR code generation
   router.get('/tables/:id/qrcode', generateTableQrController);
   router.post('/tables/qrcodes/regenerate', regenerateAllQrController);
+  router.post('/tables/qrcodes/delete', deleteTableQRCodesController);
 
   return router;
 }

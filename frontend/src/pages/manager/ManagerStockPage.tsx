@@ -67,13 +67,13 @@ export default function ManagerStockPage() {
             <Package className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Stock Management</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase">Stock Management</h1>
             <p className="text-xs text-slate-500">Manage product availability</p>
           </div>
         </div>
 
         {/* Compact Stats */}
-        <div className="flex gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-3 w-full sm:w-auto">
           <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 shadow-sm">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
             <p className="text-xl font-black text-slate-900">{products.length}</p>
@@ -105,7 +105,7 @@ export default function ManagerStockPage() {
         </div>
 
         {/* Category Dropdown */}
-        <div className="bg-white rounded-xl border border-slate-200 p-1.5 flex items-center min-w-[200px]">
+        <div className="bg-white rounded-xl border border-slate-200 p-1.5 flex items-center md:min-w-[200px]">
           <select
             value={selectedCategoryId || ""}
             onChange={(e) => setSelectedCategoryId(e.target.value || null)}
@@ -130,7 +130,8 @@ export default function ManagerStockPage() {
             <p className="text-xs text-slate-400 mt-1">Try adjusting your filters</p>
           </div>
         ) : (
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[760px]">
             <TableHeader>
               <TableRow className="hover:bg-transparent border-slate-100">
                 <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest w-20">Image</TableHead>
@@ -178,6 +179,7 @@ export default function ManagerStockPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </div>
     </div>

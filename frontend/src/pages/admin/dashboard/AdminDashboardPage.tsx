@@ -187,19 +187,19 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="container py-4 space-y-6 max-w-7xl mx-auto pb-20 no-scrollbar">
+    <div className="container py-4 sm:py-6 space-y-6 max-w-7xl mx-auto pb-20 no-scrollbar px-3 sm:px-4 lg:px-6">
       {/* Page Title Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-end justify-between gap-6"
+        className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6"
       >
         <div>
           <div className="flex items-center gap-3 mb-1 px-1">
             <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
               <LayoutDashboard className="w-5 h-5" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
           </div>
           <div className="px-1 flex flex-col">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-0.5">
@@ -211,11 +211,11 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-border shadow-sm">
+        <div className="flex w-full sm:w-auto flex-wrap items-center gap-2 sm:gap-3 bg-white p-2 rounded-xl border border-border shadow-sm">
           <Button
             variant="outline"
             onClick={() => setStockOpen(true)}
-            className="relative h-11 px-5 rounded-lg border-border font-semibold text-sm text-muted-foreground hover:bg-accent transition-all"
+            className="relative h-10 sm:h-11 px-4 sm:px-5 rounded-lg border-border font-semibold text-sm text-muted-foreground hover:bg-accent transition-all w-full sm:w-auto"
           >
             <Settings2 className="mr-2 h-4 w-4" />
             Manage Stock
@@ -228,7 +228,7 @@ export default function AdminDashboardPage() {
           </Button>
           <Button
             onClick={handleNewOrder}
-            className="h-11 px-6 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm shadow-md transition-all shrink-0"
+            className="h-10 sm:h-11 px-4 sm:px-6 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm shadow-md transition-all w-full sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" /> New Order
           </Button>

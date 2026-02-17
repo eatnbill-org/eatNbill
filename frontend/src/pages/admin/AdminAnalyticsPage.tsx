@@ -189,7 +189,7 @@ export default function AdminAnalyticsPage() {
 
             {/* Always show the analytics dashboard, even if data is 0 */}
             <motion.div
-                className="container py-8 space-y-8 no-scrollbar max-w-7xl mx-auto px-4 md:px-8"
+                className="container py-6 sm:py-8 space-y-6 sm:space-y-8 no-scrollbar max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
@@ -201,7 +201,7 @@ export default function AdminAnalyticsPage() {
                             <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                                 <Activity className="w-4 h-4" />
                             </div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Analytics Dashboard</h1>
+                            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Analytics Dashboard</h1>
                         </div>
                         <p className="text-sm font-medium text-muted-foreground max-w-lg leading-snug px-0.5">
                             View your restaurant's performance, sales, and order trends in real-time.
@@ -392,7 +392,7 @@ export default function AdminAnalyticsPage() {
 
                     <motion.div className="lg:col-span-4" variants={itemVariants}>
                         <Card className="rounded-[2rem] border-none shadow-2xl shadow-slate-200/40 bg-white overflow-hidden">
-                            <CardHeader className="p-8 pb-2">
+                            <CardHeader className="p-4 sm:p-6 lg:p-8 pb-2">
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                         <Layers className="w-3 h-3" />
@@ -472,7 +472,7 @@ export default function AdminAnalyticsPage() {
 
                     <motion.div className="lg:col-span-3" variants={itemVariants}>
                         <Card className="rounded-[2rem] border-none shadow-2xl shadow-slate-200/40 bg-white overflow-hidden h-full page-break-avoid">
-                            <CardHeader className="p-8 pb-4">
+                            <CardHeader className="p-4 sm:p-6 lg:p-8 pb-4">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
@@ -525,7 +525,7 @@ export default function AdminAnalyticsPage() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-x-8 gap-y-4 px-8 w-full mt-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 px-4 sm:px-8 w-full mt-4">
                                             {categoryData.map((c: any, i: number) => (
                                                 <div key={c.name} className="flex items-center gap-3">
                                                     <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
@@ -596,7 +596,7 @@ export default function AdminAnalyticsPage() {
                     {/* Quick Debt Recovery System */}
                     <motion.div variants={itemVariants}>
                         <Card className="rounded-[2rem] border border-orange-100 bg-orange-50/20 shadow-xl shadow-orange-100/20 overflow-hidden">
-                            <CardHeader className="p-8 pb-4">
+                            <CardHeader className="p-4 sm:p-6 lg:p-8 pb-4">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">

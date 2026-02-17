@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -247,12 +247,24 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
     };
 
     const handlePrintAll = () => {
-        setTablesToPrint(tables.map(t => ({ id: t.id, name: t.table_number })));
+        setTablesToPrint(
+            tables.map((t) => ({
+                id: t.id,
+                name: t.table_number,
+                tableNumber: t.table_number,
+                hallName: t.hall?.name || "Unassigned",
+            }))
+        );
         setIsPrintOpen(true);
     };
 
     const handlePrintSingle = (t: RestaurantTable) => {
-        setTablesToPrint([{ id: t.id, name: t.table_number }]);
+        setTablesToPrint([{
+            id: t.id,
+            name: t.table_number,
+            tableNumber: t.table_number,
+            hallName: t.hall?.name || "Unassigned",
+        }]);
         setIsPrintOpen(true);
     };
 
@@ -263,9 +275,9 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
     };
 
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex items-center gap-4">
+        <div className="space-y-6 sm:space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                     <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                         <Armchair className="w-5 h-5" />
                     </div>
@@ -277,18 +289,18 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex w-full sm:w-auto flex-wrap gap-2 sm:gap-3">
                     <Button
                         variant="outline"
                         onClick={handlePrintAll}
                         disabled={tables.length === 0}
-                        className="h-11 px-6 rounded-xl font-bold uppercase tracking-widest text-[11px] border-border hover:bg-muted transition-all shadow-sm"
+                        className="h-10 sm:h-11 px-4 sm:px-6 rounded-xl font-bold uppercase tracking-widest text-[10px] sm:text-[11px] border-border hover:bg-muted transition-all shadow-sm w-full sm:w-auto"
                     >
                         <QrCode className="w-4 h-4 mr-2 text-primary" /> Batch Print QRs
                     </Button>
 
                     <Button
-                        className="bg-primary hover:bg-primary/90 h-11 px-6 rounded-xl font-bold uppercase tracking-widest text-[11px] text-white transition-all shadow-md"
+                        className="bg-primary hover:bg-primary/90 h-10 sm:h-11 px-4 sm:px-6 rounded-xl font-bold uppercase tracking-widest text-[10px] sm:text-[11px] text-white transition-all shadow-md w-full sm:w-auto"
                         onClick={handleOpenAdd}
                     >
                         <Plus className="w-4 h-4 mr-2" /> Add Table
@@ -296,7 +308,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
 
                     {/* Dialog for Add/Edit */}
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                        <DialogContent className="max-w-md rounded-2xl p-8 border border-border shadow-2xl">
+                        <DialogContent className="max-w-md rounded-2xl p-4 sm:p-6 lg:p-8 border border-border shadow-2xl">
                             <DialogHeader className="mb-6">
                                 <DialogTitle className="text-2xl font-bold text-foreground tracking-tight">
                                     {editingId ? "Edit Table" : "Add New Table"}
@@ -372,7 +384,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                             </div>
                                             <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Table Range (e.g., 1-10)</Label>
                                         </div>
-                                        <div className="flex gap-3 items-center">
+                                        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                                             <Input
                                                 type="number"
                                                 value={bulkRangeStart}
@@ -380,7 +392,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                                 placeholder="Start"
                                                 className="h-12 bg-muted/20 border-border rounded-xl focus-visible:ring-primary font-bold text-foreground"
                                             />
-                                            <span className="text-muted-foreground font-bold">to</span>
+                                            <span className="text-muted-foreground font-bold text-center">to</span>
                                             <Input
                                                 type="number"
                                                 value={bulkRangeEnd}
@@ -447,7 +459,8 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
             </div>
 
             <div className="overflow-hidden border border-border rounded-2xl bg-muted/20">
-                <Table>
+                <div className="overflow-x-auto">
+                    <Table className="min-w-[760px]">
                     <TableHeader>
                         <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                             <TableHead className="py-6 pl-8 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">QR Code</TableHead>
@@ -527,17 +540,17 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                             <Armchair className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                                             <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">No Tables Found</p>
                                         </div>
-                                        <div className="flex gap-3">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <Button
                                                 onClick={handleOpenAdd}
-                                                className="bg-primary hover:bg-primary/90 h-11 px-5 rounded-xl font-bold uppercase tracking-widest text-[11px] text-white transition-all shadow-md"
+                                                className="bg-primary hover:bg-primary/90 h-11 px-5 rounded-xl font-bold uppercase tracking-widest text-[11px] text-white transition-all shadow-md w-full sm:w-auto"
                                             >
                                                 <Plus className="w-4 h-4 mr-2" /> Add Table
                                             </Button>
                                             <Button
                                                 variant="outline"
                                                 onClick={handleCreateRandomTable}
-                                                className="h-11 px-5 rounded-xl font-bold uppercase tracking-widest text-[11px] border-border hover:bg-muted transition-all shadow-sm"
+                                                className="h-11 px-5 rounded-xl font-bold uppercase tracking-widest text-[11px] border-border hover:bg-muted transition-all shadow-sm w-full sm:w-auto"
                                             >
                                                 <Armchair className="w-4 h-4 mr-2" /> Auto Create
                                             </Button>
@@ -554,7 +567,8 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                             </TableRow>
                         )}
                     </TableBody>
-                </Table>
+                    </Table>
+                </div>
             </div>
 
             {/* QR Sheet */}
@@ -564,6 +578,9 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                 tables={tablesToPrint}
                 storeName={restaurant?.name || "Restaurant"}
                 slug={restaurant?.slug || slug}
+                onDeleted={() => {
+                    fetchTables();
+                }}
             />
         </div>
     );
