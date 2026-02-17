@@ -36,7 +36,7 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[95vw] lg:max-w-5xl p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl bg-white flex flex-col [&>button:last-child]:hidden">
+            <DialogContent className="w-[calc(100vw-1rem)] max-w-6xl p-0 overflow-hidden border-none rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl bg-white flex flex-col max-h-[92vh] [&>button:last-child]:hidden">
 
                 {/* Custom Close Button */}
                 <button
@@ -73,9 +73,9 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                     </div>
                 </div>
 
-                <div className="flex h-[60vh] overflow-hidden bg-slate-50/20">
+                <div className="flex flex-col lg:flex-row h-[calc(92vh-86px)] lg:h-[70vh] overflow-hidden bg-slate-50/20">
                     {/* Left Column: Pure Order Manifest (No Headers/Footers) */}
-                    <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar p-6 space-y-2">
+                    <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar p-3 sm:p-4 lg:p-6 space-y-2">
                         <AnimatePresence mode="popLayout">
                             {order.items.map((item, idx) => (
                                 <motion.div
@@ -123,7 +123,7 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                     </div>
 
                     {/* Right Rail: Interaction & Details (Ultra-Compact) */}
-                    <div className="w-[280px] bg-white border-l border-indigo-50 p-4 flex flex-col gap-4 overflow-hidden">
+                    <div className="w-full lg:w-[340px] bg-white border-t lg:border-t-0 lg:border-l border-indigo-50 p-3 sm:p-4 lg:p-5 flex flex-col gap-4 overflow-y-auto">
 
                         {/* Guest & Info Section */}
                         <div className="space-y-3">

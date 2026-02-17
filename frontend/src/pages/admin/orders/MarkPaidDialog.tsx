@@ -17,7 +17,6 @@ import {
     Sparkles,
     UserPlus,
     Undo2,
-    Check,
     AlertCircle,
     RefreshCw
 } from 'lucide-react';
@@ -120,7 +119,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[calc(100vw-1rem)] max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-3xl mx-auto flex flex-col max-h-[86vh]">
+            <DialogContent className="w-[calc(100vw-1rem)] max-w-4xl p-0 overflow-scroll border-none shadow-2xl rounded-3xl mx-auto flex flex-col max-h-[96vh] sm:max-h-[80vh]">
                 <form onSubmit={handleSubmit} className="flex flex-col h-full">
                     {/* Clean Header */}
                     <div className={cn(
@@ -183,28 +182,30 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                     {!isCreditView && (
                                         <div className="space-y-2">
                                             <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Payment Method</Label>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                {PAYMENT_METHODS.map((pm) => {
-                                                    const selected = method === pm.value;
-                                                    return (
-                                                        <button
-                                                            key={pm.value}
-                                                            type="button"
-                                                            onClick={() => setMethod(pm.value as PaymentMethod)}
-                                                            className={cn(
-                                                                "h-11 rounded-xl border px-3 flex items-center gap-2 text-left transition-all",
-                                                                selected
-                                                                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
-                                                                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                                                            )}
-                                                        >
-                                                            <div className={cn("p-1.5 rounded-lg", pm.bgColor, pm.color)}>
-                                                                <pm.icon className="h-4 w-4" />
-                                                            </div>
-                                                            <span className="text-xs font-bold">{pm.label}</span>
-                                                        </button>
-                                                    );
-                                                })}
+                                            <div className="max-h-44 overflow-y-auto pr-1 sm:max-h-none sm:overflow-visible">
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {PAYMENT_METHODS.map((pm) => {
+                                                        const selected = method === pm.value;
+                                                        return (
+                                                            <button
+                                                                key={pm.value}
+                                                                type="button"
+                                                                onClick={() => setMethod(pm.value as PaymentMethod)}
+                                                                className={cn(
+                                                                    "h-11 rounded-xl border px-2.5 sm:px-3 flex items-center gap-2 text-left transition-all",
+                                                                    selected
+                                                                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                                                                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                                                )}
+                                                            >
+                                                                <div className={cn("p-1.5 rounded-lg", pm.bgColor, pm.color)}>
+                                                                    <pm.icon className="h-4 w-4" />
+                                                                </div>
+                                                                <span className="text-[11px] sm:text-xs font-bold leading-tight">{pm.label}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
