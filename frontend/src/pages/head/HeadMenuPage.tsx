@@ -238,9 +238,9 @@ export default function HeadMenuPage() {
           <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
             <RefreshCw className="h-24 w-24 rotate-12" />
           </div>
-          <div className="max-w-7xl mx-auto px-4 py-3 relative">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 relative">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
                   <RefreshCw className="h-5 w-5 animate-spin-slow" />
                 </div>
@@ -252,7 +252,7 @@ export default function HeadMenuPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-white/20 text-white border-0 text-[10px] font-bold h-6">
                   {totalItems} NEW ITEMS
                 </Badge>
@@ -272,9 +272,9 @@ export default function HeadMenuPage() {
 
       {/* Header with Search & Table Selection */}
       <div className={`sticky ${isReorderMode ? 'top-14' : 'top-0'} z-30 bg-white border-b border-slate-100 shadow-sm`}>
-        <div className="px-4 py-3">
+        <div className="px-3 sm:px-4 py-3">
           {/* Search (Left) and Table Selection (Right) */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {/* Left: Search Bar */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
@@ -287,7 +287,7 @@ export default function HeadMenuPage() {
             </div>
 
             {/* Right: Table Selection (Locked in Reorder Mode) */}
-            <div className="w-48 shrink-0">
+            <div className="w-full sm:w-48 shrink-0">
               <Select
                 value={selectedTable}
                 onValueChange={setSelectedTable}
@@ -317,10 +317,10 @@ export default function HeadMenuPage() {
         </div>
       </div>
 
-      <main className="px-4">
+      <main className="px-3 sm:px-4">
         {/* 🆕 Simplified Category Tabs (Names Only) */}
         {displayCategories.length > 0 && (
-          <div className="py-2 -mx-4 px-4 overflow-x-auto scrollbar-hide bg-white border-b border-slate-100">
+          <div className="py-2 -mx-3 sm:-mx-4 px-3 sm:px-4 overflow-x-auto scrollbar-hide bg-white border-b border-slate-100">
             <div className="flex gap-2 w-max py-1">
               {displayCategories.map((cat) => (
                 <button
@@ -430,29 +430,29 @@ export default function HeadMenuPage() {
       {/* Fixed Bottom Cart Bar */}
       {totalItems > 0 && (
         <div className="fixed bottom-16 left-0 right-0 z-50 bg-white border-t shadow-lg">
-          <div className="px-4 py-3 lg:max-w-4xl lg:mx-auto">
+          <div className="px-3 sm:px-4 py-3 lg:max-w-4xl lg:mx-auto">
             <button
               type="button"
               onClick={() => setCheckoutOpen(true)}
-              className="w-full bg-primary hover:bg-primary/90 text-white rounded-2xl py-4 px-6 flex items-center justify-between transition-colors"
+              className="w-full bg-primary hover:bg-primary/90 text-white rounded-2xl py-3.5 sm:py-4 px-4 sm:px-6 flex items-center justify-between transition-colors gap-3"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="relative">
                   <ShoppingCart className="h-6 w-6" />
                   <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-white text-primary text-xs font-bold flex items-center justify-center">
                     {totalItems}
                   </span>
                 </div>
-                <div className="text-left">
+                <div className="text-left min-w-0">
                   <p className="text-sm font-medium opacity-90">{totalItems} items</p>
-                  <p className="text-xs opacity-75">
+                  <p className="text-xs opacity-75 truncate">
                     {selectedTable && selectedTable !== 'TAKEAWAY'
                       ? `Table: ${tablesList.find((t: any) => t.id === selectedTable)?.table_number || selectedTable}`
                       : 'Takeaway'}
                   </p>
                 </div>
               </div>
-              <span className="text-lg font-bold">{formatINR(totalPrice)}</span>
+              <span className="text-base sm:text-lg font-bold shrink-0">{formatINR(totalPrice)}</span>
             </button>
           </div>
         </div>

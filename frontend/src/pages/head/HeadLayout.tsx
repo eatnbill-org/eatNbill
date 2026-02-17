@@ -184,7 +184,7 @@ export default function HeadLayout() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
             {/* Header */}
-            <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm">
+            <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 py-3 shadow-sm">
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                     {/* Left: Restaurant Name */}
                     <div className="flex items-center gap-3 min-w-0">
@@ -248,7 +248,7 @@ export default function HeadLayout() {
             </header>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-24 md:pb-10 relative bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-24 md:pb-10 relative bg-slate-50/50">
                 <div className="max-w-7xl mx-auto w-full">
                     <Outlet />
                 </div>

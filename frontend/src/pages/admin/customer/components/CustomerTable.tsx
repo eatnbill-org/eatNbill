@@ -50,7 +50,7 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
     <div className="space-y-6">
       {/* Search & Add Bar - Premium Glass Look */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-xl shadow-slate-200/50">
-        <div className="relative flex-1 w-full max-w-[460px] group transition-all">
+        <div className="relative flex-1 w-full md:max-w-[460px] group transition-all">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
           <Input
             value={query}
@@ -79,7 +79,8 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
 
       {/* Modern Table Container */}
       <div className="rounded-[2.5rem] border border-slate-100 bg-white shadow-2xl shadow-slate-200/40 overflow-hidden">
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[980px]">
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100">
               <TableHead className="w-[300px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-slate-500">Customer</TableHead>
@@ -216,6 +217,7 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );

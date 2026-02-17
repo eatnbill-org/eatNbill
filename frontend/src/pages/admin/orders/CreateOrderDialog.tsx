@@ -187,7 +187,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[99vw] h-[98vh] p-0 overflow-hidden border-none rounded-[2rem] shadow-2xl bg-white flex flex-col [&>button:last-child]:hidden">
+      <DialogContent className="max-w-[99vw] h-[98vh] p-0 overflow-hidden border-none rounded-[1.25rem] sm:rounded-[2rem] shadow-2xl bg-white flex flex-col [&>button:last-child]:hidden">
         <style>{timePickerStyles}</style>
 
         {/* Close Button UI - Premium Variant */}
@@ -200,12 +200,12 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
 
-          <div className="flex-1 overflow-hidden grid grid-cols-12 bg-white">
+          <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 bg-white">
 
 
 
             {/* Middle: Product Grid (Modern Fresh Design) */}
-            <div className="col-span-8 flex flex-col p-6 overflow-hidden bg-white">
+            <div className="lg:col-span-8 flex flex-col p-3 sm:p-4 lg:p-6 overflow-hidden bg-white">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-md">
@@ -302,7 +302,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     <TableSkeleton rows={6} />
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 gap-3 pb-40">
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 pb-40">
                     {filteredProducts.map(product => {
                       const orderItem = orderItems.find(item => item.product_id === product.id);
                       const quantity = orderItem?.quantity || 0;
@@ -372,8 +372,8 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
             </div>
 
             {/* Right: Checkout Flow (Ultra-Premium POS Design) */}
-            <div className="col-span-4 bg-slate-50/40 flex flex-col border-l border-indigo-50/50 h-full overflow-hidden">
-              <div className="p-6 flex flex-col h-full overflow-hidden space-y-4">
+            <div className="lg:col-span-4 bg-slate-50/40 flex flex-col border-t lg:border-t-0 lg:border-l border-indigo-50/50 h-full overflow-hidden">
+              <div className="p-3 sm:p-4 lg:p-6 flex flex-col h-full overflow-hidden space-y-4">
 
                 {/* Customer Identity Section - Fixed at top */}
                 <div className="space-y-3 shrink-0">

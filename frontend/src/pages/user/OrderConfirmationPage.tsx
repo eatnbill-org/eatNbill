@@ -38,7 +38,7 @@ export default function OrderConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container py-10">
+      <main className="container py-6 sm:py-10 px-3 sm:px-4 lg:px-6">
         <Card className="mx-auto max-w-2xl overflow-hidden rounded-2xl border shadow-elev-1">
           <div className="bg-brand-gradient p-6 text-primary-foreground">
             <div className="flex items-start justify-between gap-6">
@@ -109,8 +109,8 @@ export default function OrderConfirmationPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Link to="/">
-                <Button variant="secondary">Back to menu</Button>
+              <Link to="/" className="w-full sm:w-auto">
+                <Button variant="secondary" className="w-full sm:w-auto">Back to menu</Button>
               </Link>
               <Button
                 variant="outline"

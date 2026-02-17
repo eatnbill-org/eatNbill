@@ -83,7 +83,7 @@ export default function CompanyProfilePage() {
 
   if (loading && !restaurant) {
     return (
-      <div className="container max-w-5xl py-8">
+      <div className="container max-w-5xl py-6 sm:py-8 px-3 sm:px-4 lg:px-6">
         <FormSkeleton rows={8} />
       </div>
     );
@@ -91,7 +91,7 @@ export default function CompanyProfilePage() {
 
   if (!restaurant) {
     return (
-      <div className="container max-w-5xl py-8 flex items-center justify-center min-h-[400px]">
+      <div className="container max-w-5xl py-6 sm:py-8 px-3 sm:px-4 lg:px-6 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <p className="text-slate-500 text-sm">No restaurant found.</p>
           <Button onClick={() => fetchRestaurant()} variant="outline" size="sm" className="mt-4">
@@ -109,7 +109,7 @@ export default function CompanyProfilePage() {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="container py-8 space-y-8 no-scrollbar max-w-7xl mx-auto px-4 md:px-8">
+      <div className="container py-6 sm:py-8 space-y-6 sm:space-y-8 no-scrollbar max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
 
         {/* Main Title Section */}
         <motion.div
@@ -166,7 +166,7 @@ export default function CompanyProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
+            <div className="bg-white rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-100 shadow-sm">
               <TableManagement slug={restaurant.slug} />
             </div>
           </motion.section>

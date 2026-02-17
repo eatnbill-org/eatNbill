@@ -316,7 +316,7 @@ export default function HeadOrdersPage() {
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             {/* Header Controls: Search (Left) & Filter (Right) */}
-            <div className="sticky top-0 bg-slate-50 z-20 py-3 -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="sticky top-0 bg-slate-50 z-20 py-3">
                 <div className="mb-2 flex items-center gap-2">
                     {realtimeConnected ? (
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">
@@ -330,7 +330,7 @@ export default function HeadOrdersPage() {
                         </span>
                     )}
                 </div>
-                <div className="flex flex-row items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     {/* Left: Search Bar */}
                     <div className="relative flex-1 group">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
@@ -343,7 +343,7 @@ export default function HeadOrdersPage() {
                     </div>
 
                     {/* Right: Filter Dropdown */}
-                    <div className="w-40 md:w-48 shrink-0">
+                    <div className="w-full sm:w-40 md:w-48 shrink-0">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full h-11 bg-white border-slate-200 rounded-xl focus:ring-primary/20 shadow-sm font-bold text-slate-700">
                                 <SelectValue placeholder="Filter" />
@@ -381,7 +381,7 @@ export default function HeadOrdersPage() {
                     )}
                 </div>
             ) : (
-                <div className="grid gap-5 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 pb-24">
+                <div className="grid gap-4 sm:gap-5 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 pb-24">
                     {filteredOrders.map((order: any) => {
                         const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
                         const isPaid = order.payment_status === 'PAID';
@@ -533,7 +533,7 @@ export default function HeadOrdersPage() {
 
             {/* Order Details Modal - Enhanced & Responsive */}
             <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[92vh] overflow-hidden rounded-3xl p-0 gap-0 border-0 shadow-2xl">
+                <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-hidden rounded-2xl sm:rounded-3xl p-0 gap-0 border-0 shadow-2xl">
                     {selectedOrder && (
                         <>
                             {/* Modal Header */}
@@ -701,7 +701,7 @@ export default function HeadOrdersPage() {
 
             {/* Reorder Dialog - Keep as is but style better? */}
             <Dialog open={reorderDialogOpen} onOpenChange={setReorderDialogOpen}>
-                <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col rounded-3xl p-0 gap-0">
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col rounded-2xl sm:rounded-3xl p-0 gap-0">
                     <DialogHeader className="p-4 bg-orange-50 border-b border-orange-100">
                         <DialogTitle className="text-orange-900">Add Items</DialogTitle>
                         <p className="text-xs text-orange-700 font-medium">
@@ -814,7 +814,7 @@ export default function HeadOrdersPage() {
 
             {/* 🟢 Nice to Have: Confirmation Dialog */}
             <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-                <DialogContent className="max-w-md rounded-3xl p-0 gap-0">
+                <DialogContent className="max-w-[95vw] sm:max-w-md rounded-2xl sm:rounded-3xl p-0 gap-0">
                     <DialogHeader className="p-6 pb-4 bg-gradient-to-br from-orange-50 to-amber-50 border-b border-orange-100">
                         <DialogTitle className="text-xl font-black text-orange-900 flex items-center gap-2">
                             <div className="bg-orange-500 text-white rounded-full p-2">
