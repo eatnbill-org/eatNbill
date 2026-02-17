@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import Papa from 'papaparse';
+import { unparse } from 'papaparse';
 import { format } from 'date-fns';
 import { AdvancedAnalyticsResponse } from '@/api/analytics';
 
@@ -95,7 +95,7 @@ export const exportToCSV = (data: AdvancedAnalyticsResponse, view: string, date:
     ];
 
     // Convert to CSV
-    const csv = Papa.unparse(csvData, {
+    const csv = unparse(csvData, {
         quotes: false,
         delimiter: ',',
         newline: '\n'
