@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useOutletContext } from "react-router-dom";
 import { fetchProducts, fetchCategories, toggleProductAvailability } from "@/lib/staff-api";
 import { formatINR } from "@/lib/format";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,8 @@ import { WaiterLayoutSkeleton } from "@/components/ui/skeleton";
 
 export default function HeadStockPage() {
     const queryClient = useQueryClient();
-    const [query, setQuery] = React.useState("");
+    // Search state from layout context
+    const { headerSearch } = useOutletContext<{ headerSearch: string }>();
     const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
 
     // Fetch products from API
@@ -58,7 +60,7 @@ export default function HeadStockPage() {
     // Filter products by search and category
     const filteredProducts = React.useMemo(() => {
         let result = products;
-        const q = query.trim().toLowerCase();
+        const q = headerSearch.trim().toLowerCase();
         if (q) {
             result = result.filter((p: any) =>
                 p.name.toLowerCase().includes(q) ||
@@ -69,7 +71,7 @@ export default function HeadStockPage() {
             result = result.filter((p: any) => p.category_id === selectedCategoryId);
         }
         return result;
-    }, [products, query, selectedCategoryId]);
+    }, [products, headerSearch, selectedCategoryId]);
 
     const stats = React.useMemo(() => ({
         total: products.length,
@@ -98,59 +100,42 @@ export default function HeadStockPage() {
     }
 
     return (
-        <div className="space-y-6 pb-20">
-            {/* Header */}
-            <div className="flex flex-col gap-4 px-1">
-                <div>
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Stock Management</h1>
-                    <p className="text-slate-500 text-sm font-medium">Quickly toggle item availability</p>
+        <div className="space-y-4 pb-24 max-w-7xl mx-auto">
+            {/* Compact High-Density Stats Bar */}
+            <div className="flex gap-2 px-1">
+                <div className="bg-white px-3 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 flex-1">
+                    <span className="text-xl font-black text-slate-700">{stats.total}</span>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-tight">Total<br />Items</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total</p>
-                        <p className="text-lg font-black text-slate-900">{stats.total}</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">In Stock</p>
-                        <p className="text-lg font-black text-emerald-600">{stats.inStock}</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-1">Out</p>
-                        <p className="text-lg font-black text-rose-600">{stats.outOfStock}</p>
-                    </div>
+                <div className="bg-emerald-50 px-3 py-2 rounded-2xl border border-emerald-100 shadow-sm flex items-center gap-3 flex-1">
+                    <span className="text-xl font-black text-emerald-700">{stats.inStock}</span>
+                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-tight">In<br />Stock</span>
+                </div>
+                <div className="bg-rose-50 px-3 py-2 rounded-2xl border border-rose-100 shadow-sm flex items-center gap-3 flex-1">
+                    <span className="text-xl font-black text-rose-700">{stats.outOfStock}</span>
+                    <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest leading-tight">Out Of<br />Stock</span>
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="space-y-4 px-1 sticky top-0 z-10 bg-slate-50/80 backdrop-blur-md py-2 -mx-1">
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search for items..."
-                        className="pl-11 h-12 rounded-2xl border-slate-200 bg-white focus:ring-primary/20 transition-all shadow-sm"
-                    />
-                </div>
-
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* Category Filters */}
+            <div className="px-1">
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide py-1">
                     <button
                         onClick={() => setSelectedCategoryId(null)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm ${selectedCategoryId === null
-                            ? "bg-slate-900 text-white"
-                            : "bg-white text-slate-500 border border-slate-100"
+                        className={`px-4 py-2 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap shadow-sm border ${selectedCategoryId === null
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                             }`}
                     >
-                        All Items
+                        All
                     </button>
                     {categories.map((cat: any) => (
                         <button
                             key={cat.id}
                             onClick={() => setSelectedCategoryId(cat.id)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm ${selectedCategoryId === cat.id
-                                ? "bg-primary text-white"
-                                : "bg-white text-slate-500 border border-slate-100"
+                            className={`px-4 py-2 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap shadow-sm border ${selectedCategoryId === cat.id
+                                ? "bg-primary text-white border-primary"
+                                : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                                 }`}
                         >
                             {cat.name}

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom"; // For menu page redirect
+import { useNavigate, useOutletContext } from "react-router-dom"; // For menu page redirect
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
-import { useHeadAuth } from "@/hooks/use-head-auth";
-import { fetchStaffOrders, fetchProducts, addOrderItems, updateOrderItem, removeOrderItem } from "@/lib/staff-api";
+import { useHeadAuth, useStaffAuth } from "@/hooks/use-head-auth";
+import { fetchStaffOrders, updateOrderItem, removeOrderItem } from "@/lib/staff-api";
 import { formatINR, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,16 +49,11 @@ export default function HeadOrdersPage() {
     const [selectedOrder, setSelectedOrder] = React.useState<any | null>(null);
     const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
 
-    // Reorder dialog state
-    const [reorderDialogOpen, setReorderDialogOpen] = React.useState(false);
-    const [reorderCart, setReorderCart] = React.useState<Record<string, number>>({});
-    const [showConfirmation, setShowConfirmation] = React.useState(false); // 🟢 Confirmation dialog
-
     // Order Details Dialog State
     const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
 
-    // Search state
-    const [searchQuery, setSearchQuery] = React.useState("");
+    // Search state from layout context
+    const { headerSearch } = useOutletContext<{ headerSearch: string }>();
 
     const { restaurant } = useHeadAuth();
 
@@ -98,15 +93,7 @@ export default function HeadOrdersPage() {
         refetchInterval: connectionMode === 'polling' ? 5000 : false,
     });
 
-    // Fetch products for reorder dialog
-    const { data: productsResponse } = useQuery({
-        queryKey: ['staff-products'],
-        queryFn: fetchProducts,
-        enabled: reorderDialogOpen,
-    });
-
     const orders = ordersResponse?.data || [];
-    const products = productsResponse?.products || [];
     const getOrderTableNumber = React.useCallback(
         (order: any) => order?.table?.table_number || order?.table_number || null,
         []
@@ -126,8 +113,8 @@ export default function HeadOrdersPage() {
         }
 
         // Search Filter
-        if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase();
+        if (headerSearch.trim()) {
+            const q = headerSearch.toLowerCase();
             result = result.filter((o: any) =>
                 o.order_number?.toLowerCase().includes(q) ||
                 o.customer_name?.toLowerCase().includes(q) ||
@@ -144,7 +131,7 @@ export default function HeadOrdersPage() {
 
         // ✅ Cap to 50 items for performance
         return sorted.slice(0, 50);
-    }, [orders, statusFilter, searchQuery, getOrderTableNumber]);
+    }, [orders, statusFilter, headerSearch, getOrderTableNumber]);
 
     // Active orders count
     const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
@@ -206,162 +193,36 @@ export default function HeadOrdersPage() {
         setDetailsDialogOpen(true);
     };
 
-    // Reorder mutation with optimistic updates
-    const reorderMutation = useMutation({
-        mutationFn: ({ orderId, items }: { orderId: string; items: Array<{ product_id: string; quantity: number }> }) =>
-            addOrderItems(orderId, items),
-        // 🟡 Important Fix: Optimistic update for instant UI feedback
-        onMutate: async (variables) => {
-            // Cancel outgoing refetches to prevent overwriting optimistic update
-            await queryClient.cancelQueries({ queryKey: ['staff-orders'] });
 
-            // Snapshot previous value for rollback
-            const previousOrders = queryClient.getQueryData(['staff-orders']);
-
-            // Optimistically update UI
-            queryClient.setQueryData(['staff-orders'], (old: any) => {
-                if (!old?.data) return old;
-
-                return {
-                    ...old,
-                    data: old.data.map((order: any) => {
-                        if (order.id === variables.orderId) {
-                            // Calculate new total
-                            const newItemsTotal = variables.items.reduce((sum, item) => {
-                                const product = products.find((p: any) => p.id === item.product_id);
-                                return sum + (product ? product.price * item.quantity : 0);
-                            }, 0);
-
-                            return {
-                                ...order,
-                                total_amount: Number(order.total_amount) + newItemsTotal,
-                            };
-                        }
-                        return order;
-                    })
-                };
-            });
-
-            return { previousOrders };
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
-            setReorderDialogOpen(false);
-            setReorderCart({});
-            setSelectedOrder(null);
-            toast.success('Items added to order!');
-        },
-        onError: (error: any, variables, context) => {
-            // Rollback on error
-            if (context?.previousOrders) {
-                queryClient.setQueryData(['staff-orders'], context.previousOrders);
-            }
-            toast.error(error.message || 'Failed to add items');
-        }
-    });
-
-    // 🟢 Nice to Have: Show confirmation before adding items
-    const handleReorder = () => {
-        if (!selectedOrder) return;
-
-        const items = Object.entries(reorderCart)
-            .filter(([, qty]) => qty > 0)
-            .map(([productId, quantity]) => ({
-                product_id: productId,
-                quantity,
-            }));
-
-        if (items.length === 0) {
-            toast.error('Please select at least one item');
-            return;
-        }
-
-        // Show confirmation dialog
-        setShowConfirmation(true);
-    };
-
-    const confirmAddItems = () => {
-        if (!selectedOrder) return;
-
-        const items = Object.entries(reorderCart)
-            .filter(([, qty]) => qty > 0)
-            .map(([productId, quantity]) => ({
-                product_id: productId,
-                quantity,
-            }));
-
-        setShowConfirmation(false);
-        reorderMutation.mutate({ orderId: selectedOrder.id, items });
-    };
-
-    const addToReorder = (productId: string) => {
-        setReorderCart((c) => ({ ...c, [productId]: (c[productId] ?? 0) + 1 }));
-    };
-
-    const decFromReorder = (productId: string) => {
-        setReorderCart((c) => {
-            const next = { ...c };
-            const v = (next[productId] ?? 0) - 1;
-            if (v <= 0) delete next[productId];
-            else next[productId] = v;
-            return next;
-        });
-    };
-
-    const reorderTotal = Object.entries(reorderCart).reduce((sum, [productId, qty]) => {
-        const p = products.find((prod: any) => prod.id === productId);
-        return sum + (p ? p.price * qty : 0);
-    }, 0);
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto">
-            {/* Header Controls: Search (Left) & Filter (Right) */}
-            <div className="sticky top-0 bg-slate-50 z-20 py-3">
-                <div className="mb-2 flex items-center gap-2">
-                    {realtimeConnected ? (
-                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                            Live
-                        </span>
-                    ) : (
-                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                            Syncing (5s)
-                        </span>
-                    )}
-                </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    {/* Left: Search Bar */}
-                    <div className="relative flex-1 group">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                        <Input
-                            placeholder="Search Order #, Name, Phone..."
-                            className="pl-10 h-11 bg-white border-slate-200 focus:border-primary focus:ring-primary/20 rounded-xl transition-all shadow-sm font-medium"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
+        <div className="space-y-4 max-w-7xl mx-auto">
 
-                    {/* Right: Filter Dropdown */}
-                    <div className="w-full sm:w-40 md:w-48 shrink-0">
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full h-11 bg-white border-slate-200 rounded-xl focus:ring-primary/20 shadow-sm font-bold text-slate-700">
-                                <SelectValue placeholder="Filter" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-slate-200 shadow-xl" align="end">
-                                <SelectItem value="all" className="font-medium text-slate-600">All Orders</SelectItem>
-                                {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                                    <SelectItem key={key} value={key} className="focus:bg-slate-50">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`h-2 w-2 rounded-full ${config.color.replace('text-', 'bg-')}`} />
-                                            {config.label}
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
+
+            {/* Filter Buttons Row */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <button
+                    onClick={() => setStatusFilter("all")}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm ${statusFilter === "all"
+                        ? "bg-slate-900 text-white"
+                        : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300"
+                        }`}
+                >
+                    All Orders
+                </button>
+                {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                    <button
+                        key={key}
+                        onClick={() => setStatusFilter(key)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm flex items-center gap-2 ${statusFilter === key
+                            ? `${config.bgColor} ${config.color} border-2 ${config.color.replace('text-', 'border-')}`
+                            : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300"
+                            }`}
+                    >
+                        {config.icon}
+                        {config.label}
+                    </button>
+                ))}
             </div>
 
             {/* Orders Grid */}
@@ -372,10 +233,10 @@ export default function HeadOrdersPage() {
                     </div>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">No orders found</h3>
                     <p className="text-slate-500 text-sm max-w-sm text-center font-medium">
-                        {searchQuery ? "Try adjusting your search terms or filters" : "There are no active orders at the moment."}
+                        {headerSearch ? "Try adjusting your search terms or filters" : "There are no active orders at the moment."}
                     </p>
-                    {searchQuery && (
-                        <Button variant="link" onClick={() => setSearchQuery("")} className="text-primary font-bold mt-2">
+                    {headerSearch && (
+                        <Button variant="link" onClick={() => navigate('.') /* Need better way to clear layout search? Maybe just mention it */} className="text-primary font-bold mt-2">
                             Clear Filters
                         </Button>
                     )}
@@ -489,11 +350,28 @@ export default function HeadOrdersPage() {
                                         </Badge>
 
                                         <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8 w-8 p-0 rounded-lg border-orange-200 text-orange-600 hover:bg-orange-50"
+                                                title="Quick Reorder"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (order.payment_status === 'PAID') {
+                                                        toast.error('Cannot add items to a paid order');
+                                                        return;
+                                                    }
+                                                    const tableId = order.table_id || 'TAKEAWAY';
+                                                    navigate(`/head/menu/${order.id}?table=${tableId}`);
+                                                }}
+                                            >
+                                                <RefreshCw className="h-4 w-4" />
+                                            </Button>
                                             {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="h-8 px-3 rounded-lg border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 text-xs font-semibold"
+                                                    className="h-8 px-2.5 rounded-lg border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-[10px] font-bold"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (order.payment_status === 'PAID') {
@@ -505,13 +383,13 @@ export default function HeadOrdersPage() {
                                                     }}
                                                 >
                                                     <Plus className="h-3.5 w-3.5 mr-1" />
-                                                    Add Items
+                                                    Add
                                                 </Button>
                                             )}
                                             {order.payment_status !== 'PAID' && order.status !== 'CANCELLED' && (
                                                 <Button
                                                     size="sm"
-                                                    className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-sm"
+                                                    className="h-8 px-2.5 rounded-lg bg-slate-900 hover:bg-black text-white text-[10px] font-bold shadow-sm"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setSelectedOrder(order);
@@ -519,7 +397,7 @@ export default function HeadOrdersPage() {
                                                     }}
                                                 >
                                                     <IndianRupee className="h-3.5 w-3.5 mr-1" />
-                                                    Mark Paid
+                                                    Paid
                                                 </Button>
                                             )}
                                         </div>
@@ -531,151 +409,114 @@ export default function HeadOrdersPage() {
                 </div>
             )}
 
-            {/* Order Details Modal - Enhanced & Responsive */}
+            {/* Order Details Modal - Enhanced & Compact */}
             <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-                <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-hidden rounded-2xl sm:rounded-3xl p-0 gap-0 border-0 shadow-2xl">
+                <DialogContent className="max-w-[calc(100vw-2.5rem)] sm:max-w-md max-h-[90vh] overflow-hidden rounded-[2.5rem] p-0 gap-0 border-0 shadow-2xl mx-auto flex flex-col">
                     {selectedOrder && (
                         <>
-                            {/* Modal Header */}
-                            <DialogHeader className="p-5 md:p-6 pb-4 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white sticky top-0 z-10">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            {/* Modal Header - Compact */}
+                            <DialogHeader className="p-4 py-3 border-b border-slate-100 bg-white sticky top-0 z-10 shrink-0">
+                                <div className="flex items-center justify-between">
                                     <div>
-                                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2 flex-wrap">
-                                            Order #{selectedOrder.order_number}
+                                        <DialogTitle className="text-base font-black tracking-tight text-slate-900 flex items-center gap-1.5">
+                                            #{selectedOrder.order_number}
                                             {selectedOrder.payment_status === 'PAID' && (
-                                                <Badge className="bg-green-500 text-white hover:bg-green-600 border-0 h-6 px-2">PAID</Badge>
+                                                <Badge className="bg-emerald-500 text-white border-0 h-4 px-1.5 text-[8px] font-black">PAID</Badge>
                                             )}
                                         </DialogTitle>
-                                        <p className="text-xs text-slate-500 font-medium mt-1">{formatDateTime(selectedOrder.created_at)}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold">{formatDateTime(selectedOrder.created_at)}</p>
                                     </div>
-                                    <Badge className={`${STATUS_CONFIG[selectedOrder.status]?.bgColor} ${STATUS_CONFIG[selectedOrder.status]?.color} border-0 px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 w-fit`}>
-                                        {STATUS_CONFIG[selectedOrder.status]?.icon}
-                                        {STATUS_CONFIG[selectedOrder.status]?.label}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Badge className={`${STATUS_CONFIG[selectedOrder.status]?.bgColor} ${STATUS_CONFIG[selectedOrder.status]?.color} border-0 px-2 h-6 text-[9px] font-black uppercase tracking-wider`}>
+                                            {selectedOrder.status}
+                                        </Badge>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 rounded-full bg-slate-50 hover:bg-slate-100"
+                                            onClick={() => setDetailsDialogOpen(false)}
+                                        >
+                                            <X className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </DialogHeader>
 
-                            {/* Modal Body - Scrollable */}
-                            <div className="overflow-y-auto max-h-[calc(92vh-180px)] p-5 md:p-6 space-y-5">
-                                {/* Customer & Location Info */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {/* Customer Card */}
-                                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <User className="h-4 w-4 text-blue-600" />
-                                            <p className="text-[10px] uppercase tracking-wider text-blue-700 font-bold">Customer</p>
-                                        </div>
-                                        <p className="font-bold text-slate-900 text-base truncate">{selectedOrder.customer_name || 'Guest'}</p>
-                                        <p className="text-sm text-slate-600 truncate mt-0.5">{selectedOrder.customer_phone || 'No phone'}</p>
+                            {/* Modal Body - High Density */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                                {/* Compact Info Row */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-slate-50 p-2.5 rounded-2xl flex items-center gap-2 border border-slate-100/50">
+                                        <User className="h-3.5 w-3.5 text-blue-500" />
+                                        <span className="text-xs font-black text-slate-700 truncate">{selectedOrder.customer_name || 'Guest'}</span>
                                     </div>
-
-                                    {/* Location Card */}
-                                    <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-2xl border border-orange-100">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <MapPin className="h-4 w-4 text-orange-600" />
-                                            <p className="text-[10px] uppercase tracking-wider text-orange-700 font-bold">Location</p>
-                                        </div>
-                                        <p className="font-bold text-slate-900 text-base">
-                                            {selectedOrder.order_type === 'DINE_IN'
-                                                ? `Table ${getOrderTableNumber(selectedOrder) || 'N/A'}${getOrderHallName(selectedOrder) ? ` - ${getOrderHallName(selectedOrder)}` : ''}`
-                                                : 'Takeaway'}
-                                        </p>
-                                        <p className="text-sm text-slate-600 mt-0.5">{selectedOrder.source || 'In-House'}</p>
+                                    <div className="bg-slate-50 p-2.5 rounded-2xl flex items-center gap-2 border border-slate-100/50">
+                                        <MapPin className="h-3.5 w-3.5 text-orange-500" />
+                                        <span className="text-xs font-black text-slate-700 truncate">
+                                            {selectedOrder.order_type === 'DINE_IN' ? `Table ${getOrderTableNumber(selectedOrder)}` : 'Takeaway'}
+                                        </span>
                                     </div>
                                 </div>
 
-                                {/* Special Notes */}
-                                {selectedOrder.notes && (
-                                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200 flex gap-3">
-                                        <div className="text-2xl">📝</div>
-                                        <div className="flex-1">
-                                            <p className="text-xs text-amber-900 font-bold uppercase mb-1">Special Instructions</p>
-                                            <p className="text-sm text-amber-800 leading-relaxed">"{selectedOrder.notes}"</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Order Items */}
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Utensils className="h-4 w-4 text-slate-500" />
-                                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Order Items</h3>
-                                    </div>
-                                    <div className="border border-slate-200 rounded-2xl overflow-hidden">
-                                        <div className="max-h-64 overflow-y-auto">
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-slate-100 sticky top-0 z-10">
-                                                    <tr className="border-b border-slate-200">
-                                                        <th className="text-left py-3 px-4 font-bold text-slate-700">Item</th>
-                                                        <th className="text-center py-3 px-3 font-bold text-slate-700 w-16">Qty</th>
-                                                        <th className="text-right py-3 px-4 font-bold text-slate-700 w-24">Price</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="bg-white">
-                                                    {selectedOrder.items?.slice()
-                                                        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                                                        .map((item: any) => (
-                                                            <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                                                                <td className="py-3 px-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <p className="font-semibold text-slate-900">{item.name_snapshot || item.product?.name || 'Item'}</p>
-                                                                    </div>
-                                                                    {item.notes && <p className="text-xs text-slate-500 italic mt-0.5">Note: {item.notes}</p>}
-                                                                </td>
-                                                                <td className="py-3 px-3 text-center">
-                                                                    <span className="inline-flex items-center justify-center bg-slate-100 text-slate-700 font-bold rounded-lg px-2 py-1 text-sm min-w-[2rem]">
-                                                                        {item.quantity}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="py-3 px-4 text-right font-semibold text-slate-900 tabular-nums">
-                                                                    {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        {/* Total */}
-                                        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-t-2 border-orange-200 px-4 py-4">
-                                            <div className="flex justify-between items-center">
-                                                <span className="font-bold text-slate-700 text-base">Total Amount</span>
-                                                <span className="font-black text-2xl text-orange-600 tracking-tight">{formatINR(selectedOrder.total_amount)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                {/* Order Items Table */}
+                                <div className="border border-slate-100 rounded-[2rem] overflow-hidden bg-white shadow-sm">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-slate-50/50 border-b border-slate-50">
+                                            <tr>
+                                                <th className="text-left py-2.5 px-4 font-black text-slate-400 uppercase text-[9px]">Item</th>
+                                                <th className="text-center py-2.5 px-2 font-black text-slate-400 uppercase text-[9px] w-12">Qty</th>
+                                                <th className="text-right py-2.5 px-4 font-black text-slate-400 uppercase text-[9px] w-20">Sum</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {selectedOrder.items?.slice().sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item: any) => (
+                                                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="py-2.5 px-4">
+                                                        <p className="font-bold text-slate-800 leading-tight">{item.name_snapshot || item.product?.name || 'Item'}</p>
+                                                        {item.notes && <p className="text-[10px] text-slate-400 italic mt-0.5 line-clamp-1">{item.notes}</p>}
+                                                    </td>
+                                                    <td className="py-2.5 px-2 text-center">
+                                                        <span className="font-black text-primary">{item.quantity}</span>
+                                                    </td>
+                                                    <td className="py-2.5 px-4 text-right font-black text-slate-900 tabular-nums">
+                                                        {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-slate-900 text-white">
+                                                <td colSpan={2} className="py-3 px-4 font-black uppercase text-[10px] tracking-widest">Payable</td>
+                                                <td className="py-3 px-4 text-right font-black text-base">{formatINR(selectedOrder.total_amount)}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
                                 </div>
                             </div>
 
-                            {/* Modal Footer - Action Buttons */}
-                            <div className="p-5 md:p-6 border-t border-slate-200 bg-slate-50 space-y-3 sticky bottom-0">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {/* Add More Items Button */}
-                                    {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
-                                        <Button
-                                            variant="outline"
-                                            className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 rounded-xl h-11 font-semibold"
-                                            onClick={() => {
-                                                if (selectedOrder.payment_status === 'PAID') {
-                                                    toast.error('Cannot add items to a paid order');
-                                                    return;
-                                                }
-                                                const tableId = selectedOrder.table_id || 'TAKEAWAY';
-                                                navigate(`/head/menu/${selectedOrder.id}?table=${tableId}`);
-                                                setDetailsDialogOpen(false);
-                                            }}
-                                        >
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Add More Items
-                                        </Button>
-                                    )}
+                            {/* Modal Footer - Single Row Actions */}
+                            <div className="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1 h-12 rounded-2xl border-orange-200 text-orange-600 font-black text-xs uppercase tracking-wider bg-white hover:bg-orange-50"
+                                        onClick={() => {
+                                            if (selectedOrder.payment_status === 'PAID') {
+                                                toast.error('Cannot add items to a paid order');
+                                                return;
+                                            }
+                                            const tableId = selectedOrder.table_id || 'TAKEAWAY';
+                                            navigate(`/head/menu/${selectedOrder.id}?table=${tableId}`);
+                                        }}
+                                    >
+                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                        Reorder
+                                    </Button>
 
-                                    {/* Mark Paid Button */}
                                     {selectedOrder.payment_status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && (
                                         <Button
-                                            className="bg-slate-900 hover:bg-black text-white rounded-xl h-11 font-bold shadow-lg"
-                                            onClick={() => {
-                                                setPaymentDialogOpen(true);
-                                            }}
+                                            className="flex-[1.5] h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-slate-200"
+                                            onClick={() => setPaymentDialogOpen(true)}
                                         >
                                             <IndianRupee className="h-4 w-4 mr-2" />
                                             Mark Paid
@@ -699,177 +540,6 @@ export default function HeadOrdersPage() {
                 }}
             />
 
-            {/* Reorder Dialog - Keep as is but style better? */}
-            <Dialog open={reorderDialogOpen} onOpenChange={setReorderDialogOpen}>
-                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col rounded-2xl sm:rounded-3xl p-0 gap-0">
-                    <DialogHeader className="p-4 bg-orange-50 border-b border-orange-100">
-                        <DialogTitle className="text-orange-900">Add Items</DialogTitle>
-                        <p className="text-xs text-orange-700 font-medium">
-                            Adding to order #{selectedOrder?.order_number}
-                        </p>
-                    </DialogHeader>
-
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
-                        {products.filter((p: any) => p.is_active).map((product: any) => {
-                            const qty = reorderCart[product.id] ?? 0;
-
-                            return (
-                                <div
-                                    key={product.id}
-                                    className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${qty > 0 ? 'bg-white border-orange-200 shadow-md transform scale-[1.01]' : 'bg-white border-slate-100 shadow-sm'}`}
-                                >
-                                    <div className="h-12 w-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100">
-                                        {product.images?.[0]?.public_url ? (
-                                            <img src={product.images[0].public_url} alt={product.name} className="h-full w-full object-cover" />
-                                        ) : (
-                                            <Utensils className="h-5 w-5 m-auto text-slate-300" />
-                                        )}
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-slate-900 truncate text-sm">{product.name}</p>
-                                        <p className="text-xs text-orange-600 font-bold">{formatINR(product.price)}</p>
-                                    </div>
-
-                                    {qty === 0 ? (
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="shrink-0 h-9 w-9 p-0 rounded-xl border-slate-200 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
-                                            onClick={() => addToReorder(product.id)}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
-                                    ) : (
-                                        <div className="flex items-center gap-2 shrink-0 bg-slate-900 rounded-xl p-1 text-white shadow-lg">
-                                            <button className="h-7 w-7 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors" onClick={() => decFromReorder(product.id)}>−</button>
-                                            <span className="w-4 text-center font-bold text-sm">{qty}</span>
-                                            <button className="h-7 w-7 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors" onClick={() => addToReorder(product.id)}>+</button>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <div className="p-4 border-t border-slate-200 bg-white space-y-3">
-                        {/* 🟢 Nice to Have: Discount Warning */}
-                        {reorderTotal > 0 && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
-                                <div className="text-amber-600 mt-0.5">ℹ️</div>
-                                <p className="text-xs text-amber-800 leading-relaxed">
-                                    <strong>Note:</strong> Current prices will be applied. Prices may differ from the original order if discounts have changed.
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Order Summary */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-500">Current Order Total</span>
-                                <span className="font-semibold text-slate-700">{formatINR(selectedOrder?.total_amount || 0)}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-500">New Items Total</span>
-                                <span className="font-bold text-orange-600">{formatINR(reorderTotal)}</span>
-                            </div>
-                            <div className="h-px bg-slate-200"></div>
-                            <div className="flex items-center justify-between">
-                                <span className="font-semibold text-slate-700">Updated Grand Total</span>
-                                <span className="font-black text-xl text-orange-600">
-                                    {formatINR((selectedOrder?.total_amount || 0) + reorderTotal)}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setReorderDialogOpen(false);
-                                    setReorderCart({});
-                                }}
-                                className="flex-1 rounded-xl h-11 border-slate-200"
-                                disabled={reorderMutation.isPending}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="flex-1 bg-orange-600 hover:bg-orange-700 rounded-xl h-11 font-bold shadow-lg shadow-orange-200"
-                                disabled={reorderTotal === 0 || reorderMutation.isPending}
-                                onClick={handleReorder}
-                            >
-                                {reorderMutation.isPending ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                    <Plus className="h-4 w-4 mr-2" />
-                                )}
-                                {reorderMutation.isPending ? 'Adding...' : 'Confirm Add'}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* 🟢 Nice to Have: Confirmation Dialog */}
-            <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-                <DialogContent className="max-w-[95vw] sm:max-w-md rounded-2xl sm:rounded-3xl p-0 gap-0">
-                    <DialogHeader className="p-6 pb-4 bg-gradient-to-br from-orange-50 to-amber-50 border-b border-orange-100">
-                        <DialogTitle className="text-xl font-black text-orange-900 flex items-center gap-2">
-                            <div className="bg-orange-500 text-white rounded-full p-2">
-                                <Plus className="h-5 w-5" />
-                            </div>
-                            Confirm Add Items
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="p-6 space-y-4">
-                        <p className="text-slate-700 leading-relaxed">
-                            You are about to add <strong className="text-orange-600">{Object.values(reorderCart).reduce((a, b) => a + b, 0)} item(s)</strong> to order <strong>#{selectedOrder?.order_number}</strong>.
-                        </p>
-
-                        <div className="bg-slate-50 rounded-xl p-4 space-y-2 border border-slate-200">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-600">Current Total:</span>
-                                <span className="font-semibold">{formatINR(selectedOrder?.total_amount || 0)}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-600">Adding:</span>
-                                <span className="font-semibold text-orange-600">+{formatINR(reorderTotal)}</span>
-                            </div>
-                            <div className="h-px bg-slate-300"></div>
-                            <div className="flex justify-between">
-                                <span className="font-bold text-slate-900">New Total:</span>
-                                <span className="font-black text-lg text-orange-600">
-                                    {formatINR((selectedOrder?.total_amount || 0) + reorderTotal)}
-                                </span>
-                            </div>
-                        </div>
-
-                        <p className="text-xs text-slate-500 italic">
-                            This action cannot be undone. The order total will be updated immediately.
-                        </p>
-                    </div>
-
-                    <DialogFooter className="p-6 pt-0 flex gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowConfirmation(false)}
-                            className="flex-1 rounded-xl h-11 border-slate-300"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={confirmAddItems}
-                            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white rounded-xl h-11 font-bold shadow-lg"
-                        >
-                            <Check className="h-4 w-4 mr-2" />
-                            Yes, Add Items
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Custom Scrollbar Styles */}
             <style>{`
@@ -892,7 +562,6 @@ export default function HeadOrdersPage() {
                     scrollbar-color: #cbd5e1 #f1f5f9;
                 }
             `}</style>
-
         </div>
     );
 }
