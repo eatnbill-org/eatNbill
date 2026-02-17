@@ -122,230 +122,207 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[440px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl">
-                <form onSubmit={handleSubmit} className="flex flex-col">
-                    {/* Premium Header */}
+            <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[440px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl mx-auto flex flex-col max-h-[90vh]">
+                <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                    {/* Clean Header */}
                     <div className={cn(
-                        "p-6 pb-8 text-white relative overflow-hidden",
+                        "p-6 pb-8 text-white relative",
                         isPaid ? "bg-gradient-to-br from-emerald-500 to-teal-600" :
                             isCreditView ? "bg-gradient-to-br from-orange-500 to-amber-600" :
                                 "bg-gradient-to-br from-slate-800 to-slate-900"
                     )}>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-2 opacity-80">
-                                <Sparkles className="h-4 w-4" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Settlement Portal</span>
-                            </div>
-                            <DialogTitle className="text-2xl font-black tracking-tight mb-1">
-                                {isPaid ? 'Payment Received' : isCreditView ? 'Credit Issuance' : 'Settle Order'}
+                        <div className="flex items-center justify-between mb-2">
+                            <DialogTitle className="text-xl font-black tracking-tight">
+                                {isPaid ? 'Payment Confirmed' : isCreditView ? 'Credit Sale' : 'Settle Payment'}
                             </DialogTitle>
-                            <DialogDescription className="text-white/70 text-xs font-medium">
-                                Order #{order.order_number} • {order.customer_name}
-                            </DialogDescription>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => onOpenChange(false)}
+                                className="h-8 w-8 rounded-full text-white/50 hover:text-white hover:bg-white/10"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
                         </div>
-
-                        {/* Decorative Background Icon */}
-                        <div className="absolute -right-4 -bottom-4 opacity-10">
-                            <Wallet size={120} strokeWidth={1} />
-                        </div>
+                        <DialogDescription className="text-white/80 text-sm font-bold flex items-center gap-2">
+                            <span className="bg-white/20 px-2 py-0.5 rounded-lg text-xs tracking-wider">#{order.order_number}</span>
+                            <span className="truncate">{order.customer_name}</span>
+                        </DialogDescription>
                     </div>
 
-                    <div className="px-6 py-8 -mt-4 bg-white rounded-t-[2rem] relative z-20 space-y-6">
-                        {/* Amount Card Breakdown */}
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
-                            <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-                                <span>Subtotal</span>
-                                <span>{formatINR(baseTotal)}</span>
-                            </div>
-
-                            {!isPaid && (
-                                <div className="flex items-center justify-between gap-4">
-                                    <Label htmlFor="discount" className="text-xs text-slate-500 font-medium whitespace-nowrap">Discount (₹)</Label>
-                                    <Input
-                                        id="discount"
-                                        type="number"
-                                        placeholder="0"
-                                        value={discount}
-                                        onChange={(e) => setDiscount(e.target.value)}
-                                        className="h-8 w-24 text-right text-xs font-bold border-slate-200 bg-white"
-                                        min={0}
-                                        max={baseTotal}
-                                    />
-                                </div>
-                            )}
-
-                            <div className="border-t border-slate-200/60" />
-
-                            <div className="flex items-center justify-between">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payable Amount</span>
-                                    <span className="text-2xl font-black text-slate-900 tracking-tighter">
-                                        {formatINR(finalPayable)}
-                                    </span>
-                                </div>
-                                <div className={cn(
-                                    "h-10 w-10 rounded-xl flex items-center justify-center shadow-inner",
-                                    isPaid ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500"
-                                )}>
-                                    {isPaid ? <CheckCircle2 className="h-6 w-6" /> : <Banknote className="h-6 w-6" />}
-                                </div>
-                            </div>
-                        </div>
-
+                    <div className="px-6 py-6 -mt-4 bg-white rounded-t-[2.5rem] relative z-20 flex-1 overflow-y-auto space-y-6 scrollbar-hide">
                         {isPaid ? (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="space-y-4"
+                                className="space-y-4 pt-2"
                             >
-                                <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl flex items-start gap-3">
-                                    <div className="mt-0.5 bg-emerald-100 p-1.5 rounded-full text-emerald-600">
-                                        <Check className="h-3 w-3" />
+                                <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col items-center text-center gap-3">
+                                    <div className="h-16 w-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-2">
+                                        <CheckCircle2 className="h-10 w-10" />
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-emerald-900 italic">Confirmed via {order.payment_method}</p>
-                                        <p className="text-[11px] text-emerald-700 font-medium leading-relaxed opacity-80 mt-1">
-                                            This transaction has been successfully recorded in the audit logs.
-                                        </p>
-                                    </div>
+                                    <h4 className="font-black text-slate-900 text-lg">Transaction Complete</h4>
+                                    <p className="text-xs text-slate-500 font-medium px-4">
+                                        The payment of <span className="text-emerald-600 font-black">{formatINR(parseFloat(order.total_amount))}</span> was split and recorded via <span className="font-bold underline">{order.payment_method}</span>.
+                                    </p>
                                 </div>
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={handleRevertPayment}
                                     disabled={updating}
-                                    className="w-full h-12 rounded-xl border-dashed border-2 border-slate-200 text-slate-500 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50 transition-all font-bold group"
+                                    className="w-full h-12 rounded-xl border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all font-bold gap-2"
                                 >
-                                    <Undo2 className="h-4 w-4 mr-2 group-hover:-rotate-45 transition-transform" />
+                                    <Undo2 className="h-4 w-4" />
                                     Revert to Unpaid
                                 </Button>
                             </motion.div>
                         ) : (
-                            <div className="space-y-5">
-                                {!isCreditView ? (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="space-y-4"
-                                    >
-                                        <div className="space-y-2.5">
-                                            <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Select Method</Label>
-                                            <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-                                                <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-white focus:ring-slate-900/5 shadow-sm transition-all text-sm font-bold">
-                                                    <SelectValue placeholder="How was it paid?" />
-                                                </SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-slate-200 p-1 shadow-2xl">
-                                                    {PAYMENT_METHODS.map((pm) => (
-                                                        <SelectItem
-                                                            key={pm.value}
-                                                            value={pm.value}
-                                                            className="rounded-xl focus:bg-slate-50 py-3"
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <div className={cn("p-1.5 rounded-lg", pm.bgColor, pm.color)}>
-                                                                    <pm.icon className="h-4 w-4" />
-                                                                </div>
-                                                                <span className="font-bold text-slate-700">{pm.label}</span>
+                            <div className="space-y-6">
+                                {/* Step 1: Select Method */}
+                                {!isCreditView && (
+                                    <div className="space-y-2">
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Payment Method</Label>
+                                        <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
+                                            <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-white focus:ring-primary/10 shadow-sm transition-all text-sm font-bold">
+                                                <SelectValue placeholder="How was it paid?" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-slate-200 p-1 shadow-2xl">
+                                                {PAYMENT_METHODS.map((pm) => (
+                                                    <SelectItem key={pm.value} value={pm.value} className="rounded-xl py-3 cursor-pointer">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={cn("p-1.5 rounded-lg", pm.bgColor, pm.color)}>
+                                                                <pm.icon className="h-4 w-4" />
                                                             </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                                            <span className="font-bold text-slate-700">{pm.label}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
 
-                                        <div className="relative py-2">
-                                            <div className="absolute inset-0 flex items-center">
-                                                <span className="w-full border-t border-slate-100" />
-                                            </div>
-                                            <div className="relative flex justify-center">
-                                                <span className="bg-white px-4 text-[10px] uppercase font-black tracking-widest text-slate-300">Alternate</span>
-                                            </div>
-                                        </div>
-
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            onClick={() => setIsCreditView(true)}
-                                            className="w-full h-12 rounded-2xl border border-orange-100 bg-orange-50/30 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 transition-all font-bold gap-2"
-                                        >
-                                            <UserPlus className="h-4 w-4" />
-                                            Record as Customer Credit
-                                        </Button>
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="p-5 bg-orange-50/50 border border-orange-100 rounded-2xl space-y-4"
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div className="bg-orange-100 p-2 rounded-xl text-orange-600">
-                                                <AlertCircle className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-orange-900 italic">Credit Flow Enabled</p>
-                                                <p className="text-[11px] text-orange-700 font-medium leading-relaxed opacity-80 mt-1">
-                                                    Order will be marked as "Completed" but the payment will remain "Pending" in the customer's credit profile.
-                                                </p>
-                                            </div>
-                                        </div>
+                                {/* Step 2: Credit Toggle */}
+                                <div className="space-y-2">
+                                    <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Credit Option</Label>
+                                    {!isCreditView ? (
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            size="sm"
-                                            onClick={() => setIsCreditView(false)}
-                                            className="w-full h-10 rounded-xl border-orange-200 text-orange-700 bg-white hover:bg-orange-50 font-bold"
+                                            onClick={() => setIsCreditView(true)}
+                                            className="w-full h-12 rounded-2xl border-orange-100 bg-orange-50/20 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 transition-all font-bold gap-2 text-xs"
                                         >
-                                            <Undo2 className="h-3 w-3 mr-2" />
-                                            Select Direct Payment
+                                            <UserPlus className="h-4 w-4" />
+                                            Move to Customer Credit
                                         </Button>
-                                    </motion.div>
-                                )}
+                                    ) : (
+                                        <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl space-y-3">
+                                            <div className="flex items-center gap-2 text-orange-800">
+                                                <AlertCircle className="h-4 w-4" />
+                                                <span className="text-xs font-black uppercase tracking-tight">Credit Mode Active</span>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setIsCreditView(false)}
+                                                className="w-full h-8 rounded-lg text-orange-600 hover:bg-orange-100 font-bold text-[10px]"
+                                            >
+                                                Switch to Direct Payment
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Step 3: Discount & Summary */}
+                                <div className="space-y-4 pt-2">
+                                    <div className="space-y-3 bg-slate-50/80 p-5 rounded-[2rem] border border-slate-100 shadow-inner">
+                                        <div className="flex items-center justify-between text-xs text-slate-500 font-bold">
+                                            <span>ORDER TOTAL</span>
+                                            <span className="text-slate-900">{formatINR(baseTotal)}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-4 py-1">
+                                            <Label htmlFor="discount" className="text-xs text-rose-500 font-black flex items-center gap-1.5 uppercase tracking-wider">
+                                                <Sparkles className="h-3 w-3" /> Discount
+                                            </Label>
+                                            <div className="relative">
+                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-black">₹</span>
+                                                <Input
+                                                    id="discount"
+                                                    type="number"
+                                                    value={discount}
+                                                    onChange={(e) => setDiscount(e.target.value)}
+                                                    className="h-10 w-28 pl-6 text-right text-sm font-black border-slate-200 bg-white rounded-xl focus:border-rose-300 focus:ring-rose-100 transition-all"
+                                                    min={0}
+                                                    max={baseTotal}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="h-px bg-slate-200/50 my-2" />
+
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Final Payable</p>
+                                                <p className="text-3xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
+                                                    {formatINR(finalPayable)}
+                                                </p>
+                                            </div>
+                                            {!isCreditView && (
+                                                <div className="flex flex-col items-end gap-1.5">
+                                                    <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-primary transition-all group">
+                                                        <Checkbox
+                                                            id="auto-print"
+                                                            checked={autoPrint}
+                                                            onCheckedChange={(c) => setAutoPrint(!!c)}
+                                                            className="data-[state=checked]:bg-primary border-slate-300"
+                                                        />
+                                                        <Label htmlFor="auto-print" className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer group-hover:text-primary transition-colors">Print Bill</Label>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
 
-                    <DialogFooter className="px-6 py-6 bg-slate-50 border-t border-slate-100 sm:justify-between items-center gap-4">
-                        {!isPaid && !isCreditView && (
-                            <div className="flex items-center space-x-2 mr-auto">
-                                <Checkbox
-                                    id="auto-print"
-                                    checked={autoPrint}
-                                    onCheckedChange={(c) => setAutoPrint(!!c)}
-                                    className="data-[state=checked]:bg-primary border-slate-300"
-                                />
-                                <Label htmlFor="auto-print" className="text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer select-none">Print Bill</Label>
-                            </div>
+                    <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
+                        {!isPaid && (
+                            <Button
+                                type="submit"
+                                disabled={updating || (!method && !isCreditView)}
+                                className={cn(
+                                    "w-full h-14 rounded-2xl font-black transition-all shadow-xl text-lg gap-2",
+                                    isCreditView
+                                        ? "bg-orange-600 hover:bg-orange-700 text-white shadow-orange-100"
+                                        : "bg-slate-900 hover:bg-black text-white shadow-slate-200"
+                                )}
+                            >
+                                {updating ? (
+                                    <RefreshCw className="h-5 w-5 animate-spin" />
+                                ) : (
+                                    <div className="bg-white/20 p-1.5 rounded-lg">
+                                        <ArrowRight className="h-4 w-4" />
+                                    </div>
+                                )}
+                                {updating ? 'Processing...' : isCreditView ? 'Confirm Credit Sale' : 'Complete Settlement'}
+                            </Button>
                         )}
                         <Button
                             type="button"
                             variant="ghost"
                             onClick={() => onOpenChange(false)}
                             disabled={updating}
-                            className="text-slate-500 font-bold hover:bg-slate-200 rounded-xl px-6 h-12"
+                            className="w-full text-slate-500 font-bold hover:bg-slate-200/50 rounded-xl h-12 text-sm"
                         >
                             Dismiss
                         </Button>
-                        {!isPaid && (
-                            <Button
-                                type="submit"
-                                disabled={updating || (!method && !isCreditView)}
-                                className={cn(
-                                    "h-12 px-8 rounded-xl font-black transition-all shadow-lg flex-1 sm:flex-none",
-                                    isCreditView
-                                        ? "bg-orange-600 hover:bg-orange-700 text-white shadow-orange-200"
-                                        : "bg-slate-900 hover:bg-black text-white shadow-slate-200"
-                                )}
-                            >
-                                {updating ? (
-                                    <Sparkles className="h-4 w-4 animate-spin mr-2" />
-                                ) : (
-                                    <ArrowRight className="h-4 w-4 mr-2" />
-                                )}
-                                {updating ? 'Syncing...' : isCreditView ? 'Confirm Credit' : 'Finalize Payment'}
-                            </Button>
-                        )}
-                    </DialogFooter>
+                    </div>
                 </form>
             </DialogContent>
         </Dialog >

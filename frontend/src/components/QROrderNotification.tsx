@@ -87,12 +87,12 @@ const QROrderNotification: React.FC<QROrderNotificationProps> = ({
     return (
         <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                className="fixed top-6 right-6 z-[9999] w-full max-w-sm"
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 100, transition: { duration: 0.2 } }}
+                className="fixed bottom-0 left-0 right-0 md:top-6 md:right-6 md:left-auto md:bottom-auto z-[9999] md:w-full md:max-w-sm p-3 md:p-0"
             >
-                <div className="bg-white rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden ring-1 ring-emerald-500/10">
+                <div className="bg-white rounded-t-3xl md:rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden ring-1 ring-emerald-500/10">
                     {/* Auto-accept progress bar */}
                     {!isAccepted && (
                         <div className="h-1.5 bg-slate-100 w-full">
@@ -181,11 +181,11 @@ const QROrderNotification: React.FC<QROrderNotificationProps> = ({
                             ) : (
                                 <div className="flex gap-2">
                                     <Button
-                                        onClick={() => onViewDetails(order)}
+                                        onClick={onDismiss}
                                         variant="outline"
                                         className="rounded-xl h-10 px-3 font-bold text-sm border-slate-200"
                                     >
-                                        View <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                                        Cancel
                                     </Button>
                                     <Button
                                         onClick={handleAccept}

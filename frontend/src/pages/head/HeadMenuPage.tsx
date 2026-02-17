@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { MapPin, Plus, RefreshCw, Search, ShoppingCart, Check, X, Minus } from "lucide-react";
@@ -34,7 +34,7 @@ const mapApiProductToDemo = (p: any, categoryName: string): Product => ({
   name: p.name,
   price: parseFloat(p.price),
   category: categoryName,
-  imageUrl: undefined, // ❌ NO IMAGES as per plan
+  // imageUrl: undefined, // ❌ NO IMAGES as per plan
   outOfStock: !p.is_active,
   costPrice: p.costprice ? parseFloat(p.costprice) : undefined,
   isVeg: p.is_veg,
@@ -57,7 +57,8 @@ export default function HeadMenuPage() {
 
   const [cart, setCart] = React.useState<Record<string, number>>({});
   const [checkoutOpen, setCheckoutOpen] = React.useState(false);
-  const [query, setQuery] = React.useState("");
+  // Search state from layout context
+  const { headerSearch } = useOutletContext<{ headerSearch: string }>();
   const [active, setActive] = React.useState<string>("All");
   const [selectedTable, setSelectedTable] = React.useState<string>(reorderTableId || "");
 
@@ -135,7 +136,7 @@ export default function HeadMenuPage() {
     const map = new Map(processedProducts.map((p: Product) => [p.id, p]));
     return Object.entries(cart)
       .map(([id, qty]) => {
-        const p = map.get(id);
+        const p = map.get(id) as Product | undefined;
         if (!p) return null;
         return toOrderItem(p, qty);
       })
@@ -169,13 +170,13 @@ export default function HeadMenuPage() {
 
   // Filter products
   const filteredProducts = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = headerSearch.trim().toLowerCase();
     return processedProducts.filter((p: Product) => {
       if (active !== "All" && (p.category || "Other") !== active) return false;
       if (q && !p.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [processedProducts, query, active]);
+  }, [processedProducts, headerSearch, active]);
 
   const totalItems = items.reduce((s, i) => s + i.qty, 0);
   const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0);
@@ -212,6 +213,7 @@ export default function HeadMenuPage() {
             notes: payload.specialInstructions // Apply notes to all for now, or simplistic approach
           })),
           table_id: tableId,
+          order_type: tableId ? 'DINE_IN' : 'TAKEAWAY',
           notes: payload.specialInstructions
         });
 
@@ -234,32 +236,32 @@ export default function HeadMenuPage() {
     <div className="bg-slate-50 pb-24 rounded-xl">
       {/* 🔄 Reorder Mode Context Banner */}
       {isReorderMode && existingOrder && (
-        <div className="sticky top-0 z-40 bg-gradient-to-r from-emerald-600 to-primary text-white shadow-lg overflow-hidden">
+        <div className="sticky top-[52px] z-30 bg-gradient-to-r from-emerald-600 to-primary text-white shadow-lg overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
             <RefreshCw className="h-24 w-24 rotate-12" />
           </div>
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 relative">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
-                  <RefreshCw className="h-5 w-5 animate-spin-slow" />
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 relative">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
+                  <RefreshCw className="h-4 w-4 animate-spin-slow" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="font-bold text-sm tracking-wide">ADDING TO ORDER #{existingOrder.order_number}</h3>
+                  <h3 className="font-bold text-xs tracking-wide">ADDING TO #{existingOrder.order_number}</h3>
                   <p className="text-[10px] uppercase font-medium opacity-80 flex items-center gap-2">
                     <MapPin className="h-3 w-3" />
-                    Table {existingOrder.table?.table_number || "Takeaway"} • Current Total: {formatINR(existingOrder.total_amount)}
+                    Table {existingOrder.table?.table_number || "Takeaway"} • Total: {formatINR(existingOrder.total_amount)}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge className="bg-white/20 text-white border-0 text-[10px] font-bold h-6">
-                  {totalItems} NEW ITEMS
+                <Badge className="bg-white/20 text-white border-0 text-[10px] font-bold h-6 px-2">
+                  {totalItems} NEW
                 </Badge>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-white hover:bg-white/20 h-8 text-xs font-bold rounded-lg"
+                  className="text-white hover:bg-white/20 h-7 text-xs font-bold rounded-lg px-2"
                   onClick={() => navigate('/head/orders')}
                 >
                   Cancel
@@ -270,75 +272,29 @@ export default function HeadMenuPage() {
         </div>
       )}
 
-      {/* Header with Search & Table Selection */}
-      <div className={`sticky ${isReorderMode ? 'top-14' : 'top-0'} z-30 bg-white border-b border-slate-100 shadow-sm`}>
-        <div className="px-3 sm:px-4 py-3">
-          {/* Search (Left) and Table Selection (Right) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            {/* Left: Search Bar */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search menu..."
-                className="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-primary/20 focus:ring-primary/20 transition-all"
-              />
-            </div>
-
-            {/* Right: Table Selection (Locked in Reorder Mode) */}
-            <div className="w-full sm:w-48 shrink-0">
-              <Select
-                value={selectedTable}
-                onValueChange={setSelectedTable}
-                disabled={isReorderMode} // 🔒 Lock table in reorder mode
+      {/* Sticky Header with Search, Table & Categories */}
+      {/* Categories (Scrollable) - Moved up and simplified */}
+      {displayCategories.length > 0 && (
+        <div className="-mx-1 overflow-x-auto scrollbar-hide py-1">
+          <div className="flex gap-2 w-max px-1">
+            {displayCategories.map((cat) => (
+              <button
+                key={cat.name}
+                type="button"
+                onClick={() => setActive(cat.name)}
+                className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm border ${active === cat.name
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
               >
-                <SelectTrigger className={`h-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:border-primary/20 focus:ring-primary/20 ${isReorderMode ? 'opacity-70 grayscale' : ''}`}>
-                  <SelectValue placeholder="Table" />
-                </SelectTrigger>
-                <SelectContent align="end" className="rounded-xl">
-                  <SelectItem value="TAKEAWAY">Takeaway</SelectItem>
-                  {tablesList.filter((t: any) => t.is_active).map((table: any) => {
-                    const isOccupied = occupiedTableIds.has(table.id);
-                    return (
-                      <SelectItem
-                        key={table.id}
-                        value={table.id}
-                        disabled={isOccupied}
-                      >
-                        {table.table_number ? table.table_number : table.name} {table.seats ? `(${table.seats} seats)` : ''} {isOccupied ? '(Occupied)' : ''}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+                {cat.name}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       <main className="px-3 sm:px-4">
-        {/* 🆕 Simplified Category Tabs (Names Only) */}
-        {displayCategories.length > 0 && (
-          <div className="py-2 -mx-3 sm:-mx-4 px-3 sm:px-4 overflow-x-auto scrollbar-hide bg-white border-b border-slate-100">
-            <div className="flex gap-2 w-max py-1">
-              {displayCategories.map((cat) => (
-                <button
-                  key={cat.name}
-                  type="button"
-                  onClick={() => setActive(cat.name)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap shadow-sm ${active === cat.name
-                    ? "bg-primary text-white scale-105"
-                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                    }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Products Grid */}
         <section className="mt-4">
           <div className="flex items-center justify-between mb-4">
@@ -428,35 +384,37 @@ export default function HeadMenuPage() {
       </main>
 
       {/* Fixed Bottom Cart Bar */}
-      {totalItems > 0 && (
-        <div className="fixed bottom-16 left-0 right-0 z-50 bg-white border-t shadow-lg">
-          <div className="px-3 sm:px-4 py-3 lg:max-w-4xl lg:mx-auto">
-            <button
-              type="button"
-              onClick={() => setCheckoutOpen(true)}
-              className="w-full bg-primary hover:bg-primary/90 text-white rounded-2xl py-3.5 sm:py-4 px-4 sm:px-6 flex items-center justify-between transition-colors gap-3"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="relative">
-                  <ShoppingCart className="h-6 w-6" />
-                  <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-white text-primary text-xs font-bold flex items-center justify-center">
-                    {totalItems}
-                  </span>
+      {
+        totalItems > 0 && (
+          <div className="fixed bottom-16 left-0 right-0 z-50 bg-white border-t shadow-lg">
+            <div className="px-3 sm:px-4 py-3 lg:max-w-4xl lg:mx-auto">
+              <button
+                type="button"
+                onClick={() => setCheckoutOpen(true)}
+                className="w-full bg-primary hover:bg-primary/90 text-white rounded-2xl py-3.5 sm:py-4 px-4 sm:px-6 flex items-center justify-between transition-colors gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative">
+                    <ShoppingCart className="h-6 w-6" />
+                    <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-white text-primary text-xs font-bold flex items-center justify-center">
+                      {totalItems}
+                    </span>
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-sm font-medium opacity-90">{totalItems} items</p>
+                    <p className="text-xs opacity-75 truncate">
+                      {selectedTable && selectedTable !== 'TAKEAWAY'
+                        ? `Table: ${tablesList.find((t: any) => t.id === selectedTable)?.table_number || selectedTable}`
+                        : 'Takeaway'}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-left min-w-0">
-                  <p className="text-sm font-medium opacity-90">{totalItems} items</p>
-                  <p className="text-xs opacity-75 truncate">
-                    {selectedTable && selectedTable !== 'TAKEAWAY'
-                      ? `Table: ${tablesList.find((t: any) => t.id === selectedTable)?.table_number || selectedTable}`
-                      : 'Takeaway'}
-                  </p>
-                </div>
-              </div>
-              <span className="text-base sm:text-lg font-bold shrink-0">{formatINR(totalPrice)}</span>
-            </button>
+                <span className="text-base sm:text-lg font-bold shrink-0">{formatINR(totalPrice)}</span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Checkout Dialog - Staff Mode */}
       <CheckoutDialog
@@ -475,6 +433,6 @@ export default function HeadMenuPage() {
         onSubmit={handlePlaceOrder}
         onTableChange={(tableId) => setSelectedTable(tableId)}
       />
-    </div>
+    </div >
   );
 }
