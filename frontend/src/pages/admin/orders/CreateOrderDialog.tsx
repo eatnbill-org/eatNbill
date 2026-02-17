@@ -151,11 +151,14 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || !customerPhone.trim() || orderItems.length === 0) return;
+    if (orderItems.length === 0) return;
+
+    const normalizedName = customerName.trim();
+    const normalizedPhone = customerPhone.trim();
 
     const payload: CreateOrderPayload = {
-      customer_name: customerName,
-      customer_phone: customerPhone,
+      customer_name: normalizedName || undefined,
+      customer_phone: normalizedPhone || undefined,
       table_number: tableNumber || undefined,
       notes: notes || undefined,
       arrive_at: arriveAt || undefined,
@@ -506,10 +509,10 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
                 <Button
                   type="submit"
-                  disabled={creating || orderItems.length === 0 || !customerName || !customerPhone}
+                  disabled={creating || orderItems.length === 0}
                   className={cn(
                     "w-full h-20 rounded-[1.75rem] shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] transition-all relative overflow-hidden group active:scale-[0.98]",
-                    (creating || orderItems.length === 0 || !customerName || !customerPhone)
+                    (creating || orderItems.length === 0)
                       ? "bg-slate-100 text-slate-400"
                       : "bg-primary hover:bg-primary/90 text-white"
                   )}

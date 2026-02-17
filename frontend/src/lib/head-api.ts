@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Staff API client
 // Handles all API calls for staff-side functionality
 
@@ -115,7 +116,11 @@ export async function fetchOrderById(orderId: string) {
 /**
  * Update order status
  */
-export async function updateOrderStatus(orderId: string, status: string) {
+export async function updateOrderStatus(
+    orderId: string,
+    status: string,
+    cancel_reason?: string
+) {
     const token = getStaffToken();
     const restaurantId = getRestaurantId();
 
@@ -135,7 +140,10 @@ export async function updateOrderStatus(orderId: string, status: string) {
     const response = await fetch(getPath(`orders/${orderId}/status`), {
         method: 'PATCH',
         headers,
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+            status,
+            ...(cancel_reason ? { cancel_reason } : {}),
+        }),
     });
 
     if (!response.ok) {
@@ -613,4 +621,3 @@ export async function rejectQROrder(orderId: string, reason?: string, restaurant
 
     return response.json();
 }
-
