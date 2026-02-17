@@ -21,6 +21,7 @@ import { formatINR } from '@/lib/format';
 import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { TableSkeleton } from '@/components/ui/skeleton';
 
 // CSS override for time picker aesthetics
 const timePickerStyles = `
@@ -297,9 +298,8 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
               <div className="flex-1 overflow-y-auto no-scrollbar pr-2">
                 {productsLoading ? (
-                  <div className="h-full flex flex-col items-center justify-center gap-4 py-32 opacity-30">
-                    <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-[10px] font-black uppercase tracking-widest">Hydrating Catalog Engine...</p>
+                  <div className="py-4">
+                    <TableSkeleton rows={6} />
                   </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-3 pb-40">

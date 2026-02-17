@@ -1,155 +1,144 @@
-/**
- * Phase 0 - Global Loading Store
- * 
- * Centralized loading state management using Zustand.
- * Tracks active API requests by key to support concurrent operations.
- * 
- * Usage in stores:
- * 
- * ```ts
- * import { useLoadingStore } from '@/stores/ui/loading.store';
- * 
- * async function fetchProducts() {
- *   const { startLoading, stopLoading } = useLoadingStore.getState();
- *   const loadingKey = 'products:fetch';
- *   
- *   startLoading(loadingKey);
- *   try {
- *     const response = await api.get('/products');
- *     return response.data;
- *   } finally {
- *     stopLoading(loadingKey);
- *   }
- * }
- * ```
- * 
- * Usage in components:
- * 
- * ```tsx
- * import { useLoadingStore } from '@/stores/ui/loading.store';
- * 
- * function ProductList() {
- *   const isLoadingProducts = useLoadingStore((state) => state.isLoading('products:fetch'));
- *   const isAnyLoading = useLoadingStore((state) => state.isLoading());
- *   
- *   if (isLoadingProducts) return <Spinner />;
- *   // ...
- * }
- * ```
- */
-
 import { create } from 'zustand';
 
+export type LoadingScope = 'global' | 'route' | 'component';
+
+type ScopedKeys = Record<LoadingScope, Set<string>>;
+
+const createScopedKeys = (): ScopedKeys => ({
+  global: new Set<string>(),
+  route: new Set<string>(),
+  component: new Set<string>(),
+});
+
 interface LoadingState {
-  /**
-   * Set of active loading keys.
-   * Example: Set(['products:fetch', 'orders:create'])
-   */
-  activeKeys: Set<string>;
-
-  /**
-   * Global loading counter (deprecated, use keys instead).
-   * Kept for backward compatibility.
-   */
+  activeKeysByScope: ScopedKeys;
   count: number;
-
-  /**
-   * Starts loading for a specific key.
-   * If no key provided, increments global counter.
-   * 
-   * @param key - Unique identifier for this loading operation
-   */
-  startLoading: (key?: string) => void;
-
-  /**
-   * Stops loading for a specific key.
-   * If no key provided, decrements global counter.
-   * 
-   * @param key - Unique identifier for this loading operation
-   */
-  stopLoading: (key?: string) => void;
-
-  /**
-   * Checks if a specific key is loading, or if anything is loading.
-   * 
-   * @param key - Optional key to check. If omitted, returns true if any operation is loading.
-   * @returns true if loading
-   */
-  isLoading: (key?: string) => boolean;
-
-  /**
-   * Clears all loading state.
-   * Useful for cleanup on logout or navigation.
-   */
+  globalLoading: boolean;
+  routeLoading: boolean;
+  componentLoading: boolean;
+  startLoading: (key?: string, scope?: LoadingScope) => void;
+  stopLoading: (key?: string, scope?: LoadingScope) => void;
+  isLoading: (key?: string, scope?: LoadingScope) => boolean;
+  isScopeLoading: (scope: LoadingScope) => boolean;
+  withLoading: <T>(
+    task: () => Promise<T>,
+    options?: { key?: string; scope?: LoadingScope }
+  ) => Promise<T>;
   clearAll: () => void;
+  getActiveKeys: (scope?: LoadingScope) => string[];
+}
 
-  /**
-   * Returns all active loading keys (for debugging).
-   */
-  getActiveKeys: () => string[];
+const DEFAULT_SCOPE: LoadingScope = 'component';
+const DEFAULT_KEY = 'app:default';
+
+function getNextFlags(activeKeysByScope: ScopedKeys) {
+  return {
+    globalLoading: activeKeysByScope.global.size > 0,
+    routeLoading: activeKeysByScope.route.size > 0,
+    componentLoading: activeKeysByScope.component.size > 0,
+  };
 }
 
 export const useLoadingStore = create<LoadingState>((set, get) => ({
-  activeKeys: new Set(),
+  activeKeysByScope: createScopedKeys(),
   count: 0,
+  globalLoading: false,
+  routeLoading: false,
+  componentLoading: false,
 
-  startLoading: (key?: string) => {
+  startLoading: (key = DEFAULT_KEY, scope = DEFAULT_SCOPE) => {
     set((state) => {
-      if (key) {
-        const newKeys = new Set(state.activeKeys);
-        newKeys.add(key);
-        return { activeKeys: newKeys };
-      } else {
-        return { count: state.count + 1 };
-      }
+      const next = {
+        ...state.activeKeysByScope,
+        [scope]: new Set(state.activeKeysByScope[scope]).add(key),
+      } as ScopedKeys;
+
+      return {
+        activeKeysByScope: next,
+        ...getNextFlags(next),
+      };
     });
   },
 
-  stopLoading: (key?: string) => {
+  stopLoading: (key = DEFAULT_KEY, scope = DEFAULT_SCOPE) => {
     set((state) => {
-      if (key) {
-        const newKeys = new Set(state.activeKeys);
-        newKeys.delete(key);
-        return { activeKeys: newKeys };
-      } else {
-        return { count: Math.max(0, state.count - 1) };
-      }
+      const scopedSet = new Set(state.activeKeysByScope[scope]);
+      scopedSet.delete(key);
+
+      const next = {
+        ...state.activeKeysByScope,
+        [scope]: scopedSet,
+      } as ScopedKeys;
+
+      return {
+        activeKeysByScope: next,
+        ...getNextFlags(next),
+      };
     });
   },
 
-  isLoading: (key?: string) => {
+  isLoading: (key?: string, scope: LoadingScope = DEFAULT_SCOPE) => {
     const state = get();
-    
+
     if (key) {
-      return state.activeKeys.has(key);
+      return state.activeKeysByScope[scope].has(key);
     }
-    
-    // If no key provided, check if anything is loading
-    return state.activeKeys.size > 0 || state.count > 0;
+
+    return state.globalLoading || state.routeLoading || state.componentLoading || state.count > 0;
+  },
+
+  isScopeLoading: (scope: LoadingScope) => {
+    const state = get();
+    return state.activeKeysByScope[scope].size > 0;
+  },
+
+  withLoading: async <T>(
+    task: () => Promise<T>,
+    options?: { key?: string; scope?: LoadingScope }
+  ): Promise<T> => {
+    const scope = options?.scope ?? DEFAULT_SCOPE;
+    const key = options?.key ?? DEFAULT_KEY;
+
+    get().startLoading(key, scope);
+    try {
+      return await task();
+    } finally {
+      get().stopLoading(key, scope);
+    }
   },
 
   clearAll: () => {
-    set({ activeKeys: new Set(), count: 0 });
+    const next = createScopedKeys();
+    set({
+      activeKeysByScope: next,
+      count: 0,
+      ...getNextFlags(next),
+    });
   },
 
-  getActiveKeys: () => {
-    return Array.from(get().activeKeys);
+  getActiveKeys: (scope?: LoadingScope) => {
+    const state = get();
+
+    if (scope) {
+      return Array.from(state.activeKeysByScope[scope]);
+    }
+
+    return [
+      ...state.activeKeysByScope.global,
+      ...state.activeKeysByScope.route,
+      ...state.activeKeysByScope.component,
+    ];
   },
 }));
 
-/**
- * Helper hook to check if any operation is loading.
- * Useful for global loading indicators.
- */
 export function useIsAnyLoading(): boolean {
-  return useLoadingStore((state) => state.isLoading());
+  return useLoadingStore((state) => state.globalLoading || state.routeLoading || state.componentLoading || state.count > 0);
 }
 
-/**
- * Helper hook to check if a specific key is loading.
- * 
- * @param key - Loading key to check
- */
-export function useIsLoading(key: string): boolean {
-  return useLoadingStore((state) => state.isLoading(key));
+export function useIsLoading(key: string, scope: LoadingScope = 'component'): boolean {
+  return useLoadingStore((state) => state.activeKeysByScope[scope].has(key));
+}
+
+export function useScopeLoading(scope: LoadingScope): boolean {
+  return useLoadingStore((state) => state.isScopeLoading(scope));
 }

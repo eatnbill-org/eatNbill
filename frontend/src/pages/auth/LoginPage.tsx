@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { Loader2, User, ChefHat } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { clearStaffSessionStorage, saveStaffSession } from "@/lib/staff-session";
+import { FormSkeleton } from "@/components/ui/skeleton";
+import { useLoadingTask } from "@/hooks/use-loading-task";
 
 // Google OAuth - COMMENTED OUT
 // const GoogleIcon = () => (
@@ -38,7 +40,10 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { loginWithPassword, refreshUser } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const { run: runAuthLogin, isLoading: loading } = useLoadingTask({
+    key: "auth:login",
+    scope: "component",
+  });
   // const [googleLoading, setGoogleLoading] = useState(false); // Commented out
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [position, setPosition] = useState<Position>("admin");
@@ -64,76 +69,74 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    await runAuthLogin(async () => {
+      try {
+        if (position === "staff") {
+          // Ensure previous staff/waiter session context cannot leak into this login
+          clearStaffSessionStorage();
+          apiClient.clearAuth();
+          apiClient.resetAuthState();
 
-    try {
-      if (position === "staff") {
-        // Ensure previous staff/waiter session context cannot leak into this login
-        clearStaffSessionStorage();
-        apiClient.clearAuth();
-        apiClient.resetAuthState();
+          // Staff login via custom API
+          const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+          // Remove trailing slash if present in baseUrl to avoid double slashes, 
+          // and ensure we don't duplicate /api/v1 if it's already in baseUrl
+          const loginUrl = baseUrl.endsWith('/api/v1')
+            ? `${baseUrl}/auth/staff/login`
+            : `${baseUrl}/api/v1/auth/staff/login`;
 
-        // Staff login via custom API
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
-        // Remove trailing slash if present in baseUrl to avoid double slashes, 
-        // and ensure we don't duplicate /api/v1 if it's already in baseUrl
-        const loginUrl = baseUrl.endsWith('/api/v1')
-          ? `${baseUrl}/auth/staff/login`
-          : `${baseUrl}/api/v1/auth/staff/login`;
+          const response = await fetch(loginUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: formData.identifier,
+              password: formData.password,
+            }),
+            credentials: 'include',
+          });
 
-        const response = await fetch(loginUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.identifier,
-            password: formData.password,
-          }),
-          credentials: 'include',
-        });
+          const data = await response.json();
 
-        const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.message || data.error || 'Login failed');
+          }
 
-        if (!response.ok) {
-          throw new Error(data.message || data.error || 'Login failed');
-        }
+          // Store canonical staff session and refresh API client context
+          saveStaffSession(data);
+          apiClient.setRestaurantId(data.restaurant?.id || null);
+          apiClient.setTenantId(data.restaurant?.tenantId || null);
 
-        // Store canonical staff session and refresh API client context
-        saveStaffSession(data);
-        apiClient.setRestaurantId(data.restaurant?.id || null);
-        apiClient.setTenantId(data.restaurant?.tenantId || null);
-
-        toast.success(`Welcome, ${data.staff?.name || 'Staff'}!`);
-        if (data.staff?.role === 'MANAGER') {
-          await refreshUser();
-          navigate("/manager/dashboard");
-        } else {
-          navigate("/staff/orders");
-        }
-      } else {
-        // Admin login
-        const result = await loginWithPassword(formData.identifier, formData.password);
-
-        if (result.success) {
-          toast.success("Welcome back!");
-          navigate("/auth/post-login");
-        } else {
-          // Check for unconfirmed email error
-          if (result.error?.toLowerCase().includes('verify your email') ||
-              result.error?.toLowerCase().includes('email not verified')) {
-            toast.error(result.error, {
-              duration: 6000,
-              description: "Please complete OTP verification before logging in."
-            });
+          toast.success(`Welcome, ${data.staff?.name || 'Staff'}!`);
+          if (data.staff?.role === 'MANAGER') {
+            await refreshUser();
+            navigate("/manager/dashboard");
           } else {
-            toast.error(result.error || "Failed to sign in");
+            navigate("/staff/orders");
+          }
+        } else {
+          // Admin login
+          const result = await loginWithPassword(formData.identifier, formData.password);
+
+          if (result.success) {
+            toast.success("Welcome back!");
+            navigate("/auth/post-login");
+          } else {
+            // Check for unconfirmed email error
+            if (result.error?.toLowerCase().includes('verify your email') ||
+                result.error?.toLowerCase().includes('email not verified')) {
+              toast.error(result.error, {
+                duration: 6000,
+                description: "Please complete OTP verification before logging in."
+              });
+            } else {
+              toast.error(result.error || "Failed to sign in");
+            }
           }
         }
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : "Failed to sign in");
       }
-    } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "Failed to sign in");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -152,84 +155,90 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Position Selector */}
-          <div className="mb-6">
-            <Label className="text-sm text-muted-foreground mb-2 block">Login as</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setPosition("admin")}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${position === "admin"
-                  ? "border-primary bg-primary/5 text-primary"
-                  : "border-muted hover:border-muted-foreground/50"
-                  }`}
-              >
-                <User className="h-5 w-5" />
-                <span className="font-medium">Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPosition("staff")}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${position === "staff"
-                  ? "border-orange-500 bg-orange-50 text-orange-600"
-                  : "border-muted hover:border-muted-foreground/50"
-                  }`}
-              >
-                <ChefHat className="h-5 w-5" />
-                <span className="font-medium">Staff</span>
-              </button>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="identifier">
-                {position === "staff" ? "Email or Phone" : "Email"}
-              </Label>
-              <Input
-                id="identifier"
-                type="text"
-                placeholder={position === "staff" ? "staff@example.com / phone" : "you@example.com"}
-                required
-                value={formData.identifier}
-                onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                {position === "admin" && (
-                  <Link
-                    to="/auth/forgot-password"
-                    className="text-sm text-primary hover:underline"
+          {loading ? (
+            <FormSkeleton rows={3} />
+          ) : (
+            <>
+              {/* Position Selector */}
+              <div className="mb-6">
+                <Label className="text-sm text-muted-foreground mb-2 block">Login as</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPosition("admin")}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${position === "admin"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-muted hover:border-muted-foreground/50"
+                      }`}
                   >
-                    Forgot password?
-                  </Link>
-                )}
+                    <User className="h-5 w-5" />
+                    <span className="font-medium">Admin</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPosition("staff")}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${position === "staff"
+                      ? "border-orange-500 bg-orange-50 text-orange-600"
+                      : "border-muted hover:border-muted-foreground/50"
+                      }`}
+                  >
+                    <ChefHat className="h-5 w-5" />
+                    <span className="font-medium">Staff</span>
+                  </button>
+                </div>
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                disabled={loading}
-              />
-            </div>
 
-            <Button
-              type="submit"
-              className={`w-full ${position === "staff" ? "bg-orange-500 hover:bg-orange-600" : ""}`}
-              variant={position === "admin" ? "hero" : "default"}
-              disabled={loading}
-            >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign In as {position === "admin" ? "Admin" : "Staff"}
-            </Button>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="identifier">
+                    {position === "staff" ? "Email or Phone" : "Email"}
+                  </Label>
+                  <Input
+                    id="identifier"
+                    type="text"
+                    placeholder={position === "staff" ? "staff@example.com / phone" : "you@example.com"}
+                    required
+                    value={formData.identifier}
+                    onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    {position === "admin" && (
+                      <Link
+                        to="/auth/forgot-password"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    )}
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    disabled={loading}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className={`w-full ${position === "staff" ? "bg-orange-500 hover:bg-orange-600" : ""}`}
+                  variant={position === "admin" ? "hero" : "default"}
+                  disabled={loading}
+                >
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign In as {position === "admin" ? "Admin" : "Staff"}
+                </Button>
+              </form>
+            </>
+          )}
 
           {/* Google OAuth - COMMENTED OUT */}
           {/* {position === "admin" && (

@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, RefreshCw, ShoppingCart } from "lucide-react";
+import { Plus, RefreshCw, ShoppingCart } from "lucide-react";
 import type { Order } from "@/types/order";
 import CreateOrderDialog from "@/pages/admin/orders/CreateOrderDialog";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 import OrderDetailsDialog from "@/pages/admin/orders/OrderDetailsDialog";
+import { TableSkeleton } from "@/components/ui/skeleton";
 
 const STATUS_FLOW = ["PENDING", "CONFIRMED", "PREPARING", "READY", "SERVED", "COMPLETED"];
 const STATUS_LABELS: Record<string, string> = {
@@ -73,11 +74,7 @@ export default function ManagerOrdersPage() {
   };
 
   if (loading && orders.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-      </div>
-    );
+    return <TableSkeleton rows={8} />;
   }
 
   const totalOrders = orders.length;

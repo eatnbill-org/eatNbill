@@ -6,11 +6,12 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Loader2, Users, ShoppingBag, Wallet, X, Sparkles } from "lucide-react";
+import { Search, Users, ShoppingBag, Wallet, X, Sparkles } from "lucide-react";
 import { formatINR, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCustomerAnalytics, useCustomerOrders } from "@/hooks/use-customers";
 import type { Customer } from "@/types/customer";
+import { ListSkeleton } from "@/components/ui/skeleton";
 
 function loyaltyLabel(totalOrders: number) {
   if (totalOrders >= 25) return { label: "Elite", variant: "bg-indigo-500", icon: <Sparkles className="w-3 h-3 mr-1" /> };
@@ -48,11 +49,7 @@ export default function ManagerCustomersPage() {
   }, [customers, query]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-      </div>
-    );
+    return <ListSkeleton rows={6} />;
   }
 
   return (

@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Layout, Smartphone, Eye, Store, Loader2 } from "lucide-react";
+import { Layout, Smartphone, Eye, Store } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { CUSTOMER_THEME_PRESETS, normalizeCustomerTheme } from "@/lib/customer-theme-presets";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminSettingsPage() {
   const { state, dispatch } = useDemoStore();
@@ -137,7 +138,7 @@ export default function AdminSettingsPage() {
                 <span className="text-[9px] text-muted-foreground text-center font-bold tracking-tight line-clamp-1">{t.description}</span>
                 {savingTheme && activeTheme === t.id && (
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Loader2 className="w-2.5 h-2.5 animate-spin text-muted-foreground" />
+                    <Skeleton className="w-2.5 h-2.5" rounded="full" />
                     <span className="text-[9px] font-bold uppercase text-muted-foreground">Saving...</span>
                   </div>
                 )}
