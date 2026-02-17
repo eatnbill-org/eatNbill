@@ -39,8 +39,9 @@ import {
   getUserRestaurantsByTenant as getUserRestaurantsByTenantRepo,
   upsertTableQRCode,
   getTableQRCode,
+  deleteTableQRCode,
 } from './repository';
-import { createSignedUrl, getPublicUrl, uploadToStorage, STORAGE_BUCKETS } from '../../utils/storage';
+import { createSignedUrl, getPublicUrl, removeFromStorage, uploadToStorage, STORAGE_BUCKETS } from '../../utils/storage';
 
 const THEME_PRESETS = {
   classic: { primary_color: '#065f46', secondary_color: '#ffffff', accent_color: '#d4af37', font_scale: 'MD' as const },
@@ -50,6 +51,37 @@ const THEME_PRESETS = {
   dark: { primary_color: '#09090b', secondary_color: '#18181b', accent_color: '#f59e0b', font_scale: 'MD' as const },
   slider: { primary_color: '#4338ca', secondary_color: '#f8fafc', accent_color: '#06b6d4', font_scale: 'LG' as const },
 };
+
+function resolveFrontendBaseUrl() {
+  const frontendValue = Array.isArray(env.FRONTEND_URL) ? env.FRONTEND_URL[0] : env.FRONTEND_URL;
+  const normalized = (frontendValue || '').trim().replace(/\/+$/, '');
+
+  // Safety guard: in production, never generate localhost QR links.
+  if (env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/i.test(normalized)) {
+    return 'https://eatnbill.com';
+  }
+
+  return normalized || 'https://eatnbill.com';
+}
+
+function normalizeMenuUrlForResponse(menuUrl: string) {
+  if (env.NODE_ENV !== 'production') {
+    return menuUrl;
+  }
+
+  try {
+    const parsed = new URL(menuUrl);
+    if (/localhost|127\.0\.0\.1/i.test(parsed.hostname)) {
+      const prodBase = new URL('https://eatnbill.com');
+      parsed.protocol = prodBase.protocol;
+      parsed.host = prodBase.host;
+      return parsed.toString();
+    }
+    return menuUrl;
+  } catch {
+    return menuUrl;
+  }
+}
 
 function getThemePreset(themeId: keyof typeof THEME_PRESETS) {
   return THEME_PRESETS[themeId] ?? THEME_PRESETS.classic;
@@ -490,7 +522,7 @@ export async function removeTable(
 }
 
 function createPdfBuffer(
-  payload: { restaurant: string; hall: string; table: string; qrPng: Buffer }
+  payload: { restaurant: string; hall: string; table: string; menuUrl: string; qrPng: Buffer }
 ) {
   return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -503,16 +535,53 @@ function createPdfBuffer(
       reject(err);
     });
 
-    doc.fontSize(22).text(payload.restaurant, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(14).text(`Hall: ${payload.hall}`, { align: 'center' });
-    doc.text(`Table: ${payload.table}`, { align: 'center' });
-    doc.moveDown(1);
+    const cardX = 80;
+    const cardY = 70;
+    const cardWidth = doc.page.width - 160;
+    const cardHeight = doc.page.height - 140;
+    const brandColor = '#0f766e';
+    const accentColor = '#f59e0b';
 
-    const imageSize = 300;
-    const x = (doc.page.width - imageSize) / 2;
-    const y = doc.y;
-    doc.image(payload.qrPng, x, y, { width: imageSize, height: imageSize });
+    doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 16).fillAndStroke('#ffffff', '#d1d5db');
+
+    // Header
+    doc.fillColor(brandColor).fontSize(28).text(payload.restaurant, cardX + 24, cardY + 24, {
+      width: cardWidth - 48,
+      align: 'center',
+    });
+    doc.fillColor('#334155').fontSize(12).text('Welcome! Scan to view menu and place your order', cardX + 24, cardY + 62, {
+      width: cardWidth - 48,
+      align: 'center',
+    });
+
+    // Table details strip
+    doc.roundedRect(cardX + 24, cardY + 98, cardWidth - 48, 38, 10).fill('#f8fafc');
+    doc.fillColor('#0f172a').fontSize(13).text(`Hall: ${payload.hall}`, cardX + 36, cardY + 111);
+    doc.fillColor(accentColor).font('Helvetica-Bold').text(`Table: ${payload.table}`, cardX + cardWidth - 190, cardY + 111, {
+      width: 150,
+      align: 'right',
+    });
+    doc.font('Helvetica');
+
+    // QR box
+    const qrBoxSize = 320;
+    const qrBoxX = cardX + (cardWidth - qrBoxSize) / 2;
+    const qrBoxY = cardY + 160;
+    doc.roundedRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 12).fill('#f8fafc');
+    doc.image(payload.qrPng, qrBoxX + 20, qrBoxY + 20, { width: qrBoxSize - 40, height: qrBoxSize - 40 });
+
+    // Link text
+    doc.fillColor('#64748b').fontSize(10).text(payload.menuUrl, cardX + 24, qrBoxY + qrBoxSize + 14, {
+      width: cardWidth - 48,
+      align: 'center',
+      ellipsis: true,
+    });
+
+    // Footer
+    doc.fillColor('#475569').fontSize(11).text('Powered by eatnbill.com', cardX + 24, cardY + cardHeight - 34, {
+      width: cardWidth - 48,
+      align: 'center',
+    });
 
     doc.end();
   });
@@ -529,12 +598,8 @@ export async function generateTableQrAssets(
     throw new AppError('NOT_FOUND', 'Table or Hall or Restaurant details not found for QR generation', 404);
   }
 
-  if (!env.FRONTEND_URL) {
-    throw new AppError('INTERNAL_ERROR', 'FRONTEND_URL is not configured in environment variables', 500);
-  }
-
-  // Use restaurant slug instead of ID for user-friendly URLs
-  const menuUrl = `${env.FRONTEND_URL}/${table.restaurant.slug}/menu?table=${table.table_number}`;
+  const frontendBaseUrl = resolveFrontendBaseUrl();
+  const menuUrl = `${frontendBaseUrl}/${table.restaurant.slug}/menu?table=${table.table_number}`;
   console.log(`[QR_GEN] Generating QR for URL: ${menuUrl}`);
 
   let qrPng: Buffer;
@@ -562,6 +627,7 @@ export async function generateTableQrAssets(
       restaurant: table.restaurant.name,
       hall: table.hall.name,
       table: table.table_number,
+      menuUrl,
       qrPng,
     });
   } catch (error) {
@@ -599,7 +665,7 @@ export async function generateTableQrAssets(
   });
 
   return {
-    menu_url: menuUrl,
+    menu_url: normalizeMenuUrlForResponse(menuUrl),
     qr_png_url: pngUrl,
     qr_pdf_url: pdfUrl,
     storage_paths: {
@@ -649,6 +715,103 @@ export async function generateAllTableQrAssets(
   return { regenerated: items.length, items };
 }
 
+function extractTrailingNumber(value: string) {
+  const match = value.match(/(\d+)(?!.*\d)/);
+  return match ? Number(match[1]) : null;
+}
+
+export async function deleteTableQrAssets(
+  tenantId: string,
+  userId: string,
+  restaurantId: string,
+  input: {
+    mode: 'ALL' | 'HALL' | 'RANGE' | 'SELECTED';
+    hall_id?: string;
+    range_start?: number;
+    range_end?: number;
+    table_ids?: string[];
+  }
+) {
+  const tables = await listTables(restaurantId);
+  const tablesWithQr = tables.filter((table) => table.qr_code);
+
+  let targets = tablesWithQr;
+
+  if (input.mode === 'HALL' && input.hall_id) {
+    targets = targets.filter((table) => table.hall_id === input.hall_id);
+  } else if (
+    input.mode === 'RANGE' &&
+    typeof input.range_start === 'number' &&
+    typeof input.range_end === 'number'
+  ) {
+    targets = targets.filter((table) => {
+      const sequence = extractTrailingNumber(table.table_number);
+      if (sequence === null) return false;
+      return sequence >= input.range_start! && sequence <= input.range_end!;
+    });
+  } else if (input.mode === 'SELECTED' && input.table_ids?.length) {
+    const selected = new Set(input.table_ids);
+    targets = targets.filter((table) => selected.has(table.id));
+  }
+
+  if (targets.length === 0) {
+    return {
+      deleted_count: 0,
+      failed_count: 0,
+      deleted_tables: [] as string[],
+      failed_tables: [] as string[],
+    };
+  }
+
+  const storagePaths = Array.from(
+    new Set(
+      targets.flatMap((table) => [
+        table.qr_code?.qr_png_path,
+        table.qr_code?.qr_pdf_path,
+      ]).filter((path): path is string => Boolean(path))
+    )
+  );
+
+  if (storagePaths.length > 0) {
+    await removeFromStorage(STORAGE_BUCKETS.TABLE_QRCODES, storagePaths);
+  }
+
+  const deletionResults = await Promise.allSettled(
+    targets.map((table) => deleteTableQRCode(table.id))
+  );
+
+  const deletedTables: string[] = [];
+  const failedTables: string[] = [];
+
+  deletionResults.forEach((result, index) => {
+    const tableId = targets[index]?.id;
+    if (!tableId) return;
+
+    if (result.status === 'fulfilled') {
+      deletedTables.push(tableId);
+    } else {
+      failedTables.push(tableId);
+    }
+  });
+
+  await createAuditLog(tenantId, userId, 'DELETE', 'TABLE_QR_BULK', restaurantId, {
+    mode: input.mode,
+    hall_id: input.hall_id,
+    range_start: input.range_start,
+    range_end: input.range_end,
+    requested_table_ids: input.table_ids ?? [],
+    deleted_count: deletedTables.length,
+    failed_count: failedTables.length,
+  });
+
+  return {
+    deleted_count: deletedTables.length,
+    failed_count: failedTables.length,
+    deleted_tables: deletedTables,
+    failed_tables: failedTables,
+  };
+}
+
 // Get QR code for a table (fetch from database and refresh URLs if needed)
 export async function getTableQrCodeData(
   tenantId: string,
@@ -676,7 +839,9 @@ export async function getTableQrCodeData(
   return {
     id: qrCode.id,
     table_id: qrCode.table_id,
-    menu_url: qrCode.menu_url,
+    menu_url: normalizeMenuUrlForResponse(qrCode.menu_url),
+    table_number: table.table_number,
+    hall_name: table.hall?.name ?? null,
     qr_png_url: pngUrl,
     qr_pdf_url: pdfUrl,
     created_at: qrCode.created_at,
