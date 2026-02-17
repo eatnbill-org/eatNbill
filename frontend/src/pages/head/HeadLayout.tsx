@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { ClipboardList, UtensilsCrossed, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QROrderNotification from "@/components/QROrderNotification";
 import { useNotificationStore } from "@/stores/notifications.store";
+import { useRealtimeStore } from "@/stores/realtime/realtime.store";
+import { playOrderSound } from "@/lib/sound-notification";
 import {
     Dialog,
     DialogContent,
@@ -28,6 +30,27 @@ export default function HeadLayout() {
     const navigate = useNavigate();
     const { staff, restaurant, logout } = useStaffAuth();
     const [logoutOpen, setLogoutOpen] = useState(false);
+
+    useEffect(() => {
+        if (!restaurant?.id) return;
+
+        const unsubscribe = useRealtimeStore.getState().subscribeToRestaurantOrders(
+            restaurant.id,
+            (update: any) => {
+                if (update?.eventType !== 'INSERT' || !update?.order) return;
+
+                // Global waiter popup + sound for customer QR orders on all /head/* pages.
+                if (update.order.source === 'QR') {
+                    playOrderSound('QR');
+                    useNotificationStore.getState().addNotification(update.order);
+                }
+            }
+        );
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [restaurant?.id]);
 
     const handleLogout = async () => {
         await logout();
@@ -165,6 +188,7 @@ function NotificationWrapper() {
             order={current}
             onDismiss={dismissNotification}
             onViewDetails={handleViewDetails}
+            playSound={false}
         />
     );
 }
