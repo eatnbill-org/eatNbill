@@ -167,18 +167,13 @@ export default function CompanyProfilePage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="space-y-4"
           >
-            <div className="flex items-center gap-2.5 mb-4 px-0.5">
-              <div className="h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
-                <LayoutGrid className="w-3.5 h-3.5" />
-              </div>
-              <h2 className="text-lg font-bold text-foreground tracking-tight">Tables</h2>
-            </div>
-            <div className="bg-white rounded-2xl p-3 md:p-6 shadow-sm border border-border overflow-hidden">
+            <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
               <TableManagement slug={restaurant.slug} />
             </div>
           </motion.section>
+
+
         </div>
 
         <div className="pb-12" />

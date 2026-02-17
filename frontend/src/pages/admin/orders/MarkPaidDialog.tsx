@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useAdminOrdersStore } from '@/stores/orders';
@@ -27,7 +27,11 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useRestaurantStore } from '@/stores/restaurant';
+import { Checkbox } from '@/components/ui/checkbox';
+import { printBill } from '@/lib/print-utils';
 
 interface MarkPaidDialogProps {
     order: Order | null;
@@ -44,8 +48,21 @@ const PAYMENT_METHODS = [
 
 export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDialogProps) {
     const { updatePayment, updating } = useAdminOrdersStore();
+    const { restaurant } = useRestaurantStore();
     const [method, setMethod] = useState<PaymentMethod | ''>('');
     const [isCreditView, setIsCreditView] = useState(false);
+    const [autoPrint, setAutoPrint] = useState(true);
+    const [discount, setDiscount] = useState<string>('');
+
+    useEffect(() => {
+        if (open && order) {
+            setDiscount(order.discount_amount ? String(order.discount_amount) : '');
+        }
+    }, [open, order]);
+
+    const baseTotal = order ? (parseFloat(order.total_amount) + parseFloat(order.discount_amount || '0')) : 0;
+    const currentDiscount = parseFloat(discount) || 0;
+    const finalPayable = Math.max(0, baseTotal - currentDiscount);
 
     const handleRevertPayment = async () => {
         if (!order) return;
@@ -76,8 +93,21 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             await updatePayment(order.id, {
                 payment_status: isCreditView ? 'PENDING' : 'PAID',
                 payment_method: currentMethod as PaymentMethod,
-                payment_amount: parseFloat(order.total_amount),
+                payment_amount: finalPayable,
+                discount_amount: currentDiscount,
             });
+
+            if (autoPrint && !isCreditView) {
+                const updatedOrder = {
+                    ...order,
+                    payment_status: 'PAID' as any,
+                    payment_method: currentMethod as any,
+                    total_amount: String(finalPayable),
+                    discount_amount: String(currentDiscount),
+                };
+                printBill(updatedOrder, restaurant?.name || "Restaurant");
+            }
+
             onOpenChange(false);
             setMethod('');
             setIsCreditView(false);
@@ -88,7 +118,6 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
 
     if (!order) return null;
 
-    const totalAmount = parseFloat(order.total_amount);
     const isPaid = order.payment_status === 'PAID';
 
     return (
@@ -122,19 +151,44 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                     </div>
 
                     <div className="px-6 py-8 -mt-4 bg-white rounded-t-[2rem] relative z-20 space-y-6">
-                        {/* Amount Card */}
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payable Amount</span>
-                                <span className="text-2xl font-black text-slate-900 tracking-tighter">
-                                    {formatINR(totalAmount)}
-                                </span>
+                        {/* Amount Card Breakdown */}
+                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
+                            <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+                                <span>Subtotal</span>
+                                <span>{formatINR(baseTotal)}</span>
                             </div>
-                            <div className={cn(
-                                "h-10 w-10 rounded-xl flex items-center justify-center shadow-inner",
-                                isPaid ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500"
-                            )}>
-                                {isPaid ? <CheckCircle2 className="h-6 w-6" /> : <Banknote className="h-6 w-6" />}
+
+                            {!isPaid && (
+                                <div className="flex items-center justify-between gap-4">
+                                    <Label htmlFor="discount" className="text-xs text-slate-500 font-medium whitespace-nowrap">Discount (₹)</Label>
+                                    <Input
+                                        id="discount"
+                                        type="number"
+                                        placeholder="0"
+                                        value={discount}
+                                        onChange={(e) => setDiscount(e.target.value)}
+                                        className="h-8 w-24 text-right text-xs font-bold border-slate-200 bg-white"
+                                        min={0}
+                                        max={baseTotal}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="border-t border-slate-200/60" />
+
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payable Amount</span>
+                                    <span className="text-2xl font-black text-slate-900 tracking-tighter">
+                                        {formatINR(finalPayable)}
+                                    </span>
+                                </div>
+                                <div className={cn(
+                                    "h-10 w-10 rounded-xl flex items-center justify-center shadow-inner",
+                                    isPaid ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500"
+                                )}>
+                                    {isPaid ? <CheckCircle2 className="h-6 w-6" /> : <Banknote className="h-6 w-6" />}
+                                </div>
                             </div>
                         </div>
 
@@ -252,6 +306,17 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                     </div>
 
                     <DialogFooter className="px-6 py-6 bg-slate-50 border-t border-slate-100 sm:justify-between items-center gap-4">
+                        {!isPaid && !isCreditView && (
+                            <div className="flex items-center space-x-2 mr-auto">
+                                <Checkbox
+                                    id="auto-print"
+                                    checked={autoPrint}
+                                    onCheckedChange={(c) => setAutoPrint(!!c)}
+                                    className="data-[state=checked]:bg-primary border-slate-300"
+                                />
+                                <Label htmlFor="auto-print" className="text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer select-none">Print Bill</Label>
+                            </div>
+                        )}
                         <Button
                             type="button"
                             variant="ghost"

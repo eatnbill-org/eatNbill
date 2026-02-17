@@ -61,10 +61,11 @@ export const createInternalOrderSchema = z.object({
 // Update payment details
 export const updatePaymentSchema = z.object({
   payment_method: z.enum(["CASH", "CARD", "UPI", "CREDIT", "GPAY", "APPLE_PAY", "OTHER"]),
-  payment_status: z.enum(["PENDING", "PAID"]).default("PAID"),
+  payment_status: z.enum(["PENDING", "PAID"]),
   payment_provider: z.string().max(100).optional(),
   payment_reference: z.string().max(200).optional(),
   payment_amount: z.number().positive().optional(),
+  discount_amount: z.number().nonnegative().optional(),
   paid_at: z.string().datetime().optional(),
 });
 

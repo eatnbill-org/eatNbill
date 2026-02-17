@@ -198,6 +198,7 @@ model Order {
   external_metadata Json?
   notes             String?
   total_amount      Decimal          @db.Decimal(10, 2)
+  discount_amount   Decimal?         @default(0) @db.Decimal(10, 2)
   status            OrderStatus      @default(ACTIVE)
   source            OrderSource      @default(QR)
   order_type        OrderType        @default(DINE_IN)

@@ -51,6 +51,10 @@ interface OrderItem {
   unit_price: number;
 }
 
+import { Checkbox } from '@/components/ui/checkbox';
+import { printKitchenSlip } from '@/lib/print-utils';
+import { Label } from 'recharts';
+
 export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrderDialogProps) {
   const { createOrder, creating, orders } = useAdminOrdersStore();
   const { products, fetchProducts, loading: productsLoading } = useProductsStore();
@@ -63,6 +67,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
   const [notes, setNotes] = useState('');
   const [arriveAt, setArriveAt] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [printSlip, setPrintSlip] = useState(false); // Default OFF per plan
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -101,9 +106,10 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [products, selectedCategoryId, searchQuery]);
 
+  // ✅ FIXED: Use correct ACTIVE status instead of old statuses
   const tablesWithOrders = new Set(
     orders
-      .filter(order => ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'].includes(order.status))
+      .filter(order => order.status === 'ACTIVE')
       .map(order => order.table_number)
       .filter(Boolean)
   );
@@ -170,6 +176,10 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       setOrderItems([]);
       setSelectedCategoryId(null);
       onOpenChange(false);
+      if (printSlip) {
+        printKitchenSlip(order);
+        setPrintSlip(false);
+      }
       if (onSuccess) onSuccess();
     }
   };
@@ -478,7 +488,22 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
               </div>
 
               {/* High-Impact Order Footer */}
-              <div className="p-6 bg-white border-t border-slate-100 shrink-0">
+              <div className="p-6 bg-white border-t border-slate-100 shrink-0 space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="print-slip"
+                    checked={printSlip}
+                    onCheckedChange={(c) => setPrintSlip(!!c)}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:text-white border-slate-300"
+                  />
+                  <Label
+                    htmlFor="print-slip"
+                    className="text-xs font-bold text-slate-600 uppercase tracking-wide cursor-pointer select-none"
+                  >
+                    Print Kitchen Slip Automatically
+                  </Label>
+                </div>
+
                 <Button
                   type="submit"
                   disabled={creating || orderItems.length === 0 || !customerName || !customerPhone}

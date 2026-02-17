@@ -329,6 +329,7 @@ function AdminSidebar() {
               isCollapsed={isCollapsed}
               subItems={[
                 { label: "Restaurant Profile", path: "/admin/company/profile", icon: Store },
+                { label: "Tables", path: "/admin/company/tables", icon: Armchair },
                 { label: "Staff", path: "/admin/company/staff", icon: UserCog }
               ]}
             />

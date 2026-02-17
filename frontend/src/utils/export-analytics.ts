@@ -28,7 +28,7 @@ const formatCurrency = (amount: number): string => {
  */
 export const exportToCSV = (data: AdvancedAnalyticsResponse, view: string, date: Date) => {
     const { metrics, trends, distribution, products, debts, paymentMethods } = data;
-    
+
     // Prepare summary data
     const summary = [
         ['EatNbill Analytics Report', ''],
@@ -105,11 +105,11 @@ export const exportToCSV = (data: AdvancedAnalyticsResponse, view: string, date:
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const filename = `analytics_${view}_${format(date, 'yyyy-MM-dd')}.csv`;
-    
+
     link.href = URL.createObjectURL(blob);
     link.download = filename;
     link.click();
-    
+
     URL.revokeObjectURL(link.href);
 };
 
@@ -118,7 +118,7 @@ export const exportToCSV = (data: AdvancedAnalyticsResponse, view: string, date:
  */
 export const exportToPDF = (data: AdvancedAnalyticsResponse, view: string, date: Date) => {
     const { metrics, trends, distribution, products, debts, paymentMethods } = data;
-    
+
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let yPosition = 20;
@@ -127,15 +127,15 @@ export const exportToPDF = (data: AdvancedAnalyticsResponse, view: string, date:
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     doc.text('EatNbill Analytics Report', pageWidth / 2, yPosition, { align: 'center' });
-    
+
     yPosition += 10;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Generated on ${format(new Date(), 'PPP p')}`, pageWidth / 2, yPosition, { align: 'center' });
-    
+
     yPosition += 5;
     doc.text(`Period: ${view.toUpperCase()} - ${format(date, 'PPP')}`, pageWidth / 2, yPosition, { align: 'center' });
-    
+
     yPosition += 15;
 
     // Key Metrics Section

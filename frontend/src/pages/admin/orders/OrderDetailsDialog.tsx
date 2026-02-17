@@ -168,6 +168,18 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                                 {order.payment_method && <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tighter">{order.payment_method}</span>}
                             </div>
                             <div className="flex flex-col">
+                                {Number(order.discount_amount || 0) > 0 && (
+                                    <>
+                                        <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                                            <span>Subtotal</span>
+                                            <span>{formatINR(Number(order.total_amount) + Number(order.discount_amount || 0))}</span>
+                                        </div>
+                                        <div className="flex justify-between text-[8px] font-bold text-emerald-600 uppercase tracking-wider mb-1">
+                                            <span>Discount</span>
+                                            <span>-{formatINR(Number(order.discount_amount || 0))}</span>
+                                        </div>
+                                    </>
+                                )}
                                 <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Final Amount</span>
                                 <h3 className={cn("text-2xl font-black italic tracking-tighter leading-none", order.payment_status === 'PAID' ? "text-emerald-700" : "text-rose-700")}>
                                     {formatINR(parseFloat(order.total_amount))}

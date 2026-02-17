@@ -24,6 +24,7 @@ import {
   fetchOrderById,
   fetchProducts,
   fetchTables,
+  fetchStaffOrders,
 } from "@/lib/staff-api";
 import CheckoutDialog from "@/pages/user/CheckoutDialog";
 
@@ -100,7 +101,24 @@ export default function HeadMenuPage() {
     queryFn: fetchTables,
   });
 
+  // Fetch Orders to check occupied tables
+  const { data: ordersData } = useQuery({
+    queryKey: ['staff-orders'],
+    queryFn: fetchStaffOrders,
+  });
+
   const tablesList = Array.isArray(tablesData?.data) ? tablesData.data : [];
+
+  // ✅ Compute occupied tables from ACTIVE orders
+  const occupiedTableIds = React.useMemo(() => {
+    const orders = ordersData?.orders || [];
+    return new Set(
+      orders
+        .filter((order: any) => order.status === 'ACTIVE')
+        .map((order: any) => order.table_id)
+        .filter(Boolean)
+    );
+  }, [ordersData]);
 
   // Process products into usable format
   const processedProducts = React.useMemo(() => {
@@ -283,11 +301,18 @@ export default function HeadMenuPage() {
                 </SelectTrigger>
                 <SelectContent align="end" className="rounded-xl">
                   <SelectItem value="TAKEAWAY">Takeaway</SelectItem>
-                  {tablesList.filter((t: any) => t.is_active).map((table: any) => (
-                    <SelectItem key={table.id} value={table.id}>
-                      {table.table_number ? table.table_number : table.name} {table.seats ? `(${table.seats} seats)` : ''}
-                    </SelectItem>
-                  ))}
+                  {tablesList.filter((t: any) => t.is_active).map((table: any) => {
+                    const isOccupied = occupiedTableIds.has(table.id);
+                    return (
+                      <SelectItem
+                        key={table.id}
+                        value={table.id}
+                        disabled={isOccupied}
+                      >
+                        {table.table_number ? table.table_number : table.name} {table.seats ? `(${table.seats} seats)` : ''} {isOccupied ? '(Occupied)' : ''}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

@@ -560,6 +560,7 @@ export async function updatePayment(
     payment_provider?: string;
     payment_reference?: string;
     payment_amount?: number;
+    discount_amount?: number;
     paid_at?: string;
   }
 ) {
@@ -578,6 +579,7 @@ export async function updatePayment(
     payment_provider: data.payment_provider,
     payment_reference: data.payment_reference,
     payment_amount: data.payment_amount ? new Decimal(data.payment_amount) : undefined,
+    discount_amount: data.discount_amount !== undefined ? new Decimal(data.discount_amount) : undefined,
     paid_at: data.paid_at ? new Date(data.paid_at) : undefined,
   });
 
@@ -836,7 +838,7 @@ export async function acceptQROrder(
 
   // Order is already active, just confirm acceptance
   // No status change needed since ACTIVE is the correct state
-  
+
   // Optionally, broadcast acceptance to update UI in real-time
   try {
     await supabaseAdmin.channel(`restaurant:${restaurantId}:pending-orders`).send({

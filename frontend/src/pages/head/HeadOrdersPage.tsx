@@ -79,16 +79,16 @@ export default function HeadOrdersPage() {
             restaurant.id,
             (update: any) => {
                 console.log('[HeadOrdersPage] Realtime update received:', update);
-                
+
                 // Play notification sound for new orders
                 if (update?.eventType === 'INSERT' && update?.order) {
                     const orderSource = update.order.source as OrderSource;
-                    
+
                     console.log('[HeadOrdersPage] New order detected - Source:', orderSource);
-                    
+
                     // Map order source to sound notification
                     let soundType: 'QR' | 'TAKEAWAY' | 'ZOMATO' | 'SWIGGY' = 'TAKEAWAY';
-                    
+
                     switch (orderSource) {
                         case 'QR':
                             soundType = 'QR';
@@ -106,12 +106,12 @@ export default function HeadOrdersPage() {
                             soundType = 'TAKEAWAY';
                             break;
                     }
-                    
+
                     console.log('[HeadOrdersPage] Playing sound:', soundType);
-                    
+
                     // Play the appropriate sound
                     playOrderSound(soundType);
-                    
+
                     // Show toast notification
                     const orderNumber = update.order.order_number || 'New';
                     const customerName = update.order.customer_name || 'Customer';
@@ -119,7 +119,7 @@ export default function HeadOrdersPage() {
                         duration: 4000,
                     });
                 }
-                
+
                 // Invalidate and refetch orders when any change happens
                 queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
 
@@ -144,12 +144,12 @@ export default function HeadOrdersPage() {
             restaurant.id,
             (payload: QROrderPayload) => {
                 console.log('[HeadOrdersPage] New QR order:', payload);
-                
+
                 // Play notification sound for QR orders
                 playOrderSound('QR');
-                
+
                 toast.info(`New order #${payload.order_number} from Table ${payload.table_number}`);
-                
+
                 // Add to pending orders list
                 setPendingQROrders((prev) => [...prev, payload]);
 
@@ -216,9 +216,12 @@ export default function HeadOrdersPage() {
         }
 
         // Sort by updated_at descending (new/updated orders first)
-        return result.sort((a: any, b: any) =>
+        const sorted = result.sort((a: any, b: any) =>
             new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
         );
+
+        // ✅ Cap to 50 items for performance
+        return sorted.slice(0, 50);
     }, [orders, statusFilter, searchQuery, getOrderTableNumber]);
 
     // Active orders count
@@ -337,16 +340,16 @@ export default function HeadOrdersPage() {
 
     // Accept QR order mutation
     const acceptOrderMutation = useMutation({
-        mutationFn: ({ orderId, isAutoAccept }: { orderId: string; isAutoAccept?: boolean }) => 
+        mutationFn: ({ orderId, isAutoAccept }: { orderId: string; isAutoAccept?: boolean }) =>
             acceptQROrder(orderId, restaurant?.id),
         onSuccess: (data, { orderId, isAutoAccept }) => {
             // Remove from pending orders immediately
             setPendingQROrders((prev) => prev.filter((order) => order.order_id !== orderId));
-            
+
             // Refresh orders list with refetch to ensure it updates
             queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
             queryClient.refetchQueries({ queryKey: ['staff-orders'] });
-            
+
             // Only show toast for manual accepts, not auto-accepts
             if (!isAutoAccept) {
                 toast.success('Order accepted successfully');
@@ -366,11 +369,11 @@ export default function HeadOrdersPage() {
         onSuccess: (data, orderId) => {
             // Remove from pending orders immediately
             setPendingQROrders((prev) => prev.filter((order) => order.order_id !== orderId));
-            
+
             // Refresh orders list with refetch to ensure it updates
             queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
             queryClient.refetchQueries({ queryKey: ['staff-orders'] });
-            
+
             toast.success('Order rejected');
         },
         onError: (error: any) => {

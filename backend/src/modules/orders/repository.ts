@@ -271,12 +271,36 @@ export async function updateOrderPayment(
     payment_provider?: string;
     payment_reference?: string;
     payment_amount?: Prisma.Decimal;
+    discount_amount?: Prisma.Decimal; // New field
     paid_at?: Date | null;
   }
 ) {
   if (!isValidUuid(orderId)) return null;
+
+  // Fetch order to calculate subtotal if discount is applied
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true }
+  });
+  if (!order) return null;
+
+  let newTotal = order.total_amount;
+
+  // Recalculate total if discount is being updated
+  if (data.discount_amount !== undefined) {
+    const subtotal = order.items.reduce((sum, item) => sum + Number(item.price_snapshot) * item.quantity, 0);
+    const discount = Number(data.discount_amount);
+
+    if (discount > subtotal) {
+      throw new Error("Discount cannot exceed order total");
+    }
+
+    newTotal = new Prisma.Decimal(subtotal - discount);
+  }
+
   const isPaid = data.payment_status === 'PAID';
   const now = new Date();
+
   const updated = await prisma.order.update({
     where: { id: orderId },
     data: {
@@ -285,6 +309,8 @@ export async function updateOrderPayment(
       payment_provider: data.payment_provider,
       payment_reference: data.payment_reference,
       payment_amount: data.payment_amount,
+      discount_amount: data.discount_amount, // Persist discount
+      total_amount: newTotal,                // Update final total
       paid_at: data.paid_at ?? (isPaid ? now : null),
       // Automatically complete order if paid OR if it's a CREDIT payment
       ...(isPaid || data.payment_method === 'CREDIT' ? {

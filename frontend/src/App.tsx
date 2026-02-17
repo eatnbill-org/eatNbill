@@ -40,6 +40,7 @@ import AdminOrdersPage from "./pages/admin/orders/AdminOrdersPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import AdminSideSettings from "@/pages/admin/adminSettings/AdminSideSettings";
 import CompanyProfilePage from "@/pages/admin/company/CompanyProfilePage";
+import TablePage from "@/pages/admin/company/TablePage";
 import StaffPage from "./pages/admin/company/staff/StaffPage";
 import RestaurantSlugDebugPage from "./pages/admin/RestaurantSlugDebugPage";
 import DebugAuthPage from "./pages/admin/DebugAuthPage";
@@ -112,8 +113,9 @@ const App = () => (
                 <Route path="customers" element={<AdminCustomersPage />} />
                 <Route path="analytics" element={<AdminAnalyticsPage />} />
 
-                {/* ✅ COMPANY SECTION (Profile now has Tables) */}
+                {/* ✅ COMPANY SECTION */}
                 <Route path="company/profile" element={<CompanyProfilePage />} />
+                <Route path="company/tables" element={<TablePage />} />
                 <Route path="company/staff" element={<StaffPage />} />
 
                 {/* DEBUG: Restaurant Slug */}
@@ -141,6 +143,7 @@ const App = () => (
                 <Route path="stock" element={<ManagerStockPage />} />
                 <Route path="customers" element={<ManagerCustomersPage />} />
                 <Route path="company/profile" element={<CompanyProfilePage />} />
+                <Route path="company/tables" element={<TablePage />} />
                 <Route path="company/staff" element={<StaffPage />} />
               </Route>
 

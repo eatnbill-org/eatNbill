@@ -76,6 +76,8 @@ export interface Order {
   table_number: string | null;
   notes: string | null;
   total_amount: string;  // Decimal as string
+  discount_amount?: string; // Decimal as string - New field
+
 
   // Status & Lifecycle
   status: OrderStatus;
@@ -154,6 +156,7 @@ export interface UpdatePaymentPayload {
   payment_provider?: string;
   payment_reference?: string;
   payment_amount?: number;
+  discount_amount?: number;
 }
 
 export interface AddOrderItemsPayload {

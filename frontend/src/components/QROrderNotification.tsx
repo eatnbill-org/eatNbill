@@ -13,61 +13,7 @@ interface QROrderNotificationProps {
     autoAcceptSeconds?: number;
 }
 
-/**
- * Print a kitchen order slip for QR orders
- */
-function printQROrderSlip(order: Order) {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-
-    const itemsHtml = (order.items || []).map((item: any) =>
-        `<tr><td style="padding:4px 0;font-size:14px;">${item.quantity}x ${item.name_snapshot || item.name || 'Item'}</td></tr>`
-    ).join('');
-
-    const slipHtml = `<!DOCTYPE html><html><head><title>Kitchen Order</title>
-    <style>
-        @page { margin: 5mm; size: 80mm auto; }
-        body { font-family: 'Courier New', monospace; margin: 0; padding: 8px; font-size: 14px; width: 76mm; }
-        .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
-        .header h1 { font-size: 18px; margin: 0; letter-spacing: 2px; }
-        .qr-badge { text-align: center; background: #000; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: inline-block; margin-bottom: 6px; }
-        .info { margin-bottom: 8px; }
-        .info p { margin: 2px 0; font-size: 13px; }
-        .items { border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 8px 0; }
-        .items table { width: 100%; }
-        .footer { text-align: center; margin-top: 8px; font-size: 11px; color: #666; }
-    </style></head><body>
-        <div class="header">
-            <div class="qr-badge">QR ORDER</div>
-            <h1>KITCHEN ORDER</h1>
-        </div>
-        <div class="info">
-            <p><strong>Order:</strong> #${order.order_number || order.id.slice(-4).toUpperCase()}</p>
-            <p><strong>Table:</strong> ${order.table_number || 'Takeaway'}</p>
-            <p><strong>Time:</strong> ${timeStr}</p>
-            <p><strong>Date:</strong> ${dateStr}</p>
-            ${order.customer_name ? `<p><strong>Customer:</strong> ${order.customer_name}</p>` : ''}
-        </div>
-        <div class="items"><table>${itemsHtml}</table></div>
-        <div class="footer"><p>--- Kitchen Copy (QR) ---</p></div>
-    </body></html>`;
-
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;top:-10000px;left:-10000px;width:80mm;height:0;';
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (doc) {
-        doc.open();
-        doc.write(slipHtml);
-        doc.close();
-        setTimeout(() => {
-            iframe.contentWindow?.print();
-            setTimeout(() => document.body.removeChild(iframe), 3000);
-        }, 300);
-    }
-}
+import { printKitchenSlip } from '@/lib/print-utils';
 
 const QROrderNotification: React.FC<QROrderNotificationProps> = ({
     order,
@@ -119,7 +65,7 @@ const QROrderNotification: React.FC<QROrderNotificationProps> = ({
         if (intervalRef.current) clearInterval(intervalRef.current);
 
         // Print kitchen slip
-        printQROrderSlip(order);
+        printKitchenSlip(order);
 
         toast.success(`Order #${order.order_number || order.id.slice(-4).toUpperCase()} accepted & sent to kitchen!`, {
             duration: 3000,

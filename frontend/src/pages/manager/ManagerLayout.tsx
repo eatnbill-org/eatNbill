@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Package, Users, Store, UserCog, LogOut, UtensilsCrossed } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Package, Users, Store, UserCog, LogOut, UtensilsCrossed, Armchair } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ const NAV_ITEMS = [
   { to: "/manager/stock", label: "Stock", icon: Package },
   { to: "/manager/customers", label: "Customers", icon: Users },
   { to: "/manager/company/profile", label: "Restaurant", icon: Store },
+  { to: "/manager/company/tables", label: "Tables", icon: Armchair },
   { to: "/manager/company/staff", label: "Staff", icon: UserCog },
 ];
 
