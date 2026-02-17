@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -247,12 +247,24 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
     };
 
     const handlePrintAll = () => {
-        setTablesToPrint(tables.map(t => ({ id: t.id, name: t.table_number })));
+        setTablesToPrint(
+            tables.map((t) => ({
+                id: t.id,
+                name: t.table_number,
+                tableNumber: t.table_number,
+                hallName: t.hall?.name || "Unassigned",
+            }))
+        );
         setIsPrintOpen(true);
     };
 
     const handlePrintSingle = (t: RestaurantTable) => {
-        setTablesToPrint([{ id: t.id, name: t.table_number }]);
+        setTablesToPrint([{
+            id: t.id,
+            name: t.table_number,
+            tableNumber: t.table_number,
+            hallName: t.hall?.name || "Unassigned",
+        }]);
         setIsPrintOpen(true);
     };
 
@@ -564,6 +576,9 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                 tables={tablesToPrint}
                 storeName={restaurant?.name || "Restaurant"}
                 slug={restaurant?.slug || slug}
+                onDeleted={() => {
+                    fetchTables();
+                }}
             />
         </div>
     );
