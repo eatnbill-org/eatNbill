@@ -55,7 +55,8 @@ import {
   UserCog,
   ShieldCheck,
   Smartphone,
-  Armchair // Table Icon
+  Armchair, // Table Icon
+  Plus
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -372,6 +373,8 @@ function AdminSidebar() {
 
 // --- MAIN LAYOUT ---
 export default function AdminLayout() {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DemoModeBar />
@@ -379,6 +382,13 @@ export default function AdminLayout() {
         <SidebarProvider defaultOpen={true}>
           <AdminSidebar />
           <SidebarInset className="bg-background flex flex-col flex-1 min-w-0 transition-all duration-300 ease-in-out">
+            <Button
+              onClick={() => navigate('/admin/orders?new=true')}
+              className="hidden lg:flex fixed top-20 right-6 z-30 h-11 rounded-full px-5 shadow-lg shadow-primary/20"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Order
+            </Button>
             <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
               <Outlet />
             </div>

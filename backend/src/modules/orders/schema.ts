@@ -9,9 +9,10 @@ export const orderItemSchema = z.object({
 
 // Public order creation (no auth required)
 export const createPublicOrderSchema = z.object({
-  customer_name: z.string().min(2).max(100),
+  customer_name: z.string().trim().min(2).max(100),
   customer_phone: z
     .string()
+    .trim()
     .regex(/^\+?[1-9]\d{9,14}$/, "Invalid phone number format"),
   table_number: z.string().max(20).optional(),
   notes: z.string().max(500).optional(),

@@ -317,15 +317,6 @@ export async function updateOrderStatus(
     );
   }
 
-  // Require cancel reason when cancelling
-  if (input.status === "CANCELLED" && !input.cancel_reason) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Cancel reason is required when cancelling an order",
-      400
-    );
-  }
-
   const updated = await repository.updateOrderStatus(
     tenantId,
     orderId,
@@ -913,4 +904,3 @@ export async function rejectQROrder(
 
   return updatedOrder;
 }
-

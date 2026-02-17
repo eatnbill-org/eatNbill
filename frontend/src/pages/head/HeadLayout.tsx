@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize, Search } from "lucide-react";
+import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QROrderNotification from "@/components/QROrderNotification";
@@ -235,6 +235,13 @@ export default function HeadLayout() {
 
             {/* Main Content Area */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-24 md:pb-10 relative bg-slate-50/50">
+                <Button
+                    onClick={() => navigate("/head/menu")}
+                    className="hidden lg:flex fixed top-20 right-6 z-30 h-11 rounded-full px-5 shadow-lg shadow-primary/20"
+                >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Order
+                </Button>
                 <div className="max-w-7xl mx-auto w-full">
                     <Outlet context={{ headerSearch, setHeaderSearch }} />
                 </div>

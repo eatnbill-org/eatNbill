@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useAdminOrdersStore } from '@/stores/orders';
 import { formatINR } from '@/lib/format';
 import type { Order, PaymentMethod } from '@/types/order';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Wallet,
     CheckCircle2,
@@ -17,16 +18,10 @@ import {
     UserPlus,
     Undo2,
     Check,
-    AlertCircle
+    AlertCircle,
+    RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRestaurantStore } from '@/stores/restaurant';
@@ -49,14 +44,17 @@ const PAYMENT_METHODS = [
 export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDialogProps) {
     const { updatePayment, updating } = useAdminOrdersStore();
     const { restaurant } = useRestaurantStore();
-    const [method, setMethod] = useState<PaymentMethod | ''>('');
+    const [method, setMethod] = useState<PaymentMethod | ''>('UPI');
     const [isCreditView, setIsCreditView] = useState(false);
-    const [autoPrint, setAutoPrint] = useState(true);
+    const [autoPrint, setAutoPrint] = useState(false);
     const [discount, setDiscount] = useState<string>('');
 
     useEffect(() => {
         if (open && order) {
             setDiscount(order.discount_amount ? String(order.discount_amount) : '');
+            setMethod('UPI');
+            setAutoPrint(false);
+            setIsCreditView(false);
         }
     }, [open, order]);
 
@@ -75,7 +73,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                 payment_amount: parseFloat(order.total_amount),
             });
             onOpenChange(false);
-            setMethod('');
+            setMethod('UPI');
             setIsCreditView(false);
         } catch (error) {
             console.error('Failed to revert payment:', error);
@@ -109,7 +107,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             }
 
             onOpenChange(false);
-            setMethod('');
+            setMethod('UPI');
             setIsCreditView(false);
         } catch (error) {
             console.error('Failed to update payment:', error);
@@ -122,17 +120,17 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[440px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl mx-auto flex flex-col max-h-[90vh]">
+            <DialogContent className="w-[calc(100vw-1rem)] max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-3xl mx-auto flex flex-col max-h-[86vh]">
                 <form onSubmit={handleSubmit} className="flex flex-col h-full">
                     {/* Clean Header */}
                     <div className={cn(
-                        "p-6 pb-8 text-white relative",
+                        "p-4 sm:p-5 pb-6 text-white relative",
                         isPaid ? "bg-gradient-to-br from-emerald-500 to-teal-600" :
                             isCreditView ? "bg-gradient-to-br from-orange-500 to-amber-600" :
                                 "bg-gradient-to-br from-slate-800 to-slate-900"
                     )}>
                         <div className="flex items-center justify-between mb-2">
-                            <DialogTitle className="text-xl font-black tracking-tight">
+                            <DialogTitle className="text-lg sm:text-xl font-black tracking-tight">
                                 {isPaid ? 'Payment Confirmed' : isCreditView ? 'Credit Sale' : 'Settle Payment'}
                             </DialogTitle>
                             <Button
@@ -145,18 +143,18 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
-                        <DialogDescription className="text-white/80 text-sm font-bold flex items-center gap-2">
+                        <DialogDescription className="text-white/80 text-xs sm:text-sm font-bold flex items-center gap-2">
                             <span className="bg-white/20 px-2 py-0.5 rounded-lg text-xs tracking-wider">#{order.order_number}</span>
                             <span className="truncate">{order.customer_name}</span>
                         </DialogDescription>
                     </div>
 
-                    <div className="px-6 py-6 -mt-4 bg-white rounded-t-[2.5rem] relative z-20 flex-1 overflow-y-auto space-y-6 scrollbar-hide">
+                    <div className="px-4 sm:px-5 py-4 -mt-3 bg-white rounded-t-[2rem] relative z-20 flex-1 overflow-y-auto space-y-4">
                         {isPaid ? (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="space-y-4 pt-2"
+                                className="space-y-3 pt-1"
                             >
                                 <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col items-center text-center gap-3">
                                     <div className="h-16 w-16 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-2">
@@ -179,66 +177,74 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                 </Button>
                             </motion.div>
                         ) : (
-                            <div className="space-y-6">
-                                {/* Step 1: Select Method */}
-                                {!isCreditView && (
-                                    <div className="space-y-2">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Payment Method</Label>
-                                        <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-                                            <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-white focus:ring-primary/10 shadow-sm transition-all text-sm font-bold">
-                                                <SelectValue placeholder="How was it paid?" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-slate-200 p-1 shadow-2xl">
-                                                {PAYMENT_METHODS.map((pm) => (
-                                                    <SelectItem key={pm.value} value={pm.value} className="rounded-xl py-3 cursor-pointer">
-                                                        <div className="flex items-center gap-3">
+                            <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+                                <div className="space-y-4">
+                                    {/* Step 1: Select Method */}
+                                    {!isCreditView && (
+                                        <div className="space-y-2">
+                                            <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Payment Method</Label>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {PAYMENT_METHODS.map((pm) => {
+                                                    const selected = method === pm.value;
+                                                    return (
+                                                        <button
+                                                            key={pm.value}
+                                                            type="button"
+                                                            onClick={() => setMethod(pm.value as PaymentMethod)}
+                                                            className={cn(
+                                                                "h-11 rounded-xl border px-3 flex items-center gap-2 text-left transition-all",
+                                                                selected
+                                                                    ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                                                                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                                            )}
+                                                        >
                                                             <div className={cn("p-1.5 rounded-lg", pm.bgColor, pm.color)}>
                                                                 <pm.icon className="h-4 w-4" />
                                                             </div>
-                                                            <span className="font-bold text-slate-700">{pm.label}</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-
-                                {/* Step 2: Credit Toggle */}
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Credit Option</Label>
-                                    {!isCreditView ? (
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => setIsCreditView(true)}
-                                            className="w-full h-12 rounded-2xl border-orange-100 bg-orange-50/20 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 transition-all font-bold gap-2 text-xs"
-                                        >
-                                            <UserPlus className="h-4 w-4" />
-                                            Move to Customer Credit
-                                        </Button>
-                                    ) : (
-                                        <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl space-y-3">
-                                            <div className="flex items-center gap-2 text-orange-800">
-                                                <AlertCircle className="h-4 w-4" />
-                                                <span className="text-xs font-black uppercase tracking-tight">Credit Mode Active</span>
+                                                            <span className="text-xs font-bold">{pm.label}</span>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setIsCreditView(false)}
-                                                className="w-full h-8 rounded-lg text-orange-600 hover:bg-orange-100 font-bold text-[10px]"
-                                            >
-                                                Switch to Direct Payment
-                                            </Button>
                                         </div>
                                     )}
+
+                                    {/* Step 2: Credit Toggle */}
+                                    <div className="space-y-2">
+                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Credit Option</Label>
+                                        {!isCreditView ? (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setIsCreditView(true)}
+                                                className="w-full h-11 rounded-xl border-orange-100 bg-orange-50/20 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 transition-all font-bold gap-2 text-xs"
+                                            >
+                                                <UserPlus className="h-4 w-4" />
+                                                Move to Customer Credit
+                                            </Button>
+                                        ) : (
+                                            <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl space-y-2">
+                                                <div className="flex items-center gap-2 text-orange-800">
+                                                    <AlertCircle className="h-4 w-4" />
+                                                    <span className="text-xs font-black uppercase tracking-tight">Credit Mode Active</span>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setIsCreditView(false)}
+                                                    className="w-full h-8 rounded-lg text-orange-600 hover:bg-orange-100 font-bold text-[10px]"
+                                                >
+                                                    Switch to Direct Payment
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Step 3: Discount & Summary */}
-                                <div className="space-y-4 pt-2">
-                                    <div className="space-y-3 bg-slate-50/80 p-5 rounded-[2rem] border border-slate-100 shadow-inner">
+                                <div className="space-y-3">
+                                    <div className="space-y-3 bg-slate-50/80 p-4 rounded-2xl border border-slate-100 shadow-inner">
                                         <div className="flex items-center justify-between text-xs text-slate-500 font-bold">
                                             <span>ORDER TOTAL</span>
                                             <span className="text-slate-900">{formatINR(baseTotal)}</span>
@@ -267,7 +273,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Final Payable</p>
-                                                <p className="text-3xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
+                                                <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tighter tabular-nums leading-none">
                                                     {formatINR(finalPayable)}
                                                 </p>
                                             </div>
@@ -291,13 +297,13 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                         )}
                     </div>
 
-                    <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
+                    <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2 shrink-0">
                         {!isPaid && (
                             <Button
                                 type="submit"
                                 disabled={updating || (!method && !isCreditView)}
                                 className={cn(
-                                    "w-full h-14 rounded-2xl font-black transition-all shadow-xl text-lg gap-2",
+                                    "w-full h-12 rounded-xl font-black transition-all shadow-xl text-base gap-2",
                                     isCreditView
                                         ? "bg-orange-600 hover:bg-orange-700 text-white shadow-orange-100"
                                         : "bg-slate-900 hover:bg-black text-white shadow-slate-200"

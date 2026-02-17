@@ -3,18 +3,11 @@ import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useOutletContext } from "react-router-dom"; // For menu page redirect
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
-import { useHeadAuth, useStaffAuth } from "@/hooks/use-head-auth";
-import { fetchStaffOrders, updateOrderItem, removeOrderItem } from "@/lib/staff-api";
+import { useHeadAuth } from "@/hooks/use-head-auth";
+import { fetchStaffOrders, updateOrderItem, removeOrderItem, updateOrderStatus } from "@/lib/staff-api";
 import { formatINR, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import {
     Dialog,
     DialogContent,
@@ -31,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 
 // Simplified Status configuration
@@ -48,6 +42,9 @@ export default function HeadOrdersPage() {
     const [statusFilter, setStatusFilter] = React.useState<string>("all");
     const [selectedOrder, setSelectedOrder] = React.useState<any | null>(null);
     const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
+    const [cancelDialogOpen, setCancelDialogOpen] = React.useState(false);
+    const [orderToCancel, setOrderToCancel] = React.useState<any | null>(null);
+    const [cancelReason, setCancelReason] = React.useState("");
 
     // Order Details Dialog State
     const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
@@ -171,6 +168,22 @@ export default function HeadOrdersPage() {
         }
     });
 
+    const cancelOrderMutation = useMutation({
+        mutationFn: ({ orderId, reason }: { orderId: string; reason: string }) =>
+            updateOrderStatus(orderId, "CANCELLED", reason),
+        onSuccess: () => {
+            toast.success("Order cancelled");
+            queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+            setCancelDialogOpen(false);
+            setCancelReason("");
+            setOrderToCancel(null);
+            setDetailsDialogOpen(false);
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to cancel order");
+        },
+    });
+
     const canEditDineInItems = (order: any) =>
         order?.order_type === 'DINE_IN' &&
         order?.payment_status !== 'PAID' &&
@@ -193,6 +206,28 @@ export default function HeadOrdersPage() {
         setDetailsDialogOpen(true);
     };
 
+    const getOrderLocationLabel = React.useCallback((order: any) => {
+        if (order?.order_type !== "DINE_IN") {
+            return order?.order_type === "DELIVERY" ? "Delivery" : "Takeaway";
+        }
+        const tableNumber = getOrderTableNumber(order);
+        const hallName = getOrderHallName(order);
+        if (tableNumber && hallName) return `${hallName} • Table ${tableNumber}`;
+        if (tableNumber) return `Table ${tableNumber}`;
+        if (hallName) return hallName;
+        return "Dine-in";
+    }, [getOrderHallName, getOrderTableNumber]);
+
+    const handleOpenCancelDialog = React.useCallback((order: any) => {
+        setOrderToCancel(order);
+        setCancelReason("");
+        setCancelDialogOpen(true);
+    }, []);
+
+    const handleConfirmCancel = React.useCallback(() => {
+        if (!orderToCancel?.id) return;
+        cancelOrderMutation.mutate({ orderId: orderToCancel.id, reason: cancelReason.trim() });
+    }, [cancelOrderMutation, cancelReason, orderToCancel]);
 
 
     return (
@@ -266,6 +301,9 @@ export default function HeadOrdersPage() {
                                             </h3>
                                             <p className="text-xs text-slate-400 font-medium mt-0.5">
                                                 Order #{order.order_number}
+                                            </p>
+                                            <p className="text-[11px] text-slate-500 font-semibold mt-1 truncate">
+                                                {getOrderLocationLabel(order)}
                                             </p>
                                         </div>
                                         <div className="text-right ml-3">
@@ -400,6 +438,19 @@ export default function HeadOrdersPage() {
                                                     Paid
                                                 </Button>
                                             )}
+                                            {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 px-2.5 rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 text-[10px] font-bold"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenCancelDialog(order);
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -453,7 +504,7 @@ export default function HeadOrdersPage() {
                                     <div className="bg-slate-50 p-2.5 rounded-2xl flex items-center gap-2 border border-slate-100/50">
                                         <MapPin className="h-3.5 w-3.5 text-orange-500" />
                                         <span className="text-xs font-black text-slate-700 truncate">
-                                            {selectedOrder.order_type === 'DINE_IN' ? `Table ${getOrderTableNumber(selectedOrder)}` : 'Takeaway'}
+                                            {getOrderLocationLabel(selectedOrder)}
                                         </span>
                                     </div>
                                 </div>
@@ -522,6 +573,15 @@ export default function HeadOrdersPage() {
                                             Mark Paid
                                         </Button>
                                     )}
+                                    {selectedOrder.status !== "COMPLETED" && selectedOrder.status !== "CANCELLED" && (
+                                        <Button
+                                            variant="outline"
+                                            className="flex-1 h-12 rounded-2xl border-rose-200 text-rose-600 font-black text-xs uppercase tracking-wider bg-white hover:bg-rose-50"
+                                            onClick={() => handleOpenCancelDialog(selectedOrder)}
+                                        >
+                                            Cancel Order
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         </>
@@ -539,6 +599,60 @@ export default function HeadOrdersPage() {
                     }
                 }}
             />
+
+            <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
+                    <DialogHeader className="px-6 py-5 border-b border-slate-100">
+                        <DialogTitle className="text-lg font-black text-slate-900">Cancel Order</DialogTitle>
+                    </DialogHeader>
+                    <div className="px-6 py-5 space-y-4">
+                        <p className="text-sm text-slate-600">
+                            You are cancelling{" "}
+                            <span className="font-bold text-slate-900">
+                                #{orderToCancel?.order_number || selectedOrder?.order_number}
+                            </span>.
+                            This action cannot be undone. You can add a reason optionally.
+                        </p>
+                        <div className="space-y-2">
+                            <label htmlFor="cancel-reason" className="text-xs font-black uppercase tracking-wider text-slate-500">
+                                Reason (Optional)
+                            </label>
+                            <Textarea
+                                id="cancel-reason"
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                                placeholder="Reason for cancellation"
+                                rows={4}
+                                className="rounded-2xl border-slate-200 text-sm"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex-col sm:flex-row gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCancelDialogOpen(false)}
+                            className="w-full sm:w-auto rounded-xl"
+                            disabled={cancelOrderMutation.isPending}
+                        >
+                            Keep Order
+                        </Button>
+                        <Button
+                            onClick={handleConfirmCancel}
+                            className="w-full sm:w-auto rounded-xl bg-rose-600 hover:bg-rose-700 text-white"
+                            disabled={cancelOrderMutation.isPending}
+                        >
+                            {cancelOrderMutation.isPending ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Cancelling...
+                                </>
+                            ) : (
+                                "Confirm Cancel"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
 
             {/* Custom Scrollbar Styles */}

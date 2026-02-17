@@ -424,6 +424,7 @@ export default function HeadMenuPage() {
         tableId={selectedTable}
         tables={tablesList}
         isWaiterMode={true}
+        customerFieldsOptional={true}
         reorderContext={isReorderMode && existingOrder ? {
           orderNumber: existingOrder.order_number,
           customerName: existingOrder.customer_name,

@@ -251,9 +251,9 @@ export default function AddManualOrderDialog({
             variant="success"
             className="px-8"
             onClick={() => {
-              const name = customerName.trim();
-              const phone = customerPhone.trim();
-              if (!name || !phone || items.length === 0) return;
+              const name = customerName.trim() || "Guest";
+              const phone = customerPhone.trim() || "N/A";
+              if (items.length === 0) return;
 
               const now = new Date().toISOString();
               const id = makeOrderId();
@@ -282,7 +282,7 @@ export default function AddManualOrderDialog({
 
               onOpenChange(false);
             }}
-            disabled={customerName.trim().length === 0 || customerPhone.trim().length === 0 || items.length === 0}
+            disabled={items.length === 0}
           >
             Confirm Order
           </Button>
