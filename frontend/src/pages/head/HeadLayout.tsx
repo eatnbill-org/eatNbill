@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QROrderNotification from "@/components/QROrderNotification";
 import { useNotificationStore } from "@/stores/notifications.store";
 import { useRealtimeStore, type QROrderPayload } from "@/stores/realtime/realtime.store";
 import { playOrderSound } from "@/lib/sound-notification";
-import { fetchOrderById } from "@/lib/head-api";
+import { fetchOrderById, fetchStaffOrders } from "@/lib/head-api";
 import {
     Dialog,
     DialogContent,
@@ -29,10 +30,52 @@ const NAV_ITEMS = [
 export default function HeadLayout() {
     const location = useLocation();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { staff, restaurant, logout } = useStaffAuth();
     const [logoutOpen, setLogoutOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const connectionMode = useRealtimeStore((state) => state.connectionMode);
     const notifiedQrOrderIds = useRef<Set<string>>(new Set());
+    const knownOrderIdsRef = useRef<Set<string>>(new Set());
+    const pollingInitializedRef = useRef(false);
+
+    const handleQrNotification = useCallback(async (
+        orderId: string,
+        fallback?: Partial<{ order_number: string; customer_name: string; table_number: string; total_amount: number }>
+    ) => {
+        if (!orderId || notifiedQrOrderIds.current.has(orderId)) return;
+        notifiedQrOrderIds.current.add(orderId);
+
+        playOrderSound('QR');
+
+        try {
+            const response = await fetchOrderById(orderId);
+            const fullOrder = response?.data;
+            if (fullOrder?.id) {
+                useNotificationStore.getState().addNotification(fullOrder);
+                return;
+            }
+        } catch {
+            // Fall through to minimal payload.
+        }
+
+        useNotificationStore.getState().addNotification({
+            id: orderId,
+            source: 'QR',
+            order_number: fallback?.order_number || orderId.slice(-4).toUpperCase(),
+            customer_name: fallback?.customer_name || 'Customer',
+            table_number: fallback?.table_number || null,
+            total_amount: Number(fallback?.total_amount || 0),
+            items: [],
+        } as any);
+
+        // Keep head pages in sync immediately when QR notification arrives.
+        queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+        queryClient.invalidateQueries({ queryKey: ['head-orders-for-tables'] });
+        queryClient.invalidateQueries({ queryKey: ['head-tables-status'] });
+        void queryClient.refetchQueries({ queryKey: ['staff-orders'], type: 'active' });
+        void queryClient.refetchQueries({ queryKey: ['head-orders-for-tables'], type: 'active' });
+    }, [queryClient]);
 
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
@@ -60,37 +103,6 @@ export default function HeadLayout() {
     useEffect(() => {
         if (!restaurant?.id) return;
 
-        const handleQrNotification = async (
-            orderId: string,
-            fallback?: Partial<{ order_number: string; customer_name: string; table_number: string; total_amount: number }>
-        ) => {
-            if (!orderId || notifiedQrOrderIds.current.has(orderId)) return;
-            notifiedQrOrderIds.current.add(orderId);
-
-            playOrderSound('QR');
-
-            try {
-                const response = await fetchOrderById(orderId);
-                const fullOrder = response?.data;
-                if (fullOrder?.id) {
-                    useNotificationStore.getState().addNotification(fullOrder);
-                    return;
-                }
-            } catch {
-                // Fall through to minimal payload.
-            }
-
-            useNotificationStore.getState().addNotification({
-                id: orderId,
-                source: 'QR',
-                order_number: fallback?.order_number || orderId.slice(-4).toUpperCase(),
-                customer_name: fallback?.customer_name || 'Customer',
-                table_number: fallback?.table_number || null,
-                total_amount: Number(fallback?.total_amount || 0),
-                items: [],
-            } as any);
-        };
-
         const unsubscribe = useRealtimeStore.getState().subscribeToRestaurantOrders(
             restaurant.id,
             async (update: any) => {
@@ -114,7 +126,55 @@ export default function HeadLayout() {
             if (unsubscribe) unsubscribe();
             if (unsubscribePending) unsubscribePending();
         };
+    }, [restaurant?.id, handleQrNotification]);
+
+    useEffect(() => {
+        // Reset caches when restaurant context changes.
+        notifiedQrOrderIds.current.clear();
+        knownOrderIdsRef.current.clear();
+        pollingInitializedRef.current = false;
     }, [restaurant?.id]);
+
+    // Fallback: if websocket realtime is down, detect new QR orders from polling data.
+    useEffect(() => {
+        if (!restaurant?.id || connectionMode !== 'polling') return;
+
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+
+        const pollOrders = async () => {
+            try {
+                const response = await fetchStaffOrders();
+                const orders = Array.isArray(response?.data) ? response.data : [];
+                const nextIds = new Set<string>();
+
+                for (const order of orders) {
+                    if (!order?.id) continue;
+                    nextIds.add(order.id);
+
+                    const isKnown = knownOrderIdsRef.current.has(order.id);
+                    const isQr = order.source === 'QR';
+
+                    if (pollingInitializedRef.current && !isKnown && isQr) {
+                        await handleQrNotification(order.id, order);
+                    }
+                }
+
+                knownOrderIdsRef.current = nextIds;
+                pollingInitializedRef.current = true;
+            } catch {
+                // Silent: polling fallback should never block UI.
+            }
+        };
+
+        void pollOrders();
+        intervalId = setInterval(() => {
+            void pollOrders();
+        }, 5000);
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [restaurant?.id, connectionMode, handleQrNotification]);
 
     const handleLogout = async () => {
         await logout();
