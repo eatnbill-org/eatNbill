@@ -1,60 +1,55 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// PAGES
-import NotFound from "./pages/NotFound";
-import LandingPage from "./pages/website/LandingPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import LoginPage from "./pages/auth/LoginPage";
-import PostLoginPage from "./pages/auth/PostLoginPage";
-import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
-import UserMenuPage from "./pages/user/UserMenuPage";
-import OrderConfirmationPage from "./pages/user/OrderConfirmationPage";
-import RestaurantSetupPage from "./pages/restaurant/RestaurantSetupPage";
-import PublicMenuPage from "./pages/customer/PublicMenuPage";
-
-// HEAD PAGES (frmerly Staff/Waiter)
-import HeadLayout from "./pages/head/HeadLayout";
-import HeadOrdersPage from "./pages/head/HeadOrdersPage";
-import HeadStockPage from "./pages/head/HeadStockPage";
-import HeadMenuPage from "./pages/head/HeadMenuPage";
-import HeadTablesPage from "./pages/head/HeadTablesPage";
-import ManagerLayout from "./pages/manager/ManagerLayout";
-import ManagerDashboardPage from "./pages/manager/ManagerDashboardPage";
-import ManagerOrdersPage from "./pages/manager/ManagerOrdersPage";
-import ManagerStockPage from "./pages/manager/ManagerStockPage";
-import ManagerCustomersPage from "./pages/manager/ManagerCustomersPage";
-import ManagerStaffPage from "./pages/manager/ManagerStaffPage";
-
-import AdminLayout from "@/pages/admin/AdminLayout";
-import AdminDashboardPage from "./pages/admin/dashboard/AdminDashboardPage";
-import AdminCustomersPage from "./pages/admin/customer/AdminCustomersPage";
-import AdminAnalyticsPage from "@/pages/admin/AdminAnalyticsPage";
-import AdminProductsPage from "./pages/admin/products/AdminProductsPageNew";
-import AdminCampaignPage from "./pages/admin/campaigns/AdminCampaignPage";
-import AdminOrdersPage from "./pages/admin/orders/AdminOrdersPage";
-
-import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
-import AdminSideSettings from "@/pages/admin/adminSettings/AdminSideSettings";
-import CompanyProfilePage from "@/pages/admin/company/CompanyProfilePage";
-import TablePage from "@/pages/admin/company/TablePage";
-import StaffPage from "./pages/admin/company/staff/StaffPage";
-import RestaurantSlugDebugPage from "./pages/admin/RestaurantSlugDebugPage";
-import DebugAuthPage from "./pages/admin/DebugAuthPage";
-
-import CustomerEntry from './pages/admin/customerSettings/CustomerEntry';
 import { DemoStoreProvider } from "@/store/demo-store";
 import AdminRoute from "@/components/AdminRoute";
 import { AuthProvider } from "@/hooks/use-auth";
 import ManagerRoute from "@/components/ManagerRoute";
 
-const queryClient = new QueryClient();
+const NotFound = lazy(() => import("./pages/NotFound"));
+const LandingPage = lazy(() => import("./pages/website/LandingPage"));
+const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
+const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
+const PostLoginPage = lazy(() => import("./pages/auth/PostLoginPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/auth/ForgotPasswordPage"));
+const UserMenuPage = lazy(() => import("./pages/user/UserMenuPage"));
+const OrderConfirmationPage = lazy(() => import("./pages/user/OrderConfirmationPage"));
+const RestaurantSetupPage = lazy(() => import("./pages/restaurant/RestaurantSetupPage"));
+const PublicMenuPage = lazy(() => import("./pages/customer/PublicMenuPage"));
+const HeadLayout = lazy(() => import("./pages/head/HeadLayout"));
+const HeadOrdersPage = lazy(() => import("./pages/head/HeadOrdersPage"));
+const HeadStockPage = lazy(() => import("./pages/head/HeadStockPage"));
+const HeadMenuPage = lazy(() => import("./pages/head/HeadMenuPage"));
+const HeadTablesPage = lazy(() => import("./pages/head/HeadTablesPage"));
+const ManagerLayout = lazy(() => import("./pages/manager/ManagerLayout"));
+const ManagerDashboardPage = lazy(() => import("./pages/manager/ManagerDashboardPage"));
+const ManagerOrdersPage = lazy(() => import("./pages/manager/ManagerOrdersPage"));
+const ManagerStockPage = lazy(() => import("./pages/manager/ManagerStockPage"));
+const ManagerCustomersPage = lazy(() => import("./pages/manager/ManagerCustomersPage"));
+const ManagerStaffPage = lazy(() => import("./pages/manager/ManagerStaffPage"));
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboardPage = lazy(() => import("./pages/admin/dashboard/AdminDashboardPage"));
+const AdminCustomersPage = lazy(() => import("./pages/admin/customer/AdminCustomersPage"));
+const AdminAnalyticsPage = lazy(() => import("./pages/admin/AdminAnalyticsPage"));
+const AdminProductsPage = lazy(() => import("./pages/admin/products/AdminProductsPageNew"));
+const AdminCampaignPage = lazy(() => import("./pages/admin/campaigns/AdminCampaignPage"));
+const AdminOrdersPage = lazy(() => import("./pages/admin/orders/AdminOrdersPage"));
+const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
+const AdminSideSettings = lazy(() => import("./pages/admin/adminSettings/AdminSideSettings"));
+const CompanyProfilePage = lazy(() => import("./pages/admin/company/CompanyProfilePage"));
+const TablePage = lazy(() => import("./pages/admin/company/TablePage"));
+const StaffPage = lazy(() => import("./pages/admin/company/staff/StaffPage"));
+const RestaurantSlugDebugPage = lazy(() => import("./pages/admin/RestaurantSlugDebugPage"));
+const DebugAuthPage = lazy(() => import("./pages/admin/DebugAuthPage"));
+const CustomerEntry = lazy(() => import("./pages/admin/customerSettings/CustomerEntry"));
+
+const RouteFallback = () => <div className="min-h-screen bg-background" />;
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <Suspense fallback={<RouteFallback />}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -153,6 +148,6 @@ const App = () => (
         </BrowserRouter>
       </DemoStoreProvider>
     </TooltipProvider>
-  </QueryClientProvider>
+  </Suspense>
 );
 export default App;
