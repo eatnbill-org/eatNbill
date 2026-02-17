@@ -19,7 +19,6 @@ import {
     Plus,
     Eye,
     ChevronRight,
-    Loader2,
     RefreshCw,
     MapPin,
     Search,
@@ -31,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
+import { WaiterLayoutSkeleton } from "@/components/ui/skeleton";
 
 export default function HeadTablesPage() {
     const queryClient = useQueryClient();
@@ -96,11 +96,7 @@ export default function HeadTablesPage() {
     );
 
     if (tablesLoading || ordersLoading) {
-        return (
-            <div className="flex h-[60vh] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <WaiterLayoutSkeleton />;
     }
 
     const handleViewOrder = (table: any) => {

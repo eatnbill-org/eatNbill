@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as staffApi from "@/api/staff";
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
+import { ListSkeleton } from "@/components/ui/skeleton";
 
 export function SharedLoginSettings() {
     const queryClient = useQueryClient();
@@ -99,9 +100,8 @@ export function SharedLoginSettings() {
 
             <div className="p-6">
                 {isLoading ? (
-                    <div className="py-12 flex flex-col items-center justify-center space-y-3 opacity-40">
-                        <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
-                        <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Loading...</p>
+                    <div className="py-2">
+                        <ListSkeleton rows={3} />
                     </div>
                 ) : isEditing ? (
                     <div className="space-y-4">

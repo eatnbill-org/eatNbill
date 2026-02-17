@@ -2,13 +2,14 @@ import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Users, Loader2, UserCog, Key } from "lucide-react";
+import { Plus, Search, Users, UserCog, Key } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 // Import API functions
 import * as staffApi from "@/api/staff";
 import type { Staff, StaffDetails } from "@/api/staff";
+import { ListSkeleton } from "@/components/ui/skeleton";
 
 // Import Modular Components
 import { StaffTable } from "./components/StaffTable";
@@ -222,9 +223,8 @@ export default function StaffPage() {
           className="rounded-[2.5rem] border border-slate-100 bg-white shadow-2xl shadow-slate-200/40 overflow-hidden"
         >
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 space-y-4 opacity-40">
-              <Loader2 className="h-12 w-12 text-slate-300 animate-spin" />
-              <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Synchronizing Personnel...</p>
+            <div className="p-6">
+              <ListSkeleton rows={7} />
             </div>
           ) : (
             <StaffTable

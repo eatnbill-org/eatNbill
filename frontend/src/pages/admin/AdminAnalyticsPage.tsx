@@ -42,7 +42,6 @@ import {
     ChevronRight,
     Layers,
     LayoutGrid,
-    Loader2,
     Download,
     FileText,
     Printer,
@@ -56,6 +55,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ComposedChart, Bar, Legend } from "recharts";
 import { PaymentMethodChart } from "@/components/analytics/PaymentMethodChart";
 import { exportToCSV, exportToPDF, printAnalytics } from "@/utils/export-analytics";
+import { DashboardStatsSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 
 type RangeKey = "daily" | "monthly" | "yearly";
 
@@ -181,8 +181,9 @@ export default function AdminAnalyticsPage() {
     return (
         <div className="min-h-full bg-slate-50/50">
             {isLoading && !revenue && (
-                <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
+                <div className="space-y-6 py-6">
+                    <DashboardStatsSkeleton />
+                    <TableSkeleton rows={6} />
                 </div>
             )}
 

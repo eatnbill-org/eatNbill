@@ -33,6 +33,7 @@
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { axiosInstance } from './axios';
 import { ApiError } from './error';
+import { useLoadingStore, type LoadingScope } from '@/stores/ui/loading.store';
 
 /**
  * Standard API response wrapper.
@@ -51,9 +52,45 @@ export interface ApiResponse<T = unknown> {
 export interface ApiRequestConfig extends Omit<AxiosRequestConfig, 'url' | 'method' | 'data'> {
   /** Skip auth token injection (for public endpoints) */
   skipAuth?: boolean;
+  loading?: {
+    enabled?: boolean;
+    scope?: LoadingScope;
+    key?: string;
+  };
 }
 
 class ApiClient {
+  private async withTrackedLoading<T>(
+    task: () => Promise<T>,
+    method: string,
+    url: string,
+    config?: ApiRequestConfig
+  ): Promise<T> {
+    const loadingConfig = config?.loading;
+
+    if (loadingConfig?.enabled === false) {
+      return task();
+    }
+
+    const scope = loadingConfig?.scope ?? 'component';
+    const key = loadingConfig?.key ?? `api:${method.toUpperCase()}:${url}`;
+
+    const { startLoading, stopLoading } = useLoadingStore.getState();
+    startLoading(key, scope);
+
+    try {
+      return await task();
+    } finally {
+      stopLoading(key, scope);
+    }
+  }
+
+  private stripLoadingConfig(config?: ApiRequestConfig): AxiosRequestConfig | undefined {
+    if (!config) return undefined;
+    const { loading: _loading, ...axiosConfig } = config;
+    return axiosConfig;
+  }
+
   /**
    * Performs a GET request.
    * 
@@ -63,8 +100,10 @@ class ApiClient {
    * @throws ApiError on failure
    */
   async get<T = unknown>(url: string, config?: ApiRequestConfig): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<T> = await axiosInstance.get(url, config);
-    return this.normalizeResponse(response);
+    return this.withTrackedLoading(async () => {
+      const response: AxiosResponse<T> = await axiosInstance.get(url, this.stripLoadingConfig(config));
+      return this.normalizeResponse(response);
+    }, 'get', url, config);
   }
 
   /**
@@ -81,8 +120,14 @@ class ApiClient {
     data?: D,
     config?: ApiRequestConfig
   ): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<T> = await axiosInstance.post(url, data, config);
-    return this.normalizeResponse(response);
+    return this.withTrackedLoading(async () => {
+      const response: AxiosResponse<T> = await axiosInstance.post(
+        url,
+        data,
+        this.stripLoadingConfig(config)
+      );
+      return this.normalizeResponse(response);
+    }, 'post', url, config);
   }
 
   /**
@@ -99,8 +144,14 @@ class ApiClient {
     data?: D,
     config?: ApiRequestConfig
   ): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<T> = await axiosInstance.put(url, data, config);
-    return this.normalizeResponse(response);
+    return this.withTrackedLoading(async () => {
+      const response: AxiosResponse<T> = await axiosInstance.put(
+        url,
+        data,
+        this.stripLoadingConfig(config)
+      );
+      return this.normalizeResponse(response);
+    }, 'put', url, config);
   }
 
   /**
@@ -117,8 +168,14 @@ class ApiClient {
     data?: D,
     config?: ApiRequestConfig
   ): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<T> = await axiosInstance.patch(url, data, config);
-    return this.normalizeResponse(response);
+    return this.withTrackedLoading(async () => {
+      const response: AxiosResponse<T> = await axiosInstance.patch(
+        url,
+        data,
+        this.stripLoadingConfig(config)
+      );
+      return this.normalizeResponse(response);
+    }, 'patch', url, config);
   }
 
   /**
@@ -130,8 +187,10 @@ class ApiClient {
    * @throws ApiError on failure
    */
   async delete<T = unknown>(url: string, config?: ApiRequestConfig): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<T> = await axiosInstance.delete(url, config);
-    return this.normalizeResponse(response);
+    return this.withTrackedLoading(async () => {
+      const response: AxiosResponse<T> = await axiosInstance.delete(url, this.stripLoadingConfig(config));
+      return this.normalizeResponse(response);
+    }, 'delete', url, config);
   }
 
   /**
@@ -162,14 +221,16 @@ class ApiClient {
     formData: FormData,
     config?: ApiRequestConfig
   ): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<T> = await axiosInstance.post(url, formData, {
-      ...config,
-      headers: {
-        ...config?.headers,
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return this.normalizeResponse(response);
+    return this.withTrackedLoading(async () => {
+      const response: AxiosResponse<T> = await axiosInstance.post(url, formData, {
+        ...this.stripLoadingConfig(config),
+        headers: {
+          ...config?.headers,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return this.normalizeResponse(response);
+    }, 'upload', url, config);
   }
 }
 

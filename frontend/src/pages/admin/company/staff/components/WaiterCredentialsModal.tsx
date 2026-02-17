@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as staffApi from "@/api/staff";
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
+import { FormSkeleton } from "@/components/ui/skeleton";
 
 interface WaiterCredentialsModalProps {
     open: boolean;
@@ -92,9 +93,8 @@ export function WaiterCredentialsModal({ open, onOpenChange }: WaiterCredentials
                 {/* Body */}
                 <div className="p-6">
                     {isLoading ? (
-                        <div className="py-12 flex flex-col items-center justify-center space-y-3 opacity-40">
-                            <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
-                            <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Loading...</p>
+                        <div className="py-2">
+                            <FormSkeleton rows={2} />
                         </div>
                     ) : (
                         <div className="space-y-4">

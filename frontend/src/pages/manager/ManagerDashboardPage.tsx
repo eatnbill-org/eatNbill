@@ -16,6 +16,7 @@ import { BillPrintSheet } from "@/pages/admin/dashboard/components/BillPrintShee
 import { ActivityFeed } from "@/pages/admin/dashboard/components/ActivityFeed";
 import { UnpaidBillsCard } from "@/pages/admin/dashboard/components/UnpaidBillsCard";
 import { ActiveStaffCard } from "@/pages/admin/dashboard/components/ActiveStaffCard";
+import { DashboardStatsSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 
 const getOperationalRange = () => {
   const now = new Date();
@@ -111,9 +112,9 @@ export default function ManagerDashboardPage() {
 
   if (ordersLoading && (!orders || orders.length === 0)) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center gap-4 bg-slate-50">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Syncing Operations Hub...</p>
+      <div className="space-y-6 py-4">
+        <DashboardStatsSkeleton />
+        <TableSkeleton rows={6} />
       </div>
     );
   }
