@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePublicOrdersStore } from '@/stores/public/publicOrders.store';
 import { formatINR } from '@/lib/format';
-import { Search, Plus, ChevronLeft, ChevronRight, ShoppingCart, MapPin, Menu as MenuIcon, Phone } from 'lucide-react';
+import { Search, Plus, Minus, ChevronLeft, ChevronRight, ShoppingCart, MapPin, Menu as MenuIcon, Phone, X, Check } from 'lucide-react';
 import { getThemePreset, CustomerThemeName, ThemePreset } from '@/lib/customer-theme-presets';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CustomerLayoutSkeleton } from '@/components/ui/skeleton';
@@ -28,6 +28,8 @@ export default function PublicMenuPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
+  const [selectedProduct, setSelectedProduct] = useState<PublicProduct | null>(null);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const specialsRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -171,7 +173,36 @@ export default function PublicMenuPage() {
   const isCompact = preset.layout === 'compact';
 
   return (
-    <div className="min-h-screen transition-colors duration-500" style={{ ...themeStyles, fontFamily: 'var(--theme-font), sans-serif', background: 'var(--theme-secondary)', backgroundImage: 'var(--theme-bg-pattern)' }}>
+    <div className="min-h-screen transition-colors duration-500 bg-gray-100" style={{ ...themeStyles, fontFamily: 'var(--theme-font), sans-serif' }}>
+
+      {/* Success Modal - Center Screen */}
+      <AnimatePresence>
+        {showSuccessNotification && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          >
+            {/* Dark Overlay */}
+            <div className="absolute inset-0 bg-black/70" />
+
+            {/* Success Card */}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="relative bg-emerald-500 rounded-3xl p-8 shadow-2xl max-w-sm w-full text-center"
+            >
+              <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="h-12 w-12 text-emerald-500" strokeWidth={3} />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Your order is submitted successfully!</h2>
+              <p className="text-emerald-50 text-sm">Your order was too confirm or is submitted successfully!</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 1. DYNAMIC HEADER */}
       <header className="sticky top-0 z-40 backdrop-blur-md transition-all duration-300 border-b border-black/5"
@@ -179,116 +210,64 @@ export default function PublicMenuPage() {
           backgroundColor: preset.cardStyle === 'glass' ? 'rgba(255,255,255,0.85)' : 'var(--theme-secondary)',
           borderBottomColor: preset.cardStyle === 'bordered' ? 'var(--theme-primary)' : 'transparent'
         }}>
-        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
-          <div className="flex items-center gap-3">
-            {/* Search Bar (Expanded) */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" style={{ color: 'var(--theme-primary)' }} />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search..."
-                className="pl-10 h-10 border-2 focus:ring-0 transition-all font-medium placeholder:text-current/40 w-full"
-                style={{
-                  borderRadius: 'var(--theme-radius)',
-                  borderColor: preset.cardStyle === 'bordered' ? 'var(--theme-primary)' : 'transparent',
-                  backgroundColor: preset.cardStyle === 'glass' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.05)',
-                  color: 'var(--theme-primary)'
-                }}
-              />
-              <button className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
-                style={{ backgroundColor: 'var(--theme-primary)', color: 'var(--theme-secondary)' }}>
-                <Search className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Cart Button (Icon only on mobile) */}
-            <Button
-              className="relative h-10 w-10 md:w-auto px-0 md:px-4 overflow-hidden font-bold transition-transform active:scale-95 shadow-lg shrink-0"
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+          {/* Search Bar - Clean and Simple */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search for food..."
+              className="pl-12 pr-4 h-12 border-0 focus:ring-2 focus:ring-orange-500 transition-all font-normal placeholder:text-gray-400 w-full shadow-sm"
               style={{
-                backgroundColor: 'var(--theme-primary)',
-                color: 'var(--theme-secondary)',
-                borderRadius: 'var(--theme-radius)'
+                borderRadius: '12px',
+                backgroundColor: '#f5f5f5'
               }}
-              onClick={() => setCartOpen(true)}
-            >
-              <ShoppingCart className="h-5 w-5 md:mr-2" />
-              <span className="hidden md:inline">Cart</span>
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 md:top-0.5 md:right-1 bg-red-500 text-white text-[10px] h-4 w-4 md:h-5 md:w-5 flex items-center justify-center rounded-full border-2 border-white">
-                  {totalItems}
-                </span>
-              )}
-            </Button>
+            />
           </div>
 
-          {/* Restaurant Info (Compact) */}
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 overflow-hidden min-w-0">
-              <h1 className="text-lg font-black truncate leading-none" style={{ color: 'var(--theme-primary)' }}>{menu.restaurant.name}</h1>
-              {tableId && (
-                <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border border-current shrink-0" style={{ color: 'var(--theme-accent)', borderColor: 'var(--theme-accent)' }}>
-                  Table {tableId}
-                </span>
-              )}
+
+
+          {/* Categories Section - Transparent White Cards */}
+          <div className="mt-3">
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategoryId(cat.id)}
+                  className="flex flex-col items-center gap-2 shrink-0 transition-all"
+                >
+                  <div
+                    className={`h-16 w-16 rounded-2xl flex items-center justify-center overflow-hidden transition-all shadow-md ${activeCategoryId === cat.id ? 'ring-2 ring-orange-500' : ''
+                      }`}
+                    style={{
+                      backgroundColor: '#ffffff'
+                    }}
+                  >
+                    {cat.image_url ? (
+                      <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="font-bold text-xl text-orange-500">
+                        {cat.name.slice(0, 1)}
+                      </div>
+                    )}
+                  </div>
+                  <span className={`text-xs font-medium ${activeCategoryId === cat.id ? 'text-orange-500' : 'text-gray-600'
+                    }`}>
+                    {cat.name}
+                  </span>
+                </button>
+              ))}
             </div>
-          </div>
-
-          {/* Categories (Scrollable) */}
-          <div className="mt-3 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategoryId(cat.id)}
-                className={`transition-all flex flex-col items-center gap-1 shrink-0 ${preset.categoryStyle === 'card' ? 'p-0 bg-transparent border-0' : 'px-4 py-1.5 border-2 mb-1'}`}
-                style={preset.categoryStyle === 'pill' ? {
-                  borderRadius: 'var(--theme-radius)',
-                  backgroundColor: activeCategoryId === cat.id ? 'var(--theme-primary)' : 'transparent',
-                  color: activeCategoryId === cat.id ? 'var(--theme-secondary)' : 'var(--theme-primary)',
-                  borderColor: activeCategoryId === cat.id ? 'var(--theme-primary)' : 'var(--theme-primary)'
-                } : undefined}
-              >
-                {preset.categoryStyle === 'card' ? (
-                  <>
-                    <div className={`h-14 w-14 rounded-xl flex items-center justify-center shadow-sm border-2 transition-transform active:scale-95 overflow-hidden relative ${activeCategoryId === cat.id ? 'shadow-md scale-105' : ''}`}
-                      style={{
-                        backgroundColor: activeCategoryId === cat.id ? 'var(--theme-secondary)' : '#f8f9fa',
-                        borderColor: activeCategoryId === cat.id ? 'var(--theme-primary)' : 'transparent',
-                        borderWidth: activeCategoryId === cat.id ? '2px' : '1px'
-                      }}>
-                      {cat.image_url ? (
-                        <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="font-bold text-lg" style={{ color: activeCategoryId === cat.id ? 'var(--theme-primary)' : '#9ca3af' }}>
-                          {cat.name.slice(0, 1)}
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-bold" style={{ color: activeCategoryId === cat.id ? 'var(--theme-primary)' : '#6b7280' }}>
-                      {cat.name}
-                    </span>
-                  </>
-                ) : (
-                  cat.name
-                )}
-              </button>
-            ))}
           </div>
         </div>
       </header>
 
-      {/* 2. OPTIONAL HERO (Streamlined) */}
-      {preset.showImages && activeCategoryId === 'all' && !query && (
-        <div className="max-w-5xl mx-auto px-3 sm:px-4 mt-6 mb-2">
-          <div className="opacity-60 text-xs font-bold uppercase tracking-widest text-center" style={{ color: 'var(--theme-primary)' }}>
-            {preset.name}
-          </div>
-        </div>
-      )}
+
 
       {/* 3. PRODUCT LAYOUT ENGINE (Mobile Grid Forced) */}
-      <main className="max-w-5xl mx-auto px-3 sm:px-4 pb-32">
-        <div className="grid gap-x-3 gap-y-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pb-24 mt-2">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filteredProducts.map((product: PublicProduct) => {
             const qty = getQty(product.id);
             const isOut = !product.is_active;
@@ -299,29 +278,28 @@ export default function PublicMenuPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={product.id}
-                className={`group relative overflow-hidden flex flex-col justify-between transition-all duration-300 ${preset.cardStyle === 'elevated' ? 'hover:-translate-y-1 hover:shadow-xl shadow-sm' : ''
-                  }`}
-                style={{
-                  backgroundColor: preset.cardStyle === 'glass' ? 'rgba(255,255,255,0.6)' :
-                    preset.id === 'urban_hiphop' ? '#111' : '#fff',
-                  borderRadius: 'var(--theme-radius)',
-                  border: preset.cardStyle === 'bordered' || preset.id === 'urban_hiphop' ? '2px solid var(--theme-primary)' : '0px solid rgba(0,0,0,0.05)',
-                  borderColor: preset.id === 'urban_hiphop' ? (qty > 0 ? 'var(--theme-accent)' : '#333') : undefined
-                }}
+                onClick={() => !isOut && setSelectedProduct(product)}
+                className="group relative overflow-hidden flex flex-col bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
               >
                 {/* IMAGE (Square Aspect Ratio) */}
                 <div className="relative aspect-square bg-gray-100 overflow-hidden w-full">
                   {product.images?.[0]?.public_url ? (
                     <img src={product.images[0].public_url} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-[10px] opacity-30 font-bold uppercase tracking-widest text-center px-2" style={{ color: 'var(--theme-primary)' }}>No Image</div>
+                    <div className="h-full w-full flex items-center justify-center text-xs opacity-30 font-bold uppercase tracking-widest text-center px-2 text-gray-400">No Image</div>
                   )}
 
-                  {isOut && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><span className="text-white font-black uppercase text-[10px] tracking-widest px-2 py-1 border border-white">Sold Out</span></div>}
+                  {isOut && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><span className="text-white font-black uppercase text-xs tracking-widest px-3 py-1.5 border-2 border-white rounded-lg">Sold Out</span></div>}
                   {/* Qty Badge on Image */}
                   {qty > 0 && (
-                    <div className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white text-black font-bold text-xs flex items-center justify-center shadow-lg">
+                    <div className="absolute top-2 right-2 h-7 w-7 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shadow-lg">
                       {qty}
+                    </div>
+                  )}
+                  {/* Discount Badge */}
+                  {product.discount_percent && Number(product.discount_percent) > 0 && (
+                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                      {product.discount_percent}% OFF
                     </div>
                   )}
                 </div>
@@ -329,42 +307,43 @@ export default function PublicMenuPage() {
                 {/* CONTENT */}
                 <div className="p-3 flex flex-col flex-1 gap-2">
                   <div>
-                    <div className="flex justify-between items-start gap-1">
-                      <h3 className="font-bold text-sm leading-tight line-clamp-2" style={{ color: preset.id === 'urban_hiphop' ? '#fff' : 'var(--theme-primary)' }}>{product.name}</h3>
-                    </div>
-                    <p className="text-xs font-black mt-1" style={{ color: 'var(--theme-accent)' }}>{formatINR(Number(product.price))}</p>
+                    <h3 className="font-bold text-sm leading-tight line-clamp-2 text-gray-800">{product.name}</h3>
+                    <p className="text-sm font-black mt-1 text-orange-500">{formatINR(Number(product.price))}</p>
                   </div>
 
-                  <div className="mt-auto pt-2">
+                  <div className="mt-auto pt-2" onClick={(e) => e.stopPropagation()}>
                     {qty === 0 ? (
                       <Button
                         disabled={isOut}
-                        onClick={() => addItem(product)}
-                        className="w-full font-bold uppercase tracking-wider text-xs h-10 transition-all hover:scale-[1.02] flex items-center justify-between pl-4 pr-1"
-                        style={{
-                          borderRadius: '9999px',
-                          backgroundColor: isOut ? '#ccc' : 'transparent',
-                          border: '1px solid',
-                          borderColor: isOut ? 'transparent' : 'var(--theme-primary)',
-                          color: isOut ? '#fff' : (preset.id === 'urban_hiphop' ? '#fff' : 'var(--theme-primary)')
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addItem(product);
                         }}
+                        className="w-full font-semibold text-sm h-10 transition-all hover:scale-[1.02] rounded-full bg-white border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <span>{isOut ? 'Sold Out' : 'Add to Cart'}</span>
-                        {!isOut && (
-                          <span className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--theme-primary)', color: 'var(--theme-secondary)' }}>
-                            <Plus className="h-4 w-4" />
-                          </span>
-                        )}
+                        {isOut ? 'Sold Out' : 'Add'}
                       </Button>
                     ) : (
-                      <div className="flex items-center justify-between p-1 border-2" style={{
-                        borderRadius: 'var(--theme-radius)',
-                        borderColor: 'var(--theme-primary)',
-                        backgroundColor: preset.id === 'urban_hiphop' ? '#000' : 'var(--theme-secondary)'
-                      }}>
-                        <button onClick={() => updateQuantity(product.id, qty - 1)} className="w-8 h-8 flex items-center justify-center font-bold text-lg hover:bg-black/5 rounded" style={{ color: 'var(--theme-primary)' }}>−</button>
-                        <span className="font-black text-lg" style={{ color: 'var(--theme-primary)' }}>{qty}</span>
-                        <button onClick={() => updateQuantity(product.id, qty + 1)} className="w-8 h-8 flex items-center justify-center font-bold text-lg hover:bg-black/5 rounded" style={{ color: 'var(--theme-primary)' }}>+</button>
+                      <div className="flex items-center justify-between p-1.5 border-2 border-orange-500 rounded-full bg-white">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateQuantity(product.id, qty - 1);
+                          }}
+                          className="w-8 h-8 flex items-center justify-center font-bold text-lg hover:bg-orange-50 rounded-full text-orange-500 transition-colors"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="font-black text-base text-orange-500">{qty}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateQuantity(product.id, qty + 1);
+                          }}
+                          className="w-8 h-8 flex items-center justify-center font-bold text-lg hover:bg-orange-50 rounded-full text-orange-500 transition-colors"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -375,33 +354,158 @@ export default function PublicMenuPage() {
         </div>
       </main>
 
-      {/* 4. FLOATING CART BAR */}
+      {/* 4. PRODUCT DETAIL MODAL */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <div className="fixed inset-0 z-[150] flex items-end justify-center" onClick={() => setSelectedProduct(null)}>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Bottom Sheet Modal */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg bg-white rounded-t-3xl overflow-hidden shadow-2xl"
+              style={{ maxHeight: '85vh' }}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="absolute top-4 right-4 z-10 h-10 w-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-700" />
+              </button>
+
+              <div className="overflow-y-auto" style={{ maxHeight: '85vh' }}>
+                {/* Product Image */}
+                <div className="relative aspect-square bg-gray-100">
+                  {selectedProduct.images?.[0]?.public_url ? (
+                    <img
+                      src={selectedProduct.images[0].public_url}
+                      alt={selectedProduct.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-gray-400">
+                      <span className="text-sm font-semibold">No Image Available</span>
+                    </div>
+                  )}
+
+                  {/* Discount Tag */}
+                  {selectedProduct.discount_percent && Number(selectedProduct.discount_percent) > 0 && (
+                    <div className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-2 rounded-xl shadow-lg">
+                      {selectedProduct.discount_percent}% OFF
+                    </div>
+                  )}
+                </div>
+
+                {/* Product Details */}
+                <div className="p-6 space-y-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.name}</h2>
+                    <p className="text-2xl font-black text-orange-500 mt-2">
+                      {formatINR(Number(selectedProduct.price))}
+                    </p>
+                  </div>
+
+                  {selectedProduct.description && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Description</h3>
+                      <p className="text-gray-700 leading-relaxed">{selectedProduct.description}</p>
+                    </div>
+                  )}
+
+                  {/* Add to Cart Button */}
+                  <div className="pt-4">
+                    {(() => {
+                      const qty = getQty(selectedProduct.id);
+                      const isOut = !selectedProduct.is_active;
+
+                      return qty === 0 ? (
+                        <Button
+                          disabled={isOut}
+                          onClick={() => {
+                            addItem(selectedProduct);
+                            setSelectedProduct(null);
+                          }}
+                          className="w-full h-14 text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                          {isOut ? 'Sold Out' : 'Add to Cart'}
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center justify-between p-2 border-2 border-orange-500 rounded-2xl bg-white flex-1">
+                            <button
+                              onClick={() => updateQuantity(selectedProduct.id, qty - 1)}
+                              className="w-10 h-10 flex items-center justify-center font-bold text-lg hover:bg-orange-50 rounded-xl text-orange-500 transition-colors"
+                            >
+                              <Minus className="h-5 w-5" />
+                            </button>
+                            <span className="font-black text-xl text-orange-500">{qty}</span>
+                            <button
+                              onClick={() => updateQuantity(selectedProduct.id, qty + 1)}
+                              className="w-10 h-10 flex items-center justify-center font-bold text-lg hover:bg-orange-50 rounded-xl text-orange-500 transition-colors"
+                            >
+                              <Plus className="h-5 w-5" />
+                            </button>
+                          </div>
+                          <Button
+                            onClick={() => setSelectedProduct(null)}
+                            className="h-14 px-8 text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
+                          >
+                            Done
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 5. FLOATING CART BAR - Redesigned */}
       <AnimatePresence>
         {totalItems > 0 && (
           <motion.div
-            initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-            className="fixed bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 z-50 max-w-xl mx-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl"
           >
-            <button
-              onClick={() => setCartOpen(true)}
-              className="w-full p-3 sm:p-4 flex items-center justify-between gap-3 shadow-2xl backdrop-blur-md border border-white/20"
-              style={{
-                borderRadius: 'var(--theme-radius)',
-                backgroundColor: 'var(--theme-primary)',
-                color: 'var(--theme-secondary)'
-              }}
-            >
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <div className="bg-white/20 px-2 sm:px-3 py-1 rounded font-black text-xs sm:text-sm shrink-0">{totalItems} ITEMS</div>
-                <div className="text-xs sm:text-sm font-medium opacity-80 truncate">View your order</div>
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+              {/* Left: Quantity & Total */}
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs text-gray-500 font-medium">Quantity: {totalItems}</span>
+                <span className="text-lg font-black text-gray-900">Total: {formatINR(totalPrice)}</span>
               </div>
-              <div className="font-black text-base sm:text-xl shrink-0">{formatINR(totalPrice)}</div>
-            </button>
+
+              {/* Right: Verify Cart Button */}
+              <Button
+                onClick={() => setCartOpen(true)}
+                className="h-12 px-6 sm:px-8 text-base font-bold rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg transition-all hover:scale-[1.02] shrink-0"
+              >
+                Verify Your Cart
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <PublicCart />
+      <PublicCart onOrderSuccess={() => {
+        setShowSuccessNotification(true);
+        setTimeout(() => setShowSuccessNotification(false), 5000);
+      }} />
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { ShoppingBag, X, Plus, Minus, User } from 'lucide-react';
 import { formatINR } from '@/lib/format';
 import { useParams } from 'react-router-dom';
 
-export function PublicCart() {
+export function PublicCart({ onOrderSuccess }: { onOrderSuccess?: () => void }) {
     const { slug } = useParams<{ slug: string }>();
     // tableId from query params? Usually QR codes have tableId in URL
     const [params] = useSearchParams();
@@ -35,25 +35,7 @@ export function PublicCart() {
     const total = items.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
 
     if (!isCartOpen) {
-        if (items.length === 0) return null;
-        return (
-            <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
-                <Button
-                    onClick={() => setCartOpen(true)}
-                    className="h-14 w-14 shadow-2xl relative p-0 transition-transform hover:scale-105 active:scale-95"
-                    style={{
-                        backgroundColor: 'var(--theme-primary)',
-                        color: 'var(--theme-secondary)',
-                        borderRadius: 'var(--theme-radius)'
-                    }}
-                >
-                    <ShoppingBag className="h-6 w-6" />
-                    <span className="absolute -top-2 -right-2 text-[10px] font-bold h-6 w-6 flex items-center justify-center border-2 border-white rounded-full bg-red-600 text-white">
-                        {items.reduce((sum, i) => sum + i.quantity, 0)}
-                    </span>
-                </Button>
-            </div>
-        );
+        return null;
     }
 
     const handleOrder = async () => {
@@ -68,7 +50,7 @@ export function PublicCart() {
 
         const success = await placeOrder(slug!, tableId);
         if (success) {
-            alert('Order placed successfully!');
+            onOrderSuccess?.();
             setCartOpen(false);
             setShowCheckout(false);
         }

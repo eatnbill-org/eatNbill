@@ -152,6 +152,19 @@ export async function getPublicMenu(restaurantIdentifier: string) {
     })
   );
 
+  const categoriesWithImages = await Promise.all(
+    categories.map(async (category) => {
+      let imageUrl = category.image_url;
+      if (imageUrl && !imageUrl.startsWith('http')) {
+        imageUrl = await getPublicUrl(STORAGE_BUCKETS.CATEGORY_IMAGES, imageUrl);
+      }
+      return {
+        ...category,
+        image_url: imageUrl,
+      };
+    })
+  );
+
   return {
     restaurant: {
       id: restaurant.id,
@@ -173,7 +186,7 @@ export async function getPublicMenu(restaurantIdentifier: string) {
       font_scale: 'MD',
     },
     products: productsWithImages,
-    categories,
+    categories: categoriesWithImages,
   };
 }
 
