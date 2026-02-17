@@ -179,7 +179,7 @@ export default function PublicMenuPage() {
           backgroundColor: preset.cardStyle === 'glass' ? 'rgba(255,255,255,0.85)' : 'var(--theme-secondary)',
           borderBottomColor: preset.cardStyle === 'bordered' ? 'var(--theme-primary)' : 'transparent'
         }}>
-        <div className="max-w-5xl mx-auto px-4 py-3">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
           <div className="flex items-center gap-3">
             {/* Search Bar (Expanded) */}
             <div className="relative flex-1">
@@ -223,8 +223,8 @@ export default function PublicMenuPage() {
           </div>
 
           {/* Restaurant Info (Compact) */}
-          <div className="mt-3 flex items-center justify-between">
-            <div className="flex items-center gap-2 overflow-hidden">
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 overflow-hidden min-w-0">
               <h1 className="text-lg font-black truncate leading-none" style={{ color: 'var(--theme-primary)' }}>{menu.restaurant.name}</h1>
               {tableId && (
                 <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border border-current shrink-0" style={{ color: 'var(--theme-accent)', borderColor: 'var(--theme-accent)' }}>
@@ -279,7 +279,7 @@ export default function PublicMenuPage() {
 
       {/* 2. OPTIONAL HERO (Streamlined) */}
       {preset.showImages && activeCategoryId === 'all' && !query && (
-        <div className="max-w-5xl mx-auto px-4 mt-6 mb-2">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 mt-6 mb-2">
           <div className="opacity-60 text-xs font-bold uppercase tracking-widest text-center" style={{ color: 'var(--theme-primary)' }}>
             {preset.name}
           </div>
@@ -287,7 +287,7 @@ export default function PublicMenuPage() {
       )}
 
       {/* 3. PRODUCT LAYOUT ENGINE (Mobile Grid Forced) */}
-      <main className="max-w-5xl mx-auto px-4 pb-32">
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 pb-32">
         <div className="grid gap-x-3 gap-y-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filteredProducts.map((product: PublicProduct) => {
             const qty = getQty(product.id);
@@ -380,22 +380,22 @@ export default function PublicMenuPage() {
         {totalItems > 0 && (
           <motion.div
             initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-            className="fixed bottom-4 left-4 right-4 z-50 max-w-xl mx-auto"
+            className="fixed bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 z-50 max-w-xl mx-auto"
           >
             <button
               onClick={() => setCartOpen(true)}
-              className="w-full p-4 flex items-center justify-between shadow-2xl backdrop-blur-md border border-white/20"
+              className="w-full p-3 sm:p-4 flex items-center justify-between gap-3 shadow-2xl backdrop-blur-md border border-white/20"
               style={{
                 borderRadius: 'var(--theme-radius)',
                 backgroundColor: 'var(--theme-primary)',
                 color: 'var(--theme-secondary)'
               }}
             >
-              <div className="flex items-center gap-4">
-                <div className="bg-white/20 px-3 py-1 rounded font-black text-sm">{totalItems} ITEMS</div>
-                <div className="text-sm font-medium opacity-80">View your order</div>
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <div className="bg-white/20 px-2 sm:px-3 py-1 rounded font-black text-xs sm:text-sm shrink-0">{totalItems} ITEMS</div>
+                <div className="text-xs sm:text-sm font-medium opacity-80 truncate">View your order</div>
               </div>
-              <div className="font-black text-xl">{formatINR(totalPrice)}</div>
+              <div className="font-black text-base sm:text-xl shrink-0">{formatINR(totalPrice)}</div>
             </button>
           </motion.div>
         )}

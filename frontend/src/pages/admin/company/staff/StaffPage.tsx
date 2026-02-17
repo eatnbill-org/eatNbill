@@ -141,7 +141,7 @@ export default function StaffPage() {
 
   return (
     <div className="min-h-full bg-slate-50/50">
-      <div className="container py-10 space-y-8 no-scrollbar max-w-7xl mx-auto">
+      <div className="container py-6 sm:py-10 space-y-6 sm:space-y-8 no-scrollbar max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
 
         {/* Main Title Section */}
         <motion.div
@@ -154,7 +154,7 @@ export default function StaffPage() {
               <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <UserCog className="w-5 h-5" />
               </div>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">Staff Management</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Staff Management</h1>
             </div>
             <p className="text-sm font-medium text-muted-foreground max-w-lg leading-relaxed px-1">
               Manage your restaurant staff, access roles, and contact information.
@@ -163,7 +163,7 @@ export default function StaffPage() {
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="flex items-center gap-4 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm"
+            className="flex w-full sm:w-auto items-center gap-3 sm:gap-4 bg-white px-4 sm:px-5 py-3 rounded-2xl border border-slate-100 shadow-sm"
           >
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-1">Active Staff</span>
@@ -188,7 +188,7 @@ export default function StaffPage() {
           transition={{ delay: 0.1 }}
           className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-xl shadow-slate-200/50"
         >
-          <div className="relative flex-1 w-full max-w-[460px] group transition-all">
+          <div className="relative flex-1 w-full md:max-w-[460px] group transition-all">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <Input
               value={searchQuery}

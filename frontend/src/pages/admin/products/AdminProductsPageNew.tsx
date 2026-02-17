@@ -176,7 +176,7 @@ export default function AdminProductsPage() {
   return (
     <div className="min-h-full bg-slate-50/50">
 
-      <div className="container py-10 space-y-8 no-scrollbar max-w-7xl mx-auto">
+      <div className="container py-6 sm:py-10 space-y-6 sm:space-y-8 no-scrollbar max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
         {/* Main Title Section */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -188,7 +188,7 @@ export default function AdminProductsPage() {
               <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <Package className="w-5 h-5" />
               </div>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">Products</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Products</h1>
             </div>
             <p className="text-sm font-medium text-muted-foreground max-w-lg leading-relaxed px-1">
               Manage your menu items, organize categories, and set pricing and discounts.
@@ -197,7 +197,7 @@ export default function AdminProductsPage() {
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="flex items-center gap-4 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm"
+            className="flex w-full sm:w-auto items-center gap-3 sm:gap-4 bg-white px-4 sm:px-5 py-3 rounded-2xl border border-slate-100 shadow-sm"
           >
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-1">Catalog</span>
@@ -215,25 +215,25 @@ export default function AdminProductsPage() {
 
         {/* Tabs Control */}
         <Tabs defaultValue="products" className="space-y-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <TabsList className="bg-muted/50 p-1.5 rounded-xl border border-border h-auto">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
+            <TabsList className="bg-muted/50 p-1.5 rounded-xl border border-border h-auto w-full sm:w-auto">
               <TabsTrigger
                 value="products"
-                className="rounded-lg px-6 py-2.5 font-bold uppercase tracking-widest text-[11px] data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
+                className="rounded-lg px-4 sm:px-6 py-2.5 font-bold uppercase tracking-widest text-[10px] sm:text-[11px] data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all flex-1 sm:flex-initial"
               >
                 <Package className="w-4 h-4 mr-2" />
                 Products
               </TabsTrigger>
               <TabsTrigger
                 value="categories"
-                className="rounded-lg px-6 py-2.5 font-bold uppercase tracking-widest text-[11px] data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
+                className="rounded-lg px-4 sm:px-6 py-2.5 font-bold uppercase tracking-widest text-[10px] sm:text-[11px] data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all flex-1 sm:flex-initial"
               >
                 <Tag className="w-4 h-4 mr-2" />
                 Categories
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex items-center gap-3">
+            <div className="flex w-full lg:w-auto flex-wrap items-center gap-3">
               <div className="flex items-center bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
                 <Switch
                   id="show-profit"
@@ -309,7 +309,8 @@ export default function AdminProductsPage() {
 
             {/* Products Table Container */}
             <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[980px]">
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                     <TableHead className="w-[80px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-muted-foreground">Image</TableHead>
@@ -482,6 +483,7 @@ export default function AdminProductsPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </TabsContent>
 
@@ -503,7 +505,8 @@ export default function AdminProductsPage() {
             </div>
 
             <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[760px]">
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                     <TableHead className="w-[100px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-muted-foreground">Media</TableHead>
@@ -592,6 +595,7 @@ export default function AdminProductsPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

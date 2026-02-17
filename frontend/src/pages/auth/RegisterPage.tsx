@@ -235,7 +235,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex">
       {/* Right side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 bg-white">
         <div className="w-full max-w-md">
           <AnimatePresence mode="wait">
             {currentStep === 1 ? (
@@ -257,7 +257,7 @@ export default function RegisterPage() {
                 <StepIndicator currentStep={currentStep} totalSteps={2} />
 
                 <div className="mb-4">
-                  <h1 className="text-2xl font-bold text-slate-900 ">
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 ">
                     Create your account
                   </h1>
                   {/* <p className="text-slate-600">
@@ -398,7 +398,7 @@ export default function RegisterPage() {
                   <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Mail className="w-8 h-8 text-emerald-600" />
                   </div>
-                  <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
                     Check your email
                   </h1>
                   <p className="text-slate-600 mb-1">

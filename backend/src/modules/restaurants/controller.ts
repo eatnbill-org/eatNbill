@@ -29,6 +29,7 @@ import {
   getDashboard,
   getUserRestaurantsByTenant,
   uploadRestaurantLogo,
+  deleteTableQrAssets,
 } from './service';
 import {
   createHallSchema,
@@ -44,6 +45,7 @@ import {
   updateRestaurantUserSchema,
   updateTableSchema,
   updateTableStatusSchema,
+  deleteTableQRCodesSchema,
 } from './schema';
 
 function requireContext(req: Request) {
@@ -494,6 +496,28 @@ export async function regenerateAllQrController(req: Request, res: Response, nex
     requireAdminOrManager(req);
     const { user, restaurantId } = requireContext(req);
     const result = await generateAllTableQrAssets(user.tenantId, user.userId, restaurantId);
+    return res.json({ data: result });
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function deleteTableQRCodesController(req: Request, res: Response, next: NextFunction) {
+  try {
+    requireAdminOrManager(req);
+    const { user, restaurantId } = requireContext(req);
+    const parsed = deleteTableQRCodesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
+    }
+
+    const result = await deleteTableQrAssets(
+      user.tenantId,
+      user.userId,
+      restaurantId,
+      parsed.data
+    );
+
     return res.json({ data: result });
   } catch (error) {
     return next(error as Error);

@@ -91,19 +91,19 @@ export default function ManagerOrdersPage() {
   return (
     <div className="space-y-4">
       {/* Header with Stats */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200">
             <ShoppingCart className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Order Management</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase">Order Management</h1>
             <p className="text-xs text-slate-500">Manage active orders and payment status</p>
           </div>
         </div>
 
         {/* Compact Stats */}
-        <div className="flex gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-3 w-full lg:w-auto">
           <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 shadow-sm">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
             <p className="text-xl font-black text-slate-900">{totalOrders}</p>
@@ -128,7 +128,7 @@ export default function ManagerOrdersPage() {
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="h-9 w-44 rounded-lg"
+              className="h-9 w-full sm:w-44 rounded-lg"
             />
           </div>
           <div className="flex flex-col">
@@ -137,13 +137,13 @@ export default function ManagerOrdersPage() {
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="h-9 w-44 rounded-lg"
+              className="h-9 w-full sm:w-44 rounded-lg"
             />
           </div>
           <div className="flex flex-col">
             <label className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Status</label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-40 text-xs rounded-lg">
+              <SelectTrigger className="h-9 w-full sm:w-40 text-xs rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -156,7 +156,7 @@ export default function ManagerOrdersPage() {
             </Select>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 sm:flex gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -223,7 +223,7 @@ export default function ManagerOrdersPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <div className="text-sm font-bold text-slate-900">{formatINR(parseFloat(o.total_amount))}</div>
                   <Select value={o.status} onValueChange={(v) => handleStatusChange(o.id, v)}>
                     <SelectTrigger className="h-8 w-36 text-xs">

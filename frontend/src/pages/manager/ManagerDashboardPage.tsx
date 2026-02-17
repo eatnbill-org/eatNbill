@@ -120,19 +120,19 @@ export default function ManagerDashboardPage() {
   }
 
   return (
-    <div className="container py-4 space-y-6 max-w-7xl mx-auto pb-20 no-scrollbar">
+    <div className="container py-4 sm:py-6 space-y-6 max-w-7xl mx-auto pb-20 no-scrollbar px-3 sm:px-4 lg:px-6">
       {/* Page Title Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-end justify-between gap-6"
+        className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6"
       >
         <div>
           <div className="flex items-center gap-3 mb-1 px-1">
             <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200">
               <LayoutDashboard className="w-5 h-5" />
             </div>
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight uppercase tracking-tighter">Manager Hub</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight uppercase tracking-tighter">Manager Hub</h1>
           </div>
           <div className="px-1 flex flex-col">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">
@@ -144,10 +144,10 @@ export default function ManagerDashboardPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex w-full sm:w-auto items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
           <Button
             onClick={handleNewOrder}
-            className="h-11 px-6 rounded-xl bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-slate-200 transition-all shrink-0"
+            className="h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-slate-200 transition-all w-full sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" /> New Order
           </Button>

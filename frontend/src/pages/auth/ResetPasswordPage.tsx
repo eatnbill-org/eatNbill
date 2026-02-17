@@ -123,8 +123,8 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-3 sm:p-4">
+      <Card className="w-full max-w-md shadow-sm">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-between">
             <Link
@@ -135,7 +135,7 @@ export default function ResetPasswordPage() {
               Back to login
             </Link>
           </div>
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-xl sm:text-2xl font-bold">
             {success ? "Password updated" : "Create new password"}
           </CardTitle>
           <CardDescription>
