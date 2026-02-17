@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { CardSkeleton } from '@/components/ui/skeleton';
 
 export default function RestaurantSlugDebugPage() {
   const [slug, setSlug] = useState<string | null>(null);
@@ -52,11 +53,7 @@ export default function RestaurantSlugDebugPage() {
   if (loading) {
     return (
       <div className="p-6">
-        <Card>
-          <CardContent className="pt-6">
-            <p>Loading restaurant info...</p>
-          </CardContent>
-        </Card>
+        <CardSkeleton rows={3} />
       </div>
     );
   }

@@ -17,6 +17,7 @@ import { formatINR } from '@/lib/format';
 import { Search, Plus, ChevronLeft, ChevronRight, ShoppingCart, MapPin, Menu as MenuIcon, Phone } from 'lucide-react';
 import { getThemePreset, CustomerThemeName, ThemePreset } from '@/lib/customer-theme-presets';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CustomerLayoutSkeleton } from '@/components/ui/skeleton';
 
 export default function PublicMenuPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -143,14 +144,7 @@ export default function PublicMenuPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading menu...</p>
-        </div>
-      </div>
-    );
+    return <CustomerLayoutSkeleton />;
   }
 
   if (error || !menu) {

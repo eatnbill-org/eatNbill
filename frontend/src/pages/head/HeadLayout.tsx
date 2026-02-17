@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ClipboardList, UtensilsCrossed, LogOut } from "lucide-react";
+import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QROrderNotification from "@/components/QROrderNotification";
 import { useNotificationStore } from "@/stores/notifications.store";
+import { useRealtimeStore, type QROrderPayload } from "@/stores/realtime/realtime.store";
+import { playOrderSound } from "@/lib/sound-notification";
+import { fetchOrderById } from "@/lib/head-api";
 import {
     Dialog,
     DialogContent,
@@ -28,6 +31,90 @@ export default function HeadLayout() {
     const navigate = useNavigate();
     const { staff, restaurant, logout } = useStaffAuth();
     const [logoutOpen, setLogoutOpen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const notifiedQrOrderIds = useRef<Set<string>>(new Set());
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((e) => {
+                toast.error(`Error attempting to enable full-screen mode: ${e.message}`);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    };
+
+    // Keep state in sync with actual fullscreen status (handles ESC key etc)
+    useState(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    });
+
+    useEffect(() => {
+        if (!restaurant?.id) return;
+
+        const handleQrNotification = async (
+            orderId: string,
+            fallback?: Partial<{ order_number: string; customer_name: string; table_number: string; total_amount: number }>
+        ) => {
+            if (!orderId || notifiedQrOrderIds.current.has(orderId)) return;
+            notifiedQrOrderIds.current.add(orderId);
+
+            playOrderSound('QR');
+
+            try {
+                const response = await fetchOrderById(orderId);
+                const fullOrder = response?.data;
+                if (fullOrder?.id) {
+                    useNotificationStore.getState().addNotification(fullOrder);
+                    return;
+                }
+            } catch {
+                // Fall through to minimal payload.
+            }
+
+            useNotificationStore.getState().addNotification({
+                id: orderId,
+                source: 'QR',
+                order_number: fallback?.order_number || orderId.slice(-4).toUpperCase(),
+                customer_name: fallback?.customer_name || 'Customer',
+                table_number: fallback?.table_number || null,
+                total_amount: Number(fallback?.total_amount || 0),
+                items: [],
+            } as any);
+        };
+
+        const unsubscribe = useRealtimeStore.getState().subscribeToRestaurantOrders(
+            restaurant.id,
+            async (update: any) => {
+                if (update?.eventType !== 'INSERT' || !update?.order) return;
+
+                // Global waiter popup + sound for customer QR orders on all /head/* pages.
+                if (update.order.source === 'QR') {
+                    await handleQrNotification(update.order.id, update.order);
+                }
+            }
+        );
+
+        const unsubscribePending = useRealtimeStore.getState().subscribeToPendingOrders(
+            restaurant.id,
+            async (payload: QROrderPayload) => {
+                await handleQrNotification(payload.order_id, payload);
+            }
+        );
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+            if (unsubscribePending) unsubscribePending();
+        };
+    }, [restaurant?.id]);
 
     const handleLogout = async () => {
         await logout();
@@ -71,16 +158,32 @@ export default function HeadLayout() {
                         })}
                     </div>
 
-                    {/* Right: Logout Button */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50 hover:text-red-700 gap-2 pl-2 pr-3"
-                        onClick={() => setLogoutOpen(true)}
-                    >
-                        <LogOut className="h-5 w-5" />
-                        <span className="hidden sm:inline font-medium">Logout</span>
-                    </Button>
+                    {/* Right: Fullscreen & Logout */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-500 hover:text-primary hover:bg-primary/5 rounded-full"
+                            onClick={toggleFullScreen}
+                            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                        >
+                            {isFullscreen ? (
+                                <Minimize className="h-5 w-5" />
+                            ) : (
+                                <Maximize className="h-5 w-5" />
+                            )}
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700 gap-2 pl-2 pr-3"
+                            onClick={() => setLogoutOpen(true)}
+                        >
+                            <LogOut className="h-5 w-5" />
+                            <span className="hidden sm:inline font-medium">Logout</span>
+                        </Button>
+                    </div>
                 </div>
             </header>
 
@@ -165,6 +268,7 @@ function NotificationWrapper() {
             order={current}
             onDismiss={dismissNotification}
             onViewDetails={handleViewDetails}
+            playSound={false}
         />
     );
 }

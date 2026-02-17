@@ -3,7 +3,7 @@ import * as React from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, MapPin, Plus, RefreshCw, Search, ShoppingCart, Check, X, Minus } from "lucide-react";
+import { MapPin, Plus, RefreshCw, Search, ShoppingCart, Check, X, Minus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ import {
   fetchStaffOrders,
 } from "@/lib/staff-api";
 import CheckoutDialog from "@/pages/user/CheckoutDialog";
+import { WaiterLayoutSkeleton } from "@/components/ui/skeleton";
 
 const mapApiProductToDemo = (p: any, categoryName: string): Product => ({
   id: p.id,
@@ -226,11 +227,7 @@ export default function HeadMenuPage() {
   };
 
   if (productsLoading || tablesLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <WaiterLayoutSkeleton />;
   }
 
   return (

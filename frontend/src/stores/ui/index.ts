@@ -5,4 +5,4 @@
  */
 
 // Loading Store
-export { useLoadingStore, useIsAnyLoading, useIsLoading } from './loading.store';
+export { useLoadingStore, useIsAnyLoading, useIsLoading, useScopeLoading } from './loading.store';

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { QRCodesSheet } from "./QRCodesSheet";
 import type { RestaurantTable } from "@/types/table";
 import { cn } from "@/lib/utils";
+import { Skeleton, TableSkeleton } from "@/components/ui/skeleton";
 
 interface TableManagementProps {
     slug?: string;
@@ -272,7 +273,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                         <h2 className="text-xl font-bold text-foreground tracking-tight">Tables</h2>
                         <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-sm font-medium text-muted-foreground">Total: {tables.length} tables</span>
-                            {loading && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                            {loading && <Skeleton className="h-3 w-3" rounded="full" />}
                         </div>
                     </div>
                 </div>
@@ -548,7 +549,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                         {loading && tables.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center py-20">
-                                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary opacity-50" />
+                                    <TableSkeleton rows={4} />
                                 </TableCell>
                             </TableRow>
                         )}

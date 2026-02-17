@@ -11,6 +11,7 @@ interface QROrderNotificationProps {
     onDismiss: () => void;
     onViewDetails: (order: Order) => void;
     autoAcceptSeconds?: number;
+    playSound?: boolean;
 }
 
 import { printKitchenSlip } from '@/lib/print-utils';
@@ -20,6 +21,7 @@ const QROrderNotification: React.FC<QROrderNotificationProps> = ({
     onDismiss,
     onViewDetails,
     autoAcceptSeconds = 5,
+    playSound = true,
 }) => {
     const [countdown, setCountdown] = useState(autoAcceptSeconds);
     const [isAccepted, setIsAccepted] = useState(false);
@@ -31,13 +33,15 @@ const QROrderNotification: React.FC<QROrderNotificationProps> = ({
         setCountdown(autoAcceptSeconds);
         setIsAccepted(false);
 
+        if (!playSound) return;
+
         // Play notification sound
-        const playSound = () => {
+        const playNotificationSound = () => {
             const audio = new Audio('/sounds/notification.mp3');
             audio.play().catch(err => console.log('Audio play failed:', err));
         };
-        playSound();
-    }, [order, autoAcceptSeconds]);
+        playNotificationSound();
+    }, [order, autoAcceptSeconds, playSound]);
 
     // Countdown timer with auto-accept
     useEffect(() => {

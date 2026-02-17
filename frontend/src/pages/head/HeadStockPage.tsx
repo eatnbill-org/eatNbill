@@ -5,7 +5,6 @@ import { formatINR } from "@/lib/format";
 import { Input } from "@/components/ui/input";
 import {
     Search,
-    Loader2,
     RefreshCw,
     Tag,
     CheckCircle2,
@@ -17,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { WaiterLayoutSkeleton } from "@/components/ui/skeleton";
 
 export default function HeadStockPage() {
     const queryClient = useQueryClient();
@@ -78,11 +78,7 @@ export default function HeadStockPage() {
     }), [products]);
 
     if (productsLoading || categoriesLoading) {
-        return (
-            <div className="flex h-[60vh] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <WaiterLayoutSkeleton />;
     }
 
     if (productsError) {
