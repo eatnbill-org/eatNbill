@@ -1,5 +1,6 @@
 import { prisma } from "../../utils/prisma";
-import type { OrderStatus, OrderSource, OrderType, PaymentMethod, PaymentStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { OrderStatus, OrderSource, OrderType, PaymentMethod, PaymentStatus } from "@prisma/client";
 
 // UUID validation helper
 const isValidUuid = (uuid: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);

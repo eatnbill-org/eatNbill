@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ClipboardList, UtensilsCrossed, LogOut } from "lucide-react";
+import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import QROrderNotification from "@/components/QROrderNotification";
 import { useNotificationStore } from "@/stores/notifications.store";
@@ -30,6 +30,30 @@ export default function HeadLayout() {
     const navigate = useNavigate();
     const { staff, restaurant, logout } = useStaffAuth();
     const [logoutOpen, setLogoutOpen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((e) => {
+                toast.error(`Error attempting to enable full-screen mode: ${e.message}`);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    };
+
+    // Keep state in sync with actual fullscreen status (handles ESC key etc)
+    useState(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    });
 
     useEffect(() => {
         if (!restaurant?.id) return;
@@ -94,16 +118,32 @@ export default function HeadLayout() {
                         })}
                     </div>
 
-                    {/* Right: Logout Button */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50 hover:text-red-700 gap-2 pl-2 pr-3"
-                        onClick={() => setLogoutOpen(true)}
-                    >
-                        <LogOut className="h-5 w-5" />
-                        <span className="hidden sm:inline font-medium">Logout</span>
-                    </Button>
+                    {/* Right: Fullscreen & Logout */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-500 hover:text-primary hover:bg-primary/5 rounded-full"
+                            onClick={toggleFullScreen}
+                            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                        >
+                            {isFullscreen ? (
+                                <Minimize className="h-5 w-5" />
+                            ) : (
+                                <Maximize className="h-5 w-5" />
+                            )}
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700 gap-2 pl-2 pr-3"
+                            onClick={() => setLogoutOpen(true)}
+                        >
+                            <LogOut className="h-5 w-5" />
+                            <span className="hidden sm:inline font-medium">Logout</span>
+                        </Button>
+                    </div>
                 </div>
             </header>
 
