@@ -117,7 +117,7 @@ export default function HeadTablesPage() {
     return (
         <div className="space-y-6 pb-24 max-w-7xl mx-auto">
             {/* High-Density Stats Row */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-3">
                     <Users className="h-4 w-4 text-emerald-600" />
                     <span className="text-xl font-black text-emerald-700">{tables.filter(t => !t.isOccupied).length}</span>
@@ -131,7 +131,7 @@ export default function HeadTablesPage() {
             </div>
 
             {/* 2-Column High-Density Grid */}
-            <div className="grid grid-cols-2 gap-3 pb-24">
+            <div className="grid grid-cols-1 gap-3 pb-24 min-[420px]:grid-cols-2">
                 {filteredTables.map((table: any) => (
                     <div
                         key={table.id}
@@ -206,7 +206,7 @@ export default function HeadTablesPage() {
                                     </Button>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
                                         <div className="flex items-center gap-2 mb-1 text-slate-400">
                                             <Calendar className="h-3 w-3" />
@@ -275,7 +275,7 @@ export default function HeadTablesPage() {
                                     <span className="text-3xl font-black text-primary tracking-tighter">{formatINR(selectedTable.currentOrder.total_amount)}</span>
                                 </div>
 
-                                <div className="flex gap-3">
+                                <div className="flex flex-col gap-3 sm:flex-row">
                                     <Button
                                         className="flex-1 h-14 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm uppercase gap-2 transition-all"
                                         onClick={() => handleAddItems(selectedTable.currentOrder.id, selectedTable.id)}

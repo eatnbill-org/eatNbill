@@ -102,7 +102,7 @@ export default function HeadStockPage() {
     return (
         <div className="space-y-4 pb-24 max-w-7xl mx-auto">
             {/* Compact High-Density Stats Bar */}
-            <div className="flex gap-2 px-1">
+            <div className="grid grid-cols-1 gap-2 px-1 sm:grid-cols-3">
                 <div className="bg-white px-3 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 flex-1">
                     <span className="text-xl font-black text-slate-700">{stats.total}</span>
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-tight">Total<br />Items</span>

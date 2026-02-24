@@ -39,6 +39,7 @@ JWT_AUDIENCE=authenticated
 JWT_ISSUER=https://your-project.supabase.co/auth/v1
 REDIS_URL=redis://localhost:6379
 FRONTEND_URL=http://localhost:3001
+FRONTEND_URLS=http://localhost:5173,https://eatnbill.com,https://www.eatnbill.com
 
 # Optional: Restrict admin API to specific IPs (comma-separated)
 ADMIN_ALLOWED_IPS=127.0.0.1,::1

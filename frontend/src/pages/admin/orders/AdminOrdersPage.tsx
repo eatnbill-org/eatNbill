@@ -352,7 +352,98 @@ export default function AdminOrdersPage() {
       )}
 
       <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="md:hidden space-y-3 p-3">
+          {loading && orders.length === 0 ? (
+            <div className="h-40 grid place-items-center text-muted-foreground font-bold uppercase tracking-widest animate-pulse text-xs">
+              Loading Orders...
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="h-40 grid place-items-center text-muted-foreground font-semibold italic text-sm">
+              No orders found.
+            </div>
+          ) : (
+            filteredOrders.map((order) => (
+              <div
+                key={order.id}
+                className="rounded-2xl border border-border bg-white p-4 shadow-sm space-y-3"
+                onClick={() => setDetailsOrder(order)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-sm font-bold">#{order.order_number}</p>
+                    <p className="text-sm font-bold uppercase truncate">{order.customer_name}</p>
+                    {order.customer_phone && (
+                      <p className="text-[10px] text-muted-foreground font-semibold uppercase">{order.customer_phone}</p>
+                    )}
+                  </div>
+                  {getStatusBadge(order.status)}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground font-semibold uppercase tracking-wider">Items</p>
+                    <p className="font-bold">{getItemSummary(order)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground font-semibold uppercase tracking-wider">Total</p>
+                    <p className="font-bold">{formatINR(parseFloat(order.total_amount))}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground font-semibold uppercase tracking-wider">Time</p>
+                    <p className="font-bold">{order.arrive_at || formatTime(order.placed_at || order.created_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground font-semibold uppercase tracking-wider">Source</p>
+                    <p className="font-bold text-primary">{order.source}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap justify-end gap-1">
+                  {order.payment_status === 'PENDING' && !['CANCELLED'].includes(order.status) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary hover:bg-primary/20 rounded-md"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMarkPaidOrder(order);
+                      }}
+                    >
+                      Mark Paid
+                    </Button>
+                  )}
+                  {order.payment_status === 'PAID' && (
+                    <Badge variant="secondary" className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0 border-primary/20 h-8">
+                      PAID
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBillOrder(order);
+                    }}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteOrder(order);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <Table className="min-w-[920px]">
             <TableHeader className="bg-muted/50 border-b border-border">
               <TableRow className="hover:bg-transparent border-none">

@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+const parseCsv = (value?: string) =>
+  (value ?? '')
+    .split(',')
+    .map((item) => item.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
 const envSchema = z.object({
   // Supabase (required)
   SUPABASE_URL: z.string().min(1),
@@ -30,9 +36,8 @@ const envSchema = z.object({
   // Server Configuration
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  FRONTEND_URL: z.string().default('https://eatnbill.com').transform((val) => {
-    return val.includes(',') ? val.split(',').map(url => url.trim()) : val;
-  }),
+  FRONTEND_URL: z.string().default('https://eatnbill.com').transform((val) => val.trim().replace(/\/+$/, '')),
+  FRONTEND_URLS: z.string().optional().transform((val) => parseCsv(val)),
 
   // Admin configuration (optional)
   ADMIN_ALLOWED_IPS: z.string().optional().transform((val) =>
@@ -53,4 +58,14 @@ const envSchema = z.object({
   path: ['RESEND_API_KEY'],
 });
 
-export const env = envSchema.parse(process.env);
+const parsedEnv = envSchema.parse(process.env);
+
+export const env = {
+  ...parsedEnv,
+  CORS_ALLOWED_ORIGINS: Array.from(
+    new Set([
+      parsedEnv.FRONTEND_URL,
+      ...parsedEnv.FRONTEND_URLS,
+    ])
+  ),
+};
