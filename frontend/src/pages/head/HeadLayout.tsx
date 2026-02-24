@@ -8,7 +8,7 @@ import QROrderNotification from "@/components/QROrderNotification";
 import { useNotificationStore } from "@/stores/notifications.store";
 import { useRealtimeStore, type QROrderPayload } from "@/stores/realtime/realtime.store";
 import { playOrderSound } from "@/lib/sound-notification";
-import { fetchOrderById, fetchStaffOrders } from "@/lib/head-api";
+import { fetchOrderById, fetchStaffOrders, updateOrderStatus } from "@/lib/head-api";
 import {
     Dialog,
     DialogContent,
@@ -325,6 +325,7 @@ export default function HeadLayout() {
 function NotificationWrapper() {
     const navigate = useNavigate();
     const { current, dismissNotification } = useNotificationStore();
+    const queryClient = useQueryClient();
 
     const handleViewDetails = (order: any) => {
         // Navigate to orders page
@@ -333,11 +334,20 @@ function NotificationWrapper() {
         dismissNotification();
     };
 
+    const handleReject = async (order: any) => {
+        await updateOrderStatus(order.id, 'CANCELLED', 'Rejected from waiter popup');
+        queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+        queryClient.invalidateQueries({ queryKey: ['head-orders-for-tables'] });
+        queryClient.invalidateQueries({ queryKey: ['head-tables-status'] });
+        toast.success(`Order #${order.order_number || order.id.slice(-4).toUpperCase()} cancelled`);
+    };
+
     return (
         <QROrderNotification
             order={current}
             onDismiss={dismissNotification}
             onViewDetails={handleViewDetails}
+            onReject={handleReject}
             playSound={false}
         />
     );

@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { playOrderSound } from "@/lib/sound-notification";
 import { apiClient } from "@/lib/api-client";
 import type { OrderListResponse, OrderResponse } from "@/types/order";
+import { toast } from "sonner";
 import {
   LayoutDashboard,
   Users,
@@ -500,7 +501,7 @@ export default function AdminLayout() {
         <SidebarProvider defaultOpen={true}>
           <AdminSidebar />
           <SidebarInset className="bg-background flex flex-col flex-1 min-w-0 transition-all duration-300 ease-in-out">
-            <div className="md:hidden fixed left-3 top-20 z-40">
+            <div className="md:hidden fixed left-3 top-8 z-40">
               <SidebarTrigger className="h-10 w-10 rounded-xl bg-white border border-primary/10 shadow-md text-primary hover:bg-primary/5" />
             </div>
             <Button
@@ -526,7 +527,7 @@ export default function AdminLayout() {
 function NotificationWrapper() {
   const navigate = useNavigate();
   const { current, dismissNotification } = useNotificationStore();
-  const { fetchOrders } = useAdminOrdersStore();
+  const { fetchOrders, updateOrderStatus } = useAdminOrdersStore();
 
   const handleViewDetails = (order: any) => {
     // Refresh orders to make sure the new one is there
@@ -537,11 +538,18 @@ function NotificationWrapper() {
     dismissNotification();
   };
 
+  const handleReject = async (order: any) => {
+    await updateOrderStatus(order.id, { status: 'CANCELLED', cancel_reason: 'Rejected from admin popup' });
+    await fetchOrders();
+    toast.success(`Order #${order.order_number || order.id.slice(-4).toUpperCase()} cancelled`);
+  };
+
   return (
     <QROrderNotification
       order={current}
       onDismiss={dismissNotification}
       onViewDetails={handleViewDetails}
+      onReject={handleReject}
       playSound={false}
     />
   );

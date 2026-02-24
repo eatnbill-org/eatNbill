@@ -357,7 +357,7 @@ export default function PublicMenuPage() {
       {/* 4. PRODUCT DETAIL MODAL */}
       <AnimatePresence>
         {selectedProduct && (
-          <div className="fixed inset-0 z-[150] flex items-end justify-center" onClick={() => setSelectedProduct(null)}>
+          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center" onClick={() => setSelectedProduct(null)}>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -373,8 +373,8 @@ export default function PublicMenuPage() {
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-lg bg-white rounded-t-3xl overflow-hidden shadow-2xl"
-              style={{ maxHeight: '85vh' }}
+              className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+              style={{ maxHeight: '92dvh' }}
             >
               {/* Close Button */}
               <button
@@ -384,9 +384,9 @@ export default function PublicMenuPage() {
                 <X className="h-5 w-5 text-gray-700" />
               </button>
 
-              <div className="overflow-y-auto" style={{ maxHeight: '85vh' }}>
+              <div className="overflow-y-auto" style={{ maxHeight: '92dvh' }}>
                 {/* Product Image */}
-                <div className="relative aspect-square bg-gray-100">
+                <div className="relative aspect-[4/3] sm:aspect-square bg-gray-100">
                   {selectedProduct.images?.[0]?.public_url ? (
                     <img
                       src={selectedProduct.images[0].public_url}
@@ -408,10 +408,10 @@ export default function PublicMenuPage() {
                 </div>
 
                 {/* Product Details */}
-                <div className="p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-4">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.name}</h2>
-                    <p className="text-2xl font-black text-orange-500 mt-2">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{selectedProduct.name}</h2>
+                    <p className="text-xl sm:text-2xl font-black text-orange-500 mt-2">
                       {formatINR(Number(selectedProduct.price))}
                     </p>
                   </div>
@@ -441,7 +441,7 @@ export default function PublicMenuPage() {
                           {isOut ? 'Sold Out' : 'Add to Cart'}
                         </Button>
                       ) : (
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                           <div className="flex items-center justify-between p-2 border-2 border-orange-500 rounded-2xl bg-white flex-1">
                             <button
                               onClick={() => updateQuantity(selectedProduct.id, qty - 1)}
@@ -459,7 +459,7 @@ export default function PublicMenuPage() {
                           </div>
                           <Button
                             onClick={() => setSelectedProduct(null)}
-                            className="h-14 px-8 text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
+                            className="h-12 sm:h-14 px-6 sm:px-8 text-base sm:text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
                           >
                             Done
                           </Button>

@@ -10,6 +10,7 @@ interface QROrderNotificationProps {
     order: Order | null;
     onDismiss: () => void;
     onViewDetails: (order: Order) => void;
+    onReject?: (order: Order) => Promise<void> | void;
     autoAcceptSeconds?: number;
     playSound?: boolean;
 }
@@ -20,11 +21,13 @@ const QROrderNotification: React.FC<QROrderNotificationProps> = ({
     order,
     onDismiss,
     onViewDetails,
+    onReject,
     autoAcceptSeconds = 5,
     playSound = true,
 }) => {
     const [countdown, setCountdown] = useState(autoAcceptSeconds);
     const [isAccepted, setIsAccepted] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Reset state when new order arrives
@@ -77,6 +80,22 @@ const QROrderNotification: React.FC<QROrderNotificationProps> = ({
 
         // Auto-dismiss after brief success display
         setTimeout(() => onDismiss(), 2000);
+    };
+
+    const handleReject = async () => {
+        if (!order || isAccepted || isRejecting) return;
+        try {
+            setIsRejecting(true);
+            if (onReject) {
+                await onReject(order);
+            }
+            onDismiss();
+        } catch (error) {
+            console.error('Failed to reject QR order:', error);
+            toast.error('Failed to reject order');
+        } finally {
+            setIsRejecting(false);
+        }
     };
 
     if (!order) return null;
@@ -181,11 +200,12 @@ const QROrderNotification: React.FC<QROrderNotificationProps> = ({
                             ) : (
                                 <div className="flex gap-2">
                                     <Button
-                                        onClick={onDismiss}
+                                        onClick={handleReject}
                                         variant="outline"
                                         className="rounded-xl h-10 px-3 font-bold text-sm border-slate-200"
+                                        disabled={isRejecting}
                                     >
-                                        Cancel
+                                        {isRejecting ? "Rejecting..." : "Reject"}
                                     </Button>
                                     <Button
                                         onClick={handleAccept}
