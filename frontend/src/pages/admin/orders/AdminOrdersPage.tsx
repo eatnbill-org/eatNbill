@@ -164,6 +164,7 @@ export default function AdminOrdersPage() {
     }
 
     fetchOrders({
+      status: 'ACTIVE',
       from_date: start.toISOString(),
       to_date: end.toISOString(),
       limit: pagination?.limit || 25
@@ -195,7 +196,7 @@ export default function AdminOrdersPage() {
   }, [connectionMode]);
 
   const filteredOrders = useMemo(() => {
-    let result = [...orders];
+    let result = [...orders].filter((o) => o.status === 'ACTIVE');
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -299,7 +300,7 @@ export default function AdminOrdersPage() {
           <Select
             value={pagination?.limit?.toString() || "25"}
             onValueChange={(v) => {
-              fetchOrders({ ...filters, limit: parseInt(v), page: 1 });
+              fetchOrders({ ...filters, status: 'ACTIVE', limit: parseInt(v), page: 1 });
             }}
           >
             <SelectTrigger className="h-8 w-20 border-none bg-transparent shadow-none text-xs font-bold focus:ring-0 text-primary">

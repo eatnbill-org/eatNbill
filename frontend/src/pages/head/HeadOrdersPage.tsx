@@ -37,7 +37,7 @@ export default function HeadOrdersPage() {
     const navigate = useNavigate(); // For redirecting to menu page
     const connectionMode = useRealtimeStore((state) => state.connectionMode);
     const realtimeConnected = useRealtimeStore((state) => state.isConnected);
-    const [statusFilter, setStatusFilter] = React.useState<string>("all");
+    const [statusFilter, setStatusFilter] = React.useState<string>("ACTIVE");
     const [selectedOrder, setSelectedOrder] = React.useState<any | null>(null);
     const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
     const [cancelDialogOpen, setCancelDialogOpen] = React.useState(false);
@@ -559,7 +559,7 @@ export default function HeadOrdersPage() {
                                         }}
                                     >
                                         <RefreshCw className="h-4 w-4 mr-2" />
-                                        Reorder
+                                        Add Items
                                     </Button>
 
                                     {selectedOrder.payment_status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && (
