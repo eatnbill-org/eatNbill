@@ -42,6 +42,7 @@ import {
   deleteTableQRCode,
 } from './repository';
 import { createSignedUrl, getPublicUrl, removeFromStorage, uploadToStorage, STORAGE_BUCKETS } from '../../utils/storage';
+import { prisma } from '../../utils/prisma';
 
 const THEME_PRESETS = {
   classic: { primary_color: '#065f46', secondary_color: '#ffffff', accent_color: '#d4af37', font_scale: 'MD' as const },
@@ -53,8 +54,7 @@ const THEME_PRESETS = {
 };
 
 function resolveFrontendBaseUrl() {
-  const frontendValue = Array.isArray(env.FRONTEND_URL) ? env.FRONTEND_URL[0] : env.FRONTEND_URL;
-  const normalized = (frontendValue || '').trim().replace(/\/+$/, '');
+  const normalized = (env.FRONTEND_URL || '').trim().replace(/\/+$/, '');
 
   // Safety guard: in production, never generate localhost QR links.
   if (env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/i.test(normalized)) {

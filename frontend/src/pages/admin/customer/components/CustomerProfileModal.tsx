@@ -127,11 +127,11 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
   return (
     <>
       <Dialog open={Boolean(customer)} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-6xl p-0 gap-0 overflow-hidden outline-none border-none shadow-2xl h-[90vh] bg-slate-50">
-          <div className="flex h-full min-h-0 relative">
+        <DialogContent className="w-[calc(100vw-1rem)] sm:w-auto max-w-6xl p-0 gap-0 overflow-hidden outline-none border-none shadow-2xl h-[92vh] sm:h-[90vh] bg-slate-50">
+          <div className="flex flex-col lg:flex-row h-full min-h-0 relative">
 
             {/* LEFT SIDEBAR - ULTRA COMPACT */}
-            <div className="w-[300px] bg-white border-r flex flex-col h-full shadow-lg z-10 overflow-hidden relative">
+            <div className="w-full lg:w-[300px] bg-white border-b lg:border-b-0 lg:border-r flex flex-col h-auto lg:h-full max-h-[42vh] lg:max-h-none overflow-y-auto shadow-lg z-10 relative">
               <div className="absolute top-0 left-0 w-full h-32 bg-indigo-50/50 pointer-events-none" />
 
               {/* Profile Header - Compact */}
@@ -261,24 +261,24 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
             </div>
 
             {/* RIGHT MAIN - ORDER HISTORY */}
-            <div className="flex-1 flex flex-col min-h-0 bg-slate-50 relative">
+            <div className="flex-1 flex flex-col min-h-[50vh] lg:min-h-0 bg-slate-50 relative">
               {/* Decorative Blur */}
-              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-orange-100/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+              <div className="hidden sm:block absolute top-0 right-0 w-[400px] h-[400px] bg-orange-100/30 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
               {/* Close Button Absolute */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-4 right-4 h-9 w-9 z-20 hover:bg-white shadow-sm border border-slate-100 rounded-xl"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 h-9 w-9 z-20 hover:bg-white shadow-sm border border-slate-100 rounded-xl"
                 onClick={onClose}
               >
                 <X className="h-5 w-5 text-slate-400" />
               </Button>
 
-              <div className="p-8 pb-4 relative z-10 flex flex-col flex-1 min-h-0">
+              <div className="p-4 sm:p-6 lg:p-8 pb-4 relative z-10 flex flex-col flex-1 min-h-0">
                 {/* Custom Table Container */}
                 <div className="flex-1 min-h-0 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col">
-                  <div className="bg-slate-50/80 backdrop-blur-md border-b border-slate-100 px-8 py-4 flex items-center justify-between shrink-0">
+                  <div className="bg-slate-50/80 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                     <div className="flex items-center gap-3">
                       <ShoppingBag className="w-4 h-4 text-slate-400" />
                       <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Transaction History</h3>
@@ -294,6 +294,7 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                   </div>
 
                   <div className="flex-1 overflow-y-auto scrollbar-hide no-scrollbar min-h-0">
+                    <div className="overflow-x-auto">
                     <Table>
                       <TableHeader className="bg-white sticky top-0 z-10">
                         <TableRow className="hover:bg-transparent border-slate-50">
@@ -359,6 +360,7 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                         </AnimatePresence>
                       </TableBody>
                     </Table>
+                    </div>
                   </div>
                 </div>
               </div>

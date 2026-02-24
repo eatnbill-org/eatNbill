@@ -25,27 +25,25 @@ const authLimiter = rateLimit({
     : undefined,
 });
 
-// ✅ FIX #9: Disable rate limiting for internal routes (optional - saves 20-80ms)
-// Keep authLimiter for /auth routes only
 const defaultLimiter = (req: any, res: any, next: any) => next(); // No-op for better performance
 
-// Original rate limiter (commented out for performance)
-// const defaultLimiter = rateLimit({
-//   windowMs: 60_000,
-//   limit: 60,
-//   standardHeaders: true,
-//   legacyHeaders: false,
-//   store: env.REDIS_URL && redisClient.getClient()
-//     ? new RedisStore({
-//         sendCommand: (...args: string[]) => redisClient.getClient()!.call(...(args as [string, ...string[]])) as Promise<any>,
-//       })
-//     : undefined,
-// });
 
 export function applyCommonMiddleware(app: Express) {
+  const allowedOrigins = new Set(env.CORS_ALLOWED_ORIGINS.map((origin) => origin.replace(/\/+$/, '')));
+
   // CORS configuration - must be before other middleware
   app.use(cors({
-    origin: env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow non-browser and same-origin requests (no Origin header)
+      if (!origin) return callback(null, true);
+
+      const normalizedOrigin = origin.replace(/\/+$/, '');
+      if (allowedOrigins.has(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-restaurant-id'],

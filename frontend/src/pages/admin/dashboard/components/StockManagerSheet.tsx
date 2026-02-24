@@ -57,8 +57,8 @@ export function StockManagerSheet({ open, onOpenChange }: StockManagerSheetProps
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[360px] sm:w-[460px] p-0 border-none rounded-l-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
-        <SheetHeader className="p-8 pb-4 bg-slate-50 border-b border-slate-100">
+      <SheetContent side="right" className="w-[100vw] max-w-[360px] sm:max-w-[460px] p-0 border-none rounded-none sm:rounded-l-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
+        <SheetHeader className="p-5 sm:p-8 pb-4 bg-slate-50 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center">
               <Package className="w-5 h-5" />
@@ -100,7 +100,7 @@ export function StockManagerSheet({ open, onOpenChange }: StockManagerSheetProps
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4 bg-white">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-6 space-y-4 bg-white">
           {loading && products.length === 0 ? (
             <div className="p-2">
               <ListSkeleton rows={5} />
@@ -136,7 +136,7 @@ export function StockManagerSheet({ open, onOpenChange }: StockManagerSheetProps
           )}
         </div>
 
-        <div className="p-6 bg-slate-50 border-t border-slate-100">
+        <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-100">
           <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 flex gap-3">
             <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
             <p className="text-[10px] font-bold text-amber-700 leading-relaxed uppercase tracking-tight">

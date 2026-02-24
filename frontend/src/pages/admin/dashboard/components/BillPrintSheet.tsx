@@ -22,7 +22,7 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
 
   return (
     <Sheet open={Boolean(order)} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[400px] sm:w-[450px] bg-zinc-50 overflow-y-auto [&::-webkit-scrollbar]:hidden p-0">
+      <SheetContent className="w-[100vw] max-w-[400px] sm:max-w-[450px] bg-zinc-50 overflow-y-auto [&::-webkit-scrollbar]:hidden p-0">
         <style>{`
           @media print {
             @page {
@@ -66,7 +66,7 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
         <div id="print-mount-root" className="flex justify-center bg-zinc-50 py-10 print:py-0 print:bg-white lowercase-none">
           <div
             id="printable-bill"
-            className="w-[320px] bg-white shadow-xl print:shadow-none p-8 font-sans text-slate-900 space-y-6 flex flex-col min-h-fit"
+            className="w-full max-w-[320px] bg-white shadow-xl print:shadow-none p-6 sm:p-8 font-sans text-slate-900 space-y-6 flex flex-col min-h-fit"
           >
             {/* Header */}
             <div className="text-center space-y-2 border-b-2 border-slate-900 pb-6">

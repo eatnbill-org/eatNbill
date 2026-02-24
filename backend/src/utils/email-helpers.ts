@@ -73,8 +73,7 @@ export async function sendInvitationEmail(
   invitationToken: string,
   expiryDays: number = 7
 ): Promise<void> {
-  const frontendUrl = Array.isArray(env.FRONTEND_URL) ? env.FRONTEND_URL[0] : env.FRONTEND_URL;
-  const invitationLink = `${frontendUrl}/accept-invitation?token=${invitationToken}`;
+  const invitationLink = `${env.FRONTEND_URL}/accept-invitation?token=${invitationToken}`;
   
   const subject = `You're invited to join ${restaurantName} on RBS`;
   const html = invitationTemplate(
@@ -101,8 +100,7 @@ export async function sendInvitationEmailSync(
   invitationToken: string,
   expiryDays: number = 7
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const frontendUrl = Array.isArray(env.FRONTEND_URL) ? env.FRONTEND_URL[0] : env.FRONTEND_URL;
-  const invitationLink = `${frontendUrl}/accept-invitation?token=${invitationToken}`;
+  const invitationLink = `${env.FRONTEND_URL}/accept-invitation?token=${invitationToken}`;
   
   const subject = `You're invited to join ${restaurantName} on RBS`;
   const html = invitationTemplate(
