@@ -389,7 +389,7 @@ export default function HeadOrdersPage() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-8 w-8 p-0 rounded-lg border-orange-200 text-orange-600 hover:bg-orange-50"
+                                                className="h-8 w-8 p-0  rounded-lg border-orange-200 text-orange-600 hover:bg-orange-50"
                                                 title="Quick Reorder"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -402,8 +402,9 @@ export default function HeadOrdersPage() {
                                                 }}
                                             >
                                                 <RefreshCw className="h-4 w-4" />
+                                                
                                             </Button>
-                                            {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
+                                            {/* {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -421,7 +422,7 @@ export default function HeadOrdersPage() {
                                                     <Plus className="h-3.5 w-3.5 mr-1" />
                                                     Add
                                                 </Button>
-                                            )}
+                                            )} */}
                                             {order.payment_status !== 'PAID' && order.status !== 'CANCELLED' && (
                                                 <Button
                                                     size="sm"
@@ -545,10 +546,10 @@ export default function HeadOrdersPage() {
 
                             {/* Modal Footer - Single Row Actions */}
                             <div className="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
-                                <div className="flex flex-col gap-2 sm:flex-row">
+                                <div className="flex flex-col gap-2 sm:flex-row p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
                                     <Button
                                         variant="outline"
-                                        className="flex-1 h-12 rounded-2xl border-orange-200 text-orange-600 font-black text-xs uppercase tracking-wider bg-white hover:bg-orange-50"
+                                        className="flex-1 h-12 rounded-2xl border-orange-200 text-white font-black text-xs uppercase tracking-wider bg-green-600 hover:bg-green-700 p-3"
                                         onClick={() => {
                                             if (selectedOrder.payment_status === 'PAID') {
                                                 toast.error('Cannot add items to a paid order');
@@ -558,13 +559,13 @@ export default function HeadOrdersPage() {
                                             navigate(`/head/menu/${selectedOrder.id}?table=${tableId}`);
                                         }}
                                     >
-                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                        <Plus className="h-4 w-4 mr-2" />
                                         Add Items
                                     </Button>
 
                                     {selectedOrder.payment_status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && (
                                         <Button
-                                            className="flex-[1.5] h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-slate-200"
+                                            className="flex-[1.5] h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-slate-200 p-3"
                                             onClick={() => setPaymentDialogOpen(true)}
                                         >
                                             <IndianRupee className="h-4 w-4 mr-2" />
@@ -574,7 +575,7 @@ export default function HeadOrdersPage() {
                                     {selectedOrder.status !== "COMPLETED" && selectedOrder.status !== "CANCELLED" && (
                                         <Button
                                             variant="outline"
-                                            className="flex-1 h-12 rounded-2xl border-rose-200 text-rose-600 font-black text-xs uppercase tracking-wider bg-white hover:bg-rose-50"
+                                            className="flex-1 h-12 rounded-2xl border-rose-200 text-white font-black text-xs uppercase tracking-wider bg-red-500 hover:bg-rose-600 p-3"
                                             onClick={() => handleOpenCancelDialog(selectedOrder)}
                                         >
                                             Cancel Order
@@ -593,6 +594,7 @@ export default function HeadOrdersPage() {
                 onOpenChange={(open) => {
                     setPaymentDialogOpen(open);
                     if (!open) {
+                        setDetailsDialogOpen(false); 
                         queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
                     }
                 }}
@@ -629,7 +631,7 @@ export default function HeadOrdersPage() {
                         <Button
                             variant="outline"
                             onClick={() => setCancelDialogOpen(false)}
-                            className="w-full sm:w-auto rounded-xl"
+                            className="w-full sm:w-auto rounded-xl bg-green-600 hover:bg-green-700 text-white"
                             disabled={cancelOrderMutation.isPending}
                         >
                             Keep Order
