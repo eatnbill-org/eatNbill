@@ -325,7 +325,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                             variant="ghost"
                             onClick={() => onOpenChange(false)}
                             disabled={updating}
-                            className="w-full text-slate-500 font-bold hover:bg-slate-200/50 rounded-xl h-12 text-sm"
+                            className="w-full text-white font-bold hover:bg-red-700 bg-red-600 rounded-xl h-12 text-sm"
                         >
                             Dismiss
                         </Button>
