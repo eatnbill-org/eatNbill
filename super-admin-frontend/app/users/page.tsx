@@ -180,7 +180,7 @@ function UsersContent() {
   const [users, setUsers] = useState<UsersResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
   const loadUsers = useCallback(async (showToast = false) => {
@@ -190,7 +190,7 @@ function UsersContent() {
         page: currentPage,
         limit: 10,
         search: searchQuery || undefined,
-        role: roleFilter || undefined,
+        role: roleFilter !== 'all' ? roleFilter : undefined,
       });
       if (response.success) {
         setUsers(response.data);
@@ -258,7 +258,7 @@ function UsersContent() {
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Roles</SelectItem>
+                  <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="OWNER">Owner</SelectItem>
                   <SelectItem value="MANAGER">Manager</SelectItem>
                   <SelectItem value="WAITER">Waiter</SelectItem>

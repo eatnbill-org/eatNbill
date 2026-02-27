@@ -207,7 +207,7 @@ function TenantsContent() {
   const [tenants, setTenants] = useState<TenantsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
   const loadTenants = useCallback(async (showToast = false) => {
@@ -217,7 +217,7 @@ function TenantsContent() {
         page: currentPage,
         limit: 10,
         search: searchQuery || undefined,
-        status: statusFilter || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
       });
       if (response.success) {
         setTenants(response.data);
@@ -326,7 +326,7 @@ function TenantsContent() {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="ACTIVE">Active</SelectItem>
                   <SelectItem value="SUSPENDED">Suspended</SelectItem>
                   <SelectItem value="PENDING">Pending</SelectItem>

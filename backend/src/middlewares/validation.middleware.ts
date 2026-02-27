@@ -53,7 +53,12 @@ export function validateQuery<T>(schema: ZodSchema<T>) {
       );
     }
 
-    req.query = result.data as unknown as typeof req.query;
+    Object.defineProperty(req, 'query', {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     return next();
   };
 }
@@ -71,7 +76,12 @@ export function validateParams<T>(schema: ZodSchema<T>) {
       );
     }
 
-    req.params = result.data as unknown as typeof req.params;
+    Object.defineProperty(req, 'params', {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     return next();
   };
 }
