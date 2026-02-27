@@ -13,14 +13,14 @@ export async function loginController(req: Request, res: Response, next: NextFun
     res.cookie('sa_access_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'lax' in dev for cross-port
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
     
     res.cookie('sa_refresh_token', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'lax' in dev for cross-port
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     
@@ -54,7 +54,7 @@ export async function refreshController(req: Request, res: Response, next: NextF
     res.cookie('sa_access_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'lax' in dev for cross-port
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
     

@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { rateLimiters } from '../../middlewares';
-import { validateBody } from '../../middlewares/validation.middleware';
+import { rateLimiters } from '../../../middlewares';
+import { validateBody } from '../../../middlewares/validation.middleware';
+import { superAdminAuthMiddleware } from '../middleware';
 import {
   loginController,
   logoutController,
@@ -13,13 +14,14 @@ import {
 
 export function superAdminAuthRoutes() {
   const router = Router();
-  router.use(rateLimiters.auth);
 
-  // Authentication endpoints
+  // Public authentication endpoints
   router.post('/login', validateBody(loginSchema), loginController);
   router.post('/refresh', refreshController);
-  router.get('/me', meController);
   router.post('/logout', logoutController);
+  
+  // Protected endpoint - requires valid token
+  router.get('/me', superAdminAuthMiddleware, meController);
 
   return router;
 }

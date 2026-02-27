@@ -1,10 +1,10 @@
 import { compare, hash } from 'bcrypt';
-import { prisma } from '../../utils/prisma';
-import { signLocalJwt, verifyLocalJwt } from '../../utils/jwt';
-import { AppError } from '../../middlewares/error.middleware';
+import { prisma } from '../../../utils/prisma';
+import { signLocalJwt, verifyLocalJwt } from '../../../utils/jwt';
+import { AppError } from '../../../middlewares/error.middleware';
 import { logSuperAdminAction } from '../middleware';
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = 10;
 
 interface LoginResult {
   accessToken: string;
