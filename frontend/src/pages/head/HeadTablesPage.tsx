@@ -131,7 +131,7 @@ export default function HeadTablesPage() {
             </div>
 
             {/* 2-Column High-Density Grid */}
-            <div className="grid grid-cols-1 gap-3 pb-24 min-[420px]:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3 pb-24 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {filteredTables.map((table: any) => (
                     <div
                         key={table.id}
