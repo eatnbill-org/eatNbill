@@ -25,11 +25,44 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 
-// Simplified Status configuration
-const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode; ringClass: string }> = {
-    ACTIVE: { label: "Active", color: "text-blue-600", bgColor: "bg-blue-50", icon: <Clock className="h-4 w-4" />, ringClass: "ring-blue-100" },
-    COMPLETED: { label: "Completed", color: "text-slate-600", bgColor: "bg-slate-50", icon: <Check className="h-4 w-4" />, ringClass: "ring-slate-100" },
-    CANCELLED: { label: "Cancelled", color: "text-rose-600", bgColor: "bg-rose-50", icon: <UtensilsCrossed className="h-4 w-4" />, ringClass: "ring-rose-100" },
+// Relative time helper
+function timeAgo(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// Status configuration with unique card accent colors
+const STATUS_CONFIG: Record<string, {
+    label: string; color: string; bgColor: string; icon: React.ReactNode;
+    ringClass: string; borderColor: string; cardBg: string; dotColor: string;
+    hoverBorder: string; footerBg: string;
+}> = {
+    ACTIVE: {
+        label: "Active", color: "text-emerald-600", bgColor: "bg-emerald-50",
+        icon: <Clock className="h-3.5 w-3.5" />, ringClass: "ring-emerald-100",
+        borderColor: "border-l-emerald-500", cardBg: "bg-white",
+        dotColor: "bg-emerald-500", hoverBorder: "hover:border-emerald-200",
+        footerBg: "bg-emerald-50/40",
+    },
+    COMPLETED: {
+        label: "Completed", color: "text-blue-600", bgColor: "bg-blue-50",
+        icon: <Check className="h-3.5 w-3.5" />, ringClass: "ring-blue-100",
+        borderColor: "border-l-blue-500", cardBg: "bg-slate-50/50",
+        dotColor: "bg-blue-500", hoverBorder: "hover:border-blue-200",
+        footerBg: "bg-blue-50/40",
+    },
+    CANCELLED: {
+        label: "Cancelled", color: "text-rose-600", bgColor: "bg-rose-50",
+        icon: <UtensilsCrossed className="h-3.5 w-3.5" />, ringClass: "ring-rose-100",
+        borderColor: "border-l-rose-400", cardBg: "bg-rose-50/20",
+        dotColor: "bg-rose-400", hoverBorder: "hover:border-rose-200",
+        footerBg: "bg-rose-50/40",
+    },
 };
 
 export default function HeadOrdersPage() {
@@ -275,122 +308,80 @@ export default function HeadOrdersPage() {
                     )}
                 </div>
             ) : (
-                <div className="grid gap-4 sm:gap-5 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 pb-24">
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 pb-24">
                     {filteredOrders.map((order: any) => {
-                        const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
+                        const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.ACTIVE;
                         const isPaid = order.payment_status === 'PAID';
+                        const tableNum = getOrderTableNumber(order);
 
                         return (
                             <div
                                 key={order.id}
-                                className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-primary/40 transition-all duration-300 flex flex-col overflow-hidden cursor-pointer"
+                                className={`group ${config.cardBg} rounded-2xl border border-slate-100 ${config.hoverBorder} shadow-sm hover:shadow-xl transition-all duration-300 ease-out flex overflow-hidden cursor-pointer active:scale-[0.97] select-none border-l-[5px] ${config.borderColor}`}
                                 onClick={() => openDetails(order)}
+                                style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
-                                {/* Status Bar */}
-                                <div className={`h-1 w-full ${config.color.replace('text-', 'bg-')}`} />
-
-                                {/* Card Content */}
-                                <div className="p-4 flex-1 flex flex-col">
-                                    {/* Header: Customer Name & Total Amount */}
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-bold text-slate-900 text-base truncate">
-                                                {order.customer_name || 'Guest'}
-                                            </h3>
-                                            <p className="text-xs text-slate-400 font-medium mt-0.5">
-                                                Order #{order.order_number}
-                                            </p>
-                                            <p className="text-[11px] text-slate-500 font-semibold mt-1 truncate">
-                                                {getOrderLocationLabel(order)}
-                                            </p>
-                                        </div>
-                                        <div className="text-right ml-3">
-                                            <p className="text-xl font-bold text-primary tracking-tight">{formatINR(order.total_amount)}</p>
-                                            {isPaid && (
-                                                <Badge className="bg-emerald-100 text-emerald-700 border-0 px-1.5 h-4 text-[9px] font-bold mt-1">
-                                                    PAID
-                                                </Badge>
-                                            )}
-                                        </div>
+                                {/* Card Body */}
+                                <div className="flex-1 flex flex-col min-w-0">
+                                    {/* Row 1: Name + Amount */}
+                                    <div className="flex items-start justify-between px-4 pt-3.5 pb-1 gap-3">
+                                        <h3 className="font-extrabold text-slate-900 text-[15px] truncate leading-tight">
+                                            {order.customer_name || 'Guest'}
+                                        </h3>
+                                        <p className="text-lg font-extrabold text-emerald-600 tabular-nums whitespace-nowrap tracking-tight leading-tight">
+                                            {formatINR(order.total_amount)}
+                                        </p>
                                     </div>
 
-                                    {/* Items Table (Scrollable) */}
-                                    <div className="flex-1 mt-3 mb-3">
-                                        <div className="border border-slate-200 rounded-xl overflow-hidden">
-                                            <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-                                                <table className="w-full text-xs">
-                                                    <thead className="bg-slate-50 sticky top-0">
-                                                        <tr className="border-b border-slate-200">
-                                                            <th className="text-left py-2 px-3 font-semibold text-slate-600">Item</th>
-                                                            <th className="text-center py-2 px-2 font-semibold text-slate-600 w-12">Qty</th>
-                                                            <th className="text-right py-2 px-3 font-semibold text-slate-600 w-20">Price</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {order.items?.slice().sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item: any, idx: number) => {
-                                                            // Determine effective status
-                                                            // If status is "REORDER" or null/undefined, treat as "New" unless order is in advanced state
-                                                            let statusLabel = 'New';
-                                                            let statusColor = 'bg-blue-100 text-blue-700';
-
-                                                            if (item.status === 'SERVED') {
-                                                                statusLabel = 'Served';
-                                                                statusColor = 'bg-purple-100 text-purple-700';
-                                                            } else if (item.status === 'REORDER') {
-                                                                statusLabel = 'New';
-                                                                statusColor = 'bg-orange-100 text-orange-700';
-                                                            } else if (!item.status || item.status === 'PENDING') {
-                                                                // Use order status as fallback if item status is ambiguous
-                                                                if (order.status === 'PREPARING') {
-                                                                    statusLabel = 'Cook';
-                                                                    statusColor = 'bg-orange-100 text-orange-700';
-                                                                } else if (order.status === 'READY') {
-                                                                    statusLabel = 'Ready';
-                                                                    statusColor = 'bg-green-100 text-green-700';
-                                                                } else {
-                                                                    statusLabel = 'New';
-                                                                    statusColor = 'bg-blue-100 text-blue-700';
-                                                                }
-                                                            }
-
-                                                            return (
-                                                                <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                                                                    <td className="py-2 px-3 text-slate-700 font-medium truncat">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="truncate max-w-[120px]">{item.name_snapshot || item.product?.name || 'Item'}</span>
-                                                                            <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide ${statusColor}`}>
-                                                                                {statusLabel}
-                                                                            </span>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="py-2 px-2 text-center text-slate-600 font-semibold">
-                                                                        {item.quantity}
-                                                                    </td>
-                                                                    <td className="py-2 px-3 text-right text-slate-700 font-semibold tabular-nums">
-                                                                        {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
-                                                                    </td>
-                                                                </tr>
-                                                            )
-                                                        })}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
+                                    {/* Row 2: Table, Time, Order # */}
+                                    <div className="flex items-center gap-2 px-4 pb-2.5 flex-wrap">
+                                        {tableNum && (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-slate-100 rounded-md px-1.5 py-0.5">
+                                                <MapPin className="h-3 w-3 text-slate-400" />
+                                                T-{tableNum}
+                                            </span>
+                                        )}
+                                        <span className="text-[11px] text-slate-400 font-semibold">
+                                            {timeAgo(order.created_at)}
+                                        </span>
+                                        <span className="text-[11px] text-slate-400 font-medium">
+                                            #{order.order_number}
+                                        </span>
+                                        {isPaid && (
+                                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 rounded-md px-1.5 py-0.5">
+                                                <Check className="h-2.5 w-2.5" /> Paid
+                                            </span>
+                                        )}
                                     </div>
 
-                                    {/* Footer: Status Badge & Action Buttons */}
-                                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                                        <Badge variant="outline" className={`${config.bgColor} ${config.color} border-0 px-2.5 py-1 text-[10px] font-bold flex items-center gap-1.5 rounded-lg`}>
-                                            {config.icon}
+                                    {/* Row 3: Item Chips */}
+                                    <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+                                        {order.items?.slice(0, 5).map((item: any, idx: number) => (
+                                            <span
+                                                key={idx}
+                                                className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-[11px] font-semibold rounded-lg px-2 py-1 transition-colors duration-200 group-hover:bg-slate-200/70"
+                                            >
+                                                {item.quantity}× {item.name_snapshot || item.product?.name || 'Item'}
+                                            </span>
+                                        ))}
+                                        {order.items?.length > 5 && (
+                                            <span className="inline-flex items-center text-[11px] font-bold text-primary bg-primary/10 rounded-lg px-2 py-1">
+                                                +{order.items.length - 5} more
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Footer: Status + Actions */}
+                                    <div className={`flex items-center justify-between gap-2 px-4 py-2 ${config.footerBg} border-t border-slate-100/80 mt-auto`}>
+                                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${config.color}`}>
+                                            <span className={`inline-block h-2 w-2 rounded-full ${config.dotColor} animate-pulse`} />
                                             {config.label}
-                                        </Badge>
+                                        </span>
 
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="h-8 w-8 p-0  rounded-lg border-orange-200 text-orange-600 hover:bg-orange-50"
-                                                title="Quick Reorder"
+                                        <div className="flex items-center gap-1.5">
+                                            {/* Add Button */}
+                                            <button
+                                                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all duration-150 shadow-sm"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     if (order.payment_status === 'PAID') {
@@ -401,54 +392,37 @@ export default function HeadOrdersPage() {
                                                     navigate(`/head/menu/${order.id}?table=${tableId}`);
                                                 }}
                                             >
-                                                <RefreshCw className="h-4 w-4" />
-                                                
-                                            </Button>
-                                            {/* {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="h-8 px-2.5 rounded-lg border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-[10px] font-bold"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (order.payment_status === 'PAID') {
-                                                            toast.error('Cannot add items to a paid order');
-                                                            return;
-                                                        }
-                                                        const tableId = order.table_id || 'TAKEAWAY';
-                                                        navigate(`/head/menu/${order.id}?table=${tableId}`);
-                                                    }}
-                                                >
-                                                    <Plus className="h-3.5 w-3.5 mr-1" />
-                                                    Add
-                                                </Button>
-                                            )} */}
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Add
+                                            </button>
+
+                                            {/* Paid Button */}
                                             {order.payment_status !== 'PAID' && order.status !== 'CANCELLED' && (
-                                                <Button
-                                                    size="sm"
-                                                    className="h-8 px-2.5 rounded-lg bg-slate-900 hover:bg-black text-white text-[10px] font-bold shadow-sm"
+                                                <button
+                                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-emerald-500 rounded-lg px-2.5 py-1.5 hover:bg-emerald-600 active:scale-95 transition-all duration-150 shadow-sm"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setSelectedOrder(order);
                                                         setPaymentDialogOpen(true);
                                                     }}
                                                 >
-                                                    <IndianRupee className="h-3.5 w-3.5 mr-1" />
+                                                    <Check className="h-3.5 w-3.5" />
                                                     Paid
-                                                </Button>
+                                                </button>
                                             )}
-                                            {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="h-8 px-2.5 rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 text-[10px] font-bold"
+
+                                            {/* Cancel Button */}
+                                            {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                                                <button
+                                                    className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-rose-400 bg-rose-50 border border-rose-100 hover:bg-rose-100 hover:text-rose-600 active:scale-90 transition-all duration-150"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleOpenCancelDialog(order);
                                                     }}
+                                                    title="Cancel order"
                                                 >
-                                                    Cancel
-                                                </Button>
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
                                             )}
                                         </div>
                                     </div>
@@ -459,132 +433,117 @@ export default function HeadOrdersPage() {
                 </div>
             )}
 
-            {/* Order Details Modal - Enhanced & Compact */}
+            {/* Order Details Modal — Compact Chip Design */}
             <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-                <DialogContent className="max-w-[calc(100vw-2.5rem)] sm:max-w-md max-h-[90vh] overflow-hidden rounded-[2.5rem] p-0 gap-0 border-0 shadow-2xl mx-auto flex flex-col">
-                    {selectedOrder && (
-                        <>
-                            {/* Modal Header - Compact */}
-                            <DialogHeader className="p-4 py-3 border-b border-slate-100 bg-white sticky top-0 z-10 shrink-0">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <DialogTitle className="text-base font-black tracking-tight text-slate-900 flex items-center gap-1.5">
-                                            #{selectedOrder.order_number}
-                                            {selectedOrder.payment_status === 'PAID' && (
-                                                <Badge className="bg-emerald-500 text-white border-0 h-4 px-1.5 text-[8px] font-black">PAID</Badge>
-                                            )}
-                                        </DialogTitle>
-                                        <p className="text-[10px] text-slate-400 font-bold">{formatDateTime(selectedOrder.created_at)}</p>
-                                    </div>
-                                    <div className="flex flex-wrap items-center justify-end gap-2">
-                                        <Badge className={`${STATUS_CONFIG[selectedOrder.status]?.bgColor} ${STATUS_CONFIG[selectedOrder.status]?.color} border-0 px-2 h-6 text-[9px] font-black uppercase tracking-wider`}>
-                                            {selectedOrder.status}
-                                        </Badge>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-7 w-7 rounded-full bg-slate-50 hover:bg-slate-100"
-                                            onClick={() => setDetailsDialogOpen(false)}
-                                        >
-                                            <X className="h-3.5 w-3.5" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </DialogHeader>
+                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm overflow-hidden rounded-2xl p-0 gap-0 border-0 shadow-2xl mx-auto flex flex-col">
+                    {selectedOrder && (() => {
+                        const mCfg = STATUS_CONFIG[selectedOrder.status] || STATUS_CONFIG.ACTIVE;
+                        const mPaid = selectedOrder.payment_status === 'PAID';
+                        return (
+                            <>
+                                {/* Status strip */}
+                                <div className={`h-1 w-full shrink-0 ${mCfg.dotColor}`} />
 
-                            {/* Modal Body - High Density */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
-                                {/* Compact Info Row */}
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                    <div className="bg-slate-50 p-2.5 rounded-2xl flex items-center gap-2 border border-slate-100/50">
-                                        <User className="h-3.5 w-3.5 text-blue-500" />
-                                        <span className="text-xs font-black text-slate-700 truncate">{selectedOrder.customer_name || 'Guest'}</span>
+                                {/* Header */}
+                                <DialogHeader className={`px-4 pt-3 pb-2.5 border-b border-slate-100 ${mCfg.cardBg} shrink-0`}>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <DialogTitle className="text-base font-extrabold text-slate-900 truncate leading-tight">
+                                                {selectedOrder.customer_name || 'Guest'}
+                                            </DialogTitle>
+                                            <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 mt-0.5">
+                                                <span className="text-[10px] text-slate-400">#{selectedOrder.order_number}</span>
+                                                <span className="text-slate-300">·</span>
+                                                <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-400">
+                                                    <MapPin className="h-2.5 w-2.5" />{getOrderLocationLabel(selectedOrder)}
+                                                </span>
+                                                {mPaid && (
+                                                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-100 rounded px-1 py-0.5">
+                                                        <Check className="h-2 w-2" /> Paid
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${mCfg.bgColor} ${mCfg.color}`}>
+                                                <span className={`h-1.5 w-1.5 rounded-full ${mCfg.dotColor} animate-pulse`} />
+                                                {mCfg.label}
+                                            </span>
+                                            <button
+                                                className="h-6 w-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+                                                onClick={() => setDetailsDialogOpen(false)}
+                                            >
+                                                <X className="h-3 w-3 text-slate-500" />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="bg-slate-50 p-2.5 rounded-2xl flex items-center gap-2 border border-slate-100/50">
-                                        <MapPin className="h-3.5 w-3.5 text-orange-500" />
-                                        <span className="text-xs font-black text-slate-700 truncate">
-                                            {getOrderLocationLabel(selectedOrder)}
+                                </DialogHeader>
+
+                                {/* Body — item chips */}
+                                <div className="flex-1 overflow-y-auto scrollbar-hide px-3 pt-3 pb-1 bg-slate-50/50">
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedOrder.items?.slice().sort((a: any, b: any) =>
+                                            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                                        ).map((item: any, idx: number) => (
+                                            <div
+                                                key={item.id || idx}
+                                                className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold ${mCfg.bgColor} ${mCfg.color}`}
+                                            >
+                                                <span className="font-extrabold">{item.quantity}×</span>
+                                                <span className="truncate max-w-[100px]">
+                                                    {item.name_snapshot || item.product?.name || 'Item'}
+                                                </span>
+                                                <span className="font-extrabold opacity-75 tabular-nums">
+                                                    {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Total */}
+                                    <div className="flex items-center justify-between mt-3 mb-2 px-1">
+                                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Total</span>
+                                        <span className={`text-lg font-extrabold tabular-nums ${mCfg.color}`}>
+                                            {formatINR(selectedOrder.total_amount)}
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Order Items Table */}
-                                <div className="border border-slate-100 rounded-[2rem] overflow-hidden bg-white shadow-sm">
-                                    <table className="w-full text-xs">
-                                        <thead className="bg-slate-50/50 border-b border-slate-50">
-                                            <tr>
-                                                <th className="text-left py-2.5 px-4 font-black text-slate-400 uppercase text-[9px]">Item</th>
-                                                <th className="text-center py-2.5 px-2 font-black text-slate-400 uppercase text-[9px] w-12">Qty</th>
-                                                <th className="text-right py-2.5 px-4 font-black text-slate-400 uppercase text-[9px] w-20">Sum</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50">
-                                            {selectedOrder.items?.slice().sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item: any) => (
-                                                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="py-2.5 px-4">
-                                                        <p className="font-bold text-slate-800 leading-tight">{item.name_snapshot || item.product?.name || 'Item'}</p>
-                                                        {item.notes && <p className="text-[10px] text-slate-400 italic mt-0.5 line-clamp-1">{item.notes}</p>}
-                                                    </td>
-                                                    <td className="py-2.5 px-2 text-center">
-                                                        <span className="font-black text-primary">{item.quantity}</span>
-                                                    </td>
-                                                    <td className="py-2.5 px-4 text-right font-black text-slate-900 tabular-nums">
-                                                        {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr className="bg-slate-900 text-white">
-                                                <td colSpan={2} className="py-3 px-4 font-black uppercase text-[10px] tracking-widest">Payable</td>
-                                                <td className="py-3 px-4 text-right font-black text-base">{formatINR(selectedOrder.total_amount)}</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* Modal Footer - Single Row Actions */}
-                            <div className="p-4 bg-slate-50 border-t border-slate-100 shrink-0">
-                                <div className="flex flex-col gap-2 sm:flex-row p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                                    <Button
-                                        variant="outline"
-                                        className="flex-1 h-12 rounded-2xl border-orange-200 text-white font-black text-xs uppercase tracking-wider bg-green-600 hover:bg-green-700 p-3"
-                                        onClick={() => {
-                                            if (selectedOrder.payment_status === 'PAID') {
-                                                toast.error('Cannot add items to a paid order');
-                                                return;
-                                            }
-                                            const tableId = selectedOrder.table_id || 'TAKEAWAY';
-                                            navigate(`/head/menu/${selectedOrder.id}?table=${tableId}`);
-                                        }}
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Items
-                                    </Button>
-
-                                    {selectedOrder.payment_status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && (
-                                        <Button
-                                            className="flex-[1.5] h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-slate-200 p-3"
-                                            onClick={() => setPaymentDialogOpen(true)}
+                                {/* Footer */}
+                                <div className="shrink-0 px-3 py-2.5 bg-white border-t border-slate-100">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            className="flex-1 inline-flex items-center justify-center gap-1 h-9 rounded-xl text-[11px] font-extrabold text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all duration-150 uppercase"
+                                            onClick={() => {
+                                                if (selectedOrder.payment_status === 'PAID') {
+                                                    toast.error('Cannot add items to a paid order');
+                                                    return;
+                                                }
+                                                navigate(`/head/menu/${selectedOrder.id}?table=${selectedOrder.table_id || 'TAKEAWAY'}`);
+                                            }}
                                         >
-                                            <IndianRupee className="h-4 w-4 mr-2" />
-                                            Mark Paid
-                                        </Button>
-                                    )}
-                                    {selectedOrder.status !== "COMPLETED" && selectedOrder.status !== "CANCELLED" && (
-                                        <Button
-                                            variant="outline"
-                                            className="flex-1 h-12 rounded-2xl border-rose-200 text-white font-black text-xs uppercase tracking-wider bg-red-500 hover:bg-rose-600 p-3"
-                                            onClick={() => handleOpenCancelDialog(selectedOrder)}
-                                        >
-                                            Cancel Order
-                                        </Button>
-                                    )}
+                                            <Plus className="h-3.5 w-3.5" /> Add
+                                        </button>
+                                        {selectedOrder.payment_status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && (
+                                            <button
+                                                className="flex-[1.5] inline-flex items-center justify-center gap-1 h-9 rounded-xl text-[11px] font-extrabold text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all duration-150 uppercase shadow-sm"
+                                                onClick={() => setPaymentDialogOpen(true)}
+                                            >
+                                                <Check className="h-3.5 w-3.5" /> Mark Paid
+                                            </button>
+                                        )}
+                                        {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
+                                            <button
+                                                className="flex-1 inline-flex items-center justify-center gap-1 h-9 rounded-xl text-[11px] font-extrabold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 active:scale-95 transition-all duration-150 uppercase"
+                                                onClick={() => handleOpenCancelDialog(selectedOrder)}
+                                            >
+                                                <X className="h-3.5 w-3.5" /> Cancel
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        </>
-                    )}
+                            </>
+                        );
+                    })()}
                 </DialogContent>
             </Dialog>
 
@@ -594,7 +553,7 @@ export default function HeadOrdersPage() {
                 onOpenChange={(open) => {
                     setPaymentDialogOpen(open);
                     if (!open) {
-                        setDetailsDialogOpen(false); 
+                        setDetailsDialogOpen(false);
                         queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
                     }
                 }}
@@ -676,6 +635,6 @@ export default function HeadOrdersPage() {
                     scrollbar-color: #cbd5e1 #f1f5f9;
                 }
             `}</style>
-        </div>
+        </div >
     );
 }
