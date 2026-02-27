@@ -5,6 +5,8 @@ import { authRoutes } from './modules/auth/routes';
 import { productRoutes, publicProductRoutes } from './modules/products/routes';
 import { orderRoutes, publicOrderRoutes } from './modules/orders/routes';
 import integrationRoutes from './modules/integrations/routes';
+import { superAdminRoutes } from './modules/super-admin/routes';
+import { superAdminAuthRoutes } from './modules/super-admin/auth/routes';
 import { prisma } from './utils/prisma';
 import { redisClient } from './utils/redis';
 import { env } from './env';
@@ -38,6 +40,10 @@ export async function createApp() {
   app.use('/api/v1/public', publicProductRoutes());
   app.use('/api/v1/public', publicOrderRoutes());
   app.use('/api/v1/integrations', integrationRoutes);
+
+  // Super Admin routes (platform-level, NOT tenant-scoped)
+  app.use('/api/v1/super-admin/auth', superAdminAuthRoutes());
+  app.use('/api/v1/super-admin', superAdminRoutes());
 
   // Error handler (last)
   app.use(errorHandler);

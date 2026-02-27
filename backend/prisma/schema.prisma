@@ -9,15 +9,16 @@ datasource db {
 }
 
 model AdminUser {
-  id          String             @id @default(uuid()) @db.Uuid
-  supabase_id String             @unique
-  email       String             @unique
-  name        String?
-  is_active   Boolean            @default(true)
-  created_at  DateTime           @default(now())
-  updated_at  DateTime           @updatedAt
-  deleted_at  DateTime?
-  audit_logs  PlatformAuditLog[]
+  id            String             @id @default(uuid()) @db.Uuid
+  supabase_id   String             @unique
+  email         String             @unique
+  name          String?
+  password_hash String?
+  is_active     Boolean            @default(true)
+  created_at    DateTime           @default(now())
+  updated_at    DateTime           @updatedAt
+  deleted_at    DateTime?
+  audit_logs    PlatformAuditLog[]
 
   @@index([supabase_id])
   @@index([email])
