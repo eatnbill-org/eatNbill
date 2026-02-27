@@ -43,8 +43,9 @@ npm run dev
 ### Environment Variables
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
+Note: The API path `/api/v1` is handled in the application routing, not in the base URL.
 
 ## Default Login
 

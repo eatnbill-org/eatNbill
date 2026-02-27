@@ -6,6 +6,8 @@ import { orderRoutes, publicOrderRoutes } from './modules/orders/routes';
 import { kdsRoutes } from './modules/kds/routes';
 import { restaurantRoutes } from './modules/restaurants/routes';
 import { customerRoutes } from './modules/customers/routes';
+import { superAdminRoutes } from './modules/super-admin/routes';
+import { superAdminAuthRoutes } from './modules/super-admin/auth/routes';
 
 export function registerRoutes(app: Router) {
   // Root endpoint
@@ -29,6 +31,7 @@ export function registerRoutes(app: Router) {
   // KDS routes (Kitchen Display System - Supabase Realtime)
   app.use('/api/v1/kds', kdsRoutes());
 
-  // Admin routes (platform-level, NOT tenant-scoped)
-  // app.use('/api/v1/admin', adminRoutes());
+  // Super Admin routes (platform-level, NOT tenant-scoped)
+  app.use('/api/v1/super-admin/auth', superAdminAuthRoutes());
+  app.use('/api/v1/super-admin', superAdminRoutes());
 }

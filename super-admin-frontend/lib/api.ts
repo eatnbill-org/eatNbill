@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+// Use relative URL to let Next.js proxy handle the request
+// This prevents path duplication in the rewrite rule
+const API_URL = '/api/v1';
 
 class ApiClient {
   private client: AxiosInstance;
