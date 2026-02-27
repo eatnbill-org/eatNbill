@@ -50,6 +50,11 @@ class ApiClient {
     return response.data;
   }
 
+  async verifyTotpLogin(tempToken: string, totpCode: string) {
+    const response = await this.client.post('/auth/2fa/verify-login', { tempToken, totpCode });
+    return response.data;
+  }
+
   async logout() {
     const response = await this.client.post('/auth/logout');
     return response.data;
@@ -141,6 +146,38 @@ class ApiClient {
 
   async getSystemHealth() {
     const response = await this.client.get('/system/health');
+    return response.data;
+  }
+
+  // ── Settings ──────────────────────────────────────────────
+  async updateProfile(name: string) {
+    const response = await this.client.patch('/auth/profile', { name });
+    return response.data;
+  }
+
+  async changePassword(currentPassword: string, newPassword: string, confirmPassword: string) {
+    const response = await this.client.patch('/auth/change-password', { currentPassword, newPassword, confirmPassword });
+    return response.data;
+  }
+
+  async changeEmail(newEmail: string, password: string) {
+    const response = await this.client.patch('/auth/change-email', { newEmail, password });
+    return response.data;
+  }
+
+  // ── 2FA ───────────────────────────────────────────────────
+  async setup2fa() {
+    const response = await this.client.post('/auth/2fa/setup');
+    return response.data;
+  }
+
+  async enable2fa(totpCode: string) {
+    const response = await this.client.post('/auth/2fa/enable', { totpCode });
+    return response.data;
+  }
+
+  async disable2fa(password: string, totpCode: string) {
+    const response = await this.client.delete('/auth/2fa/disable', { data: { password, totpCode } });
     return response.data;
   }
 }

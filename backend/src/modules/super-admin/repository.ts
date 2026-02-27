@@ -31,7 +31,6 @@ export async function getRestaurantStats() {
 
 export async function getOrderStats() {
   const result = await prisma.order.aggregate({
-    where: { deleted_at: null },
     _count: { id: true },
     _sum: { total_amount: true },
   });

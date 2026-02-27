@@ -65,7 +65,7 @@ interface AuditLogsResponse {
 }
 
 const ENTITY_OPTIONS = [
-  { value: '', label: 'All Entities' },
+  { value: 'all', label: 'All Entities' },
   { value: 'TENANT', label: 'Tenant' },
   { value: 'RESTAURANT', label: 'Restaurant' },
   { value: 'USER', label: 'User' },
@@ -73,7 +73,7 @@ const ENTITY_OPTIONS = [
 ];
 
 const ACTION_OPTIONS = [
-  { value: '', label: 'All Actions' },
+  { value: 'all', label: 'All Actions' },
   { value: 'LOGIN', label: 'Login' },
   { value: 'CREATE', label: 'Create' },
   { value: 'UPDATE', label: 'Update' },
@@ -169,8 +169,8 @@ function ActivityContent() {
   const [logs, setLogs] = useState<AuditLogsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [entityFilter, setEntityFilter] = useState<string>('');
-  const [actionFilter, setActionFilter] = useState<string>('');
+  const [entityFilter, setEntityFilter] = useState<string>('all');
+  const [actionFilter, setActionFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
   const loadAuditLogs = useCallback(async (showToast = false) => {
@@ -179,8 +179,8 @@ function ActivityContent() {
       const response = await apiClient.listAuditLogs({
         page: currentPage,
         limit: 25,
-        entity: entityFilter || undefined,
-        action: actionFilter || undefined,
+        entity: entityFilter !== 'all' ? entityFilter : undefined,
+        action: actionFilter !== 'all' ? actionFilter : undefined,
       });
       if (response.success) {
         setLogs(response.data);
