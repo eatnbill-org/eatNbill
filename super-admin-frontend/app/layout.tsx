@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/lib/auth-context';
+import ConditionalAdminLayout from '@/components/conditional-admin-layout';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -64,7 +65,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <ConditionalAdminLayout>
+              {children}
+            </ConditionalAdminLayout>
             <Toaster 
               position="top-right" 
               richColors 

@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import AdminLayout from '@/components/admin-layout';
 
 export const metadata: Metadata = {
   title: 'Audit Logs',
@@ -11,5 +10,5 @@ export default function AuditLogsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminLayout>{children}</AdminLayout>;
+  return <>{children}</>;
 }
