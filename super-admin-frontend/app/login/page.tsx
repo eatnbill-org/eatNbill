@@ -18,22 +18,24 @@ import {
   Lock,
   Mail,
   ArrowRight,
+  KeyRound,
+  ArrowLeft,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [totpCode, setTotpCode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, verifyTotp, cancelTotp, requiresTOTP } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-
     try {
       await login(email, password);
     } catch (err: any) {
@@ -41,6 +43,24 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTotpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    try {
+      await verifyTotp(totpCode);
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Invalid authenticator code');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTotpInput = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 6);
+    setTotpCode(digits);
   };
 
   return (
@@ -67,9 +87,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <ShieldCheck className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">
-            EatnBill
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">EatnBill</h1>
           <div className="flex items-center justify-center gap-2 text-muted-foreground">
             <Sparkles className="w-4 h-4" />
             <span className="text-sm font-medium">Super Admin Portal</span>
@@ -77,119 +95,203 @@ export default function LoginPage() {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
-          <Card className="border shadow-xl shadow-primary/5 backdrop-blur-sm">
-            <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-xl text-center">Welcome back</CardTitle>
-              <CardDescription className="text-center">
-                Enter your credentials to access the dashboard
-              </CardDescription>
-            </CardHeader>
-            
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-5">
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                  >
-                    <Alert variant="destructive" className="text-sm">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  </motion.div>
-                )}
+        <AnimatePresence mode="wait">
+          {!requiresTOTP ? (
+            /* ── Step 1: Email + Password ── */
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="border shadow-xl shadow-primary/5 backdrop-blur-sm">
+                <CardHeader className="space-y-1 pb-6">
+                  <CardTitle className="text-xl text-center">Welcome back</CardTitle>
+                  <CardDescription className="text-center">
+                    Enter your credentials to access the dashboard
+                  </CardDescription>
+                </CardHeader>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                    Email Address
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="admin@eatnbill.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
-                    autoComplete="email"
-                  />
-                </div>
+                <form onSubmit={handleLoginSubmit}>
+                  <CardContent className="space-y-5">
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                      >
+                        <Alert variant="destructive" className="text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      </motion.div>
+                    )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="h-11 pr-10 transition-all focus:ring-2 focus:ring-primary/20"
-                      autoComplete="current-password"
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                        Email Address
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="admin@eatnbill.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="h-11 transition-all focus:ring-2 focus:ring-primary/20"
+                        autoComplete="email"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                        Password
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="h-11 pr-10 transition-all focus:ring-2 focus:ring-primary/20"
+                          autoComplete="current-password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-11 w-11 text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full h-11 text-base font-medium"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</>
+                      ) : (
+                        <>Sign In<ArrowRight className="ml-2 h-4 w-4" /></>
+                      )}
+                    </Button>
+                  </CardContent>
+                </form>
+
+                <Separator />
+                <CardContent className="pt-4 pb-6">
+                  <p className="text-xs text-center text-muted-foreground">
+                    Protected by industry-standard security.
+                    <br />
+                    Unauthorized access is prohibited and monitored.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ) : (
+            /* ── Step 2: TOTP Code ── */
+            <motion.div
+              key="totp"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="border shadow-xl shadow-primary/5 backdrop-blur-sm">
+                <CardHeader className="space-y-1 pb-6">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mx-auto mb-2">
+                    <KeyRound className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl text-center">Two-Factor Authentication</CardTitle>
+                  <CardDescription className="text-center">
+                    Open your authenticator app and enter the 6-digit code
+                  </CardDescription>
+                </CardHeader>
+
+                <form onSubmit={handleTotpSubmit}>
+                  <CardContent className="space-y-5">
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                      >
+                        <Alert variant="destructive" className="text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      </motion.div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="totp" className="text-sm font-medium flex items-center gap-2">
+                        <KeyRound className="w-3.5 h-3.5 text-muted-foreground" />
+                        Authenticator Code
+                      </Label>
+                      <Input
+                        id="totp"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="000000"
+                        value={totpCode}
+                        onChange={(e) => handleTotpInput(e.target.value)}
+                        required
+                        maxLength={6}
+                        className="h-14 text-center text-2xl font-mono tracking-[0.5em] transition-all focus:ring-2 focus:ring-primary/20"
+                        autoComplete="one-time-code"
+                        autoFocus
+                      />
+                      <p className="text-xs text-muted-foreground text-center">
+                        Codes refresh every 30 seconds
+                      </p>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full h-11 text-base font-medium"
+                      disabled={isLoading || totpCode.length !== 6}
+                    >
+                      {isLoading ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Verifying...</>
+                      ) : (
+                        <>Verify &amp; Sign In<ArrowRight className="ml-2 h-4 w-4" /></>
+                      )}
+                    </Button>
+
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-11 w-11 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowPassword(!showPassword)}
+                      className="w-full h-10 text-sm text-muted-foreground"
+                      onClick={() => { cancelTotp(); setError(''); setTotpCode(''); }}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">
-                        {showPassword ? 'Hide password' : 'Show password'}
-                      </span>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to Sign In
                     </Button>
-                  </div>
-                </div>
+                  </CardContent>
+                </form>
 
-                <Button 
-                  type="submit" 
-                  className="w-full h-11 text-base font-medium"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      Sign In
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </form>
+                <Separator />
+                <CardContent className="pt-4 pb-6">
+                  <p className="text-xs text-center text-muted-foreground">
+                    Can't access your authenticator?
+                    <br />
+                    Contact your system administrator.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            <Separator />
-            
-            <CardContent className="pt-4 pb-6">
-              <p className="text-xs text-center text-muted-foreground">
-                Protected by industry-standard security.
-                <br />
-                Unauthorized access is prohibited and monitored.
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.p 
+        <motion.p
           className="text-center text-sm text-muted-foreground mt-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
