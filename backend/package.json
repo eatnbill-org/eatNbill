@@ -54,7 +54,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-    "otplib": "^13.3.0",
+    "otplib": "12",
     "pdfkit": "^0.15.0",
     "qrcode": "^1.5.4",
     "rate-limit-redis": "^4.3.1",
