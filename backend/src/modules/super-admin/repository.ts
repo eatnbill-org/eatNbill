@@ -1,5 +1,5 @@
 import { prisma } from '../../utils/prisma';
-import type { Plan, TenantStatus } from '@prisma/client';
+import type { Plan, Role, TenantStatus } from '@prisma/client';
 
 // ==========================================
 // DASHBOARD REPOSITORY
@@ -238,7 +238,7 @@ interface ListUsersParams {
   page: number;
   limit: number;
   tenantId?: string;
-  role?: string;
+  role?: Role;
   search?: string;
 }
 

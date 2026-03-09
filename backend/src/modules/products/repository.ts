@@ -24,10 +24,12 @@ export async function createProduct(
     price: number;
     costPrice?: number;
     categoryId?: string;
-
     isAvailable?: boolean;
     isVeg?: boolean | null;
     preparationTimeMinutes?: number;
+    discount_percent?: number;
+    hsn_sac?: string;
+    gst_rate_percent?: number;
   }
 ) {
   const createData = {
@@ -41,6 +43,8 @@ export async function createProduct(
     is_veg: data.isVeg ?? null,
     preparation_time_minutes: data.preparationTimeMinutes ?? null,
     discount_percent: data.discount_percent ?? 0,
+    hsn_sac: data.hsn_sac ?? null,
+    gst_rate_percent: data.gst_rate_percent ?? null,
   };
 
   const product = await prisma.product.create({
@@ -80,10 +84,12 @@ export async function updateProduct(
     price?: number;
     costPrice?: number;
     categoryId?: string;
-
     isAvailable?: boolean;
     isVeg?: boolean | null;
     preparationTimeMinutes?: number;
+    discount_percent?: number;
+    hsn_sac?: string;
+    gst_rate_percent?: number;
   }
 ) {
   return prisma.product.update({
@@ -98,6 +104,8 @@ export async function updateProduct(
       is_veg: data.isVeg,
       preparation_time_minutes: data.preparationTimeMinutes,
       discount_percent: data.discount_percent,
+      hsn_sac: data.hsn_sac,
+      gst_rate_percent: data.gst_rate_percent,
     },
     include: {
       category: true,

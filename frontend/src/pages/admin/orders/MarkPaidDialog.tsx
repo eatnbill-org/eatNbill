@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { useRestaurantStore } from '@/stores/restaurant';
 import { Checkbox } from '@/components/ui/checkbox';
 import { printBill } from '@/lib/print-utils';
+import { fetchOrderInvoice, generateOrderEInvoice, validateOrderGst } from '@/lib/enterprise-api';
 
 interface MarkPaidDialogProps {
     order: Order | null;
@@ -47,6 +48,11 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const [isCreditView, setIsCreditView] = useState(false);
     const [autoPrint, setAutoPrint] = useState(false);
     const [discount, setDiscount] = useState<string>('');
+    const [buyerName, setBuyerName] = useState('');
+    const [buyerGstin, setBuyerGstin] = useState('');
+    const [buyerStateCode, setBuyerStateCode] = useState('');
+    const [invoiceMeta, setInvoiceMeta] = useState<{ invoiceNumber?: string; irnStatus?: string } | null>(null);
+    const [invoiceLoading, setInvoiceLoading] = useState(false);
 
     useEffect(() => {
         if (open && order) {
@@ -54,6 +60,10 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             setMethod('UPI');
             setAutoPrint(false);
             setIsCreditView(false);
+            setBuyerName(order.customer_name || '');
+            setBuyerGstin('');
+            setBuyerStateCode('');
+            setInvoiceMeta(null);
         }
     }, [open, order]);
 
@@ -110,6 +120,42 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             setIsCreditView(false);
         } catch (error) {
             console.error('Failed to update payment:', error);
+        }
+    };
+
+    const handleValidateGst = async () => {
+        if (!order) return;
+        setInvoiceLoading(true);
+        try {
+            const result = await validateOrderGst(order.id, {
+                buyer_name: buyerName || null,
+                buyer_gstin: buyerGstin || null,
+                buyer_state_code: buyerStateCode || null,
+            });
+            setInvoiceMeta({
+                invoiceNumber: result?.invoice?.invoice_number,
+                irnStatus: result?.invoice?.irn_status,
+            });
+        } catch (error) {
+            console.error('GST validation failed:', error);
+        } finally {
+            setInvoiceLoading(false);
+        }
+    };
+
+    const handleGenerateEInvoice = async () => {
+        if (!order) return;
+        setInvoiceLoading(true);
+        try {
+            const result = await generateOrderEInvoice(order.id, 'mock');
+            setInvoiceMeta({
+                invoiceNumber: result?.invoice_number,
+                irnStatus: result?.irn_status,
+            });
+        } catch (error) {
+            console.error('E-invoice generation failed:', error);
+        } finally {
+            setInvoiceLoading(false);
         }
     };
 
@@ -296,6 +342,78 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                 </div>
                             </div>
                         )}
+
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-widest text-slate-500">GST Invoice Tools</p>
+                                <p className="text-[11px] text-slate-500 mt-1">Validate GST invoice data and generate IRN/QR for eligible B2B invoices.</p>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <Input
+                                    value={buyerName}
+                                    onChange={(event) => setBuyerName(event.target.value)}
+                                    className="h-10 rounded-xl bg-white"
+                                    placeholder="Buyer name"
+                                />
+                                <Input
+                                    value={buyerGstin}
+                                    onChange={(event) => setBuyerGstin(event.target.value.toUpperCase())}
+                                    className="h-10 rounded-xl bg-white"
+                                    placeholder="Buyer GSTIN"
+                                />
+                                <Input
+                                    value={buyerStateCode}
+                                    onChange={(event) => setBuyerStateCode(event.target.value)}
+                                    className="h-10 rounded-xl bg-white"
+                                    placeholder="Buyer state code"
+                                />
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-9 rounded-xl"
+                                    onClick={() => void handleValidateGst()}
+                                    disabled={invoiceLoading}
+                                >
+                                    Validate GST
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-9 rounded-xl"
+                                    onClick={() => void handleGenerateEInvoice()}
+                                    disabled={invoiceLoading}
+                                >
+                                    Generate E-Invoice
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-9 rounded-xl"
+                                    onClick={async () => {
+                                        try {
+                                            const invoice = await fetchOrderInvoice(order.id);
+                                            setInvoiceMeta({
+                                                invoiceNumber: invoice?.invoice_number,
+                                                irnStatus: invoice?.irn_status,
+                                            });
+                                        } catch (error) {
+                                            console.error('Failed to fetch invoice:', error);
+                                        }
+                                    }}
+                                >
+                                    Refresh Invoice
+                                </Button>
+                            </div>
+                            {invoiceMeta && (
+                                <p className="text-xs text-slate-600">
+                                    Invoice: <span className="font-semibold">{invoiceMeta.invoiceNumber || '-'}</span>
+                                    {' | '}
+                                    IRN Status: <span className="font-semibold">{invoiceMeta.irnStatus || '-'}</span>
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col gap-2 shrink-0">

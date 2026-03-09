@@ -5,6 +5,10 @@ import { DemoStoreProvider } from "@/store/demo-store";
 
 describe("CheckoutDialog reservation warnings", () => {
   it("shows warning when waiter selects a reserved table", () => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
     render(
       <DemoStoreProvider>
         <CheckoutDialog

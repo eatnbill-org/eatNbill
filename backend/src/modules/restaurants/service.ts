@@ -50,6 +50,7 @@ import {
   getTableQRCode,
   deleteTableQRCode,
 } from './repository';
+import { ensureDefaultOutlet } from './enterprise.repository';
 import { createSignedUrl, getPublicUrl, removeFromStorage, uploadToStorage, STORAGE_BUCKETS } from '../../utils/storage';
 import { prisma } from '../../utils/prisma';
 
@@ -107,6 +108,9 @@ export async function setupRestaurant(
 ) {
   // Create restaurant and assign user as OWNER
   const restaurant = await createRestaurant(tenantId, userId, data);
+
+  // Ensure there is a default outlet for billing/reconciliation compatibility
+  await ensureDefaultOutlet(tenantId, restaurant.id);
 
   // Create audit log
   await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT', restaurant.id);
@@ -304,9 +308,13 @@ export async function addHall(
   tenantId: string,
   userId: string,
   restaurantId: string,
-  data: { name: string; is_ac?: boolean }
+  data: { name: string; is_ac?: boolean; outlet_id?: string }
 ) {
-  const hall = await createHall(restaurantId, data);
+  const defaultOutlet = data.outlet_id ? null : await ensureDefaultOutlet(tenantId, restaurantId);
+  const hall = await createHall(restaurantId, {
+    ...data,
+    outlet_id: data.outlet_id ?? defaultOutlet?.id,
+  });
   await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT_HALL', hall.id);
   return hall;
 }
@@ -315,7 +323,7 @@ export async function updateHallInfo(
   tenantId: string,
   userId: string,
   hallId: string,
-  data: { name?: string; is_ac?: boolean }
+  data: { name?: string; is_ac?: boolean; outlet_id?: string }
 ) {
   const hall = await updateHall(hallId, data);
   await createAuditLog(tenantId, userId, 'UPDATE', 'RESTAURANT_HALL', hallId);
@@ -402,9 +410,13 @@ export async function addTable(
   tenantId: string,
   userId: string,
   restaurantId: string,
-  data: { hall_id: string; table_number: string; seats: number; is_active?: boolean }
+  data: { hall_id: string; outlet_id?: string; table_number: string; seats: number; is_active?: boolean }
 ) {
-  const table = await createTable(restaurantId, data);
+  const defaultOutlet = data.outlet_id ? null : await ensureDefaultOutlet(tenantId, restaurantId);
+  const table = await createTable(restaurantId, {
+    ...data,
+    outlet_id: data.outlet_id ?? defaultOutlet?.id,
+  });
   await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT_TABLE', table.id);
 
   // Automatically generate QR code for the new table
@@ -426,12 +438,12 @@ export async function bulkAddTables(
   tenantId: string,
   userId: string,
   restaurantId: string,
-  tablesData: Array<{ hall_id: string; table_number: string; seats: number; is_active?: boolean }>
+  tablesData: Array<{ hall_id: string; outlet_id?: string; table_number: string; seats: number; is_active?: boolean }>
 ) {
   const createdTables = [];
   const errors: Array<{ table_number: string; error: string }> = [];
   const seenInPayload = new Set<string>();
-  const candidates: Array<{ hall_id: string; table_number: string; seats: number; is_active?: boolean }> = [];
+  const candidates: Array<{ hall_id: string; outlet_id?: string; table_number: string; seats: number; is_active?: boolean }> = [];
 
   for (const table of tablesData) {
     const tableNumber = table.table_number.trim();
@@ -467,7 +479,11 @@ export async function bulkAddTables(
 
   for (const data of tablesToCreate) {
     try {
-      const table = await createTable(restaurantId, data);
+      const defaultOutlet = data.outlet_id ? null : await ensureDefaultOutlet(tenantId, restaurantId);
+      const table = await createTable(restaurantId, {
+        ...data,
+        outlet_id: data.outlet_id ?? defaultOutlet?.id,
+      });
       await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT_TABLE', table.id);
 
       // Automatically generate QR code for the new table
@@ -523,7 +539,7 @@ export async function updateTableInfo(
   tenantId: string,
   userId: string,
   tableId: string,
-  data: { hall_id?: string; table_number?: string; seats?: number; is_active?: boolean }
+  data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean }
 ) {
   const table = await updateTable(tableId, data);
   await createAuditLog(tenantId, userId, 'UPDATE', 'RESTAURANT_TABLE', tableId);
@@ -662,6 +678,7 @@ export async function addTableReservation(
     const reservation = await createTableReservation({
       tenant_id: tenantId,
       restaurant_id: restaurantId,
+      outlet_id: table.outlet_id,
       table_id: data.table_id,
       customer_name: data.customer_name,
       customer_phone: data.customer_phone,
@@ -752,6 +769,7 @@ export async function updateTableReservationInfo(
   try {
     const reservation = await updateTableReservation(reservationId, {
       ...(data.table_id ? { table_id: data.table_id } : {}),
+      ...(table.outlet_id ? { outlet_id: table.outlet_id } : {}),
       ...(data.customer_name ? { customer_name: data.customer_name } : {}),
       ...(data.customer_phone !== undefined ? { customer_phone: data.customer_phone } : {}),
       ...(data.customer_email !== undefined ? { customer_email: data.customer_email } : {}),

@@ -278,33 +278,38 @@ export async function deleteRestaurantUser(restaurantUserId: string) {
 export async function listHalls(restaurantId: string) {
   return prisma.restaurantHall.findMany({
     where: { restaurant_id: restaurantId },
+    include: { outlet: true },
     orderBy: { created_at: 'asc' },
   });
 }
 
 export async function createHall(
   restaurantId: string,
-  data: { name: string; is_ac?: boolean }
+  data: { name: string; is_ac?: boolean; outlet_id?: string }
 ) {
   return prisma.restaurantHall.create({
     data: {
       restaurant_id: restaurantId,
+      outlet_id: data.outlet_id ?? null,
       name: data.name,
       is_ac: data.is_ac ?? false,
     },
+    include: { outlet: true },
   });
 }
 
 export async function updateHall(
   hallId: string,
-  data: { name?: string; is_ac?: boolean }
+  data: { name?: string; is_ac?: boolean; outlet_id?: string }
 ) {
   return prisma.restaurantHall.update({
     where: { id: hallId },
     data: {
       name: data.name,
       is_ac: data.is_ac,
+      outlet_id: data.outlet_id ?? undefined,
     },
+    include: { outlet: true },
   });
 }
 
@@ -319,6 +324,7 @@ export async function listTables(restaurantId: string) {
     where: { restaurant_id: restaurantId },
     include: {
       hall: true,
+      outlet: true,
       qr_code: true,
     },
     orderBy: { created_at: 'asc' },
@@ -327,17 +333,18 @@ export async function listTables(restaurantId: string) {
 
 export async function createTable(
   restaurantId: string,
-  data: { hall_id: string; table_number: string; seats: number; is_active?: boolean }
+  data: { hall_id: string; outlet_id?: string; table_number: string; seats: number; is_active?: boolean }
 ) {
   return prisma.restaurantTable.create({
     data: {
       restaurant_id: restaurantId,
       hall_id: data.hall_id,
+      outlet_id: data.outlet_id ?? null,
       table_number: data.table_number,
       seats: data.seats,
       is_active: data.is_active ?? true,
     },
-    include: { hall: true },
+    include: { hall: true, outlet: true },
   });
 }
 
@@ -364,17 +371,18 @@ export async function findExistingTableNumbers(
 
 export async function updateTable(
   tableId: string,
-  data: { hall_id?: string; table_number?: string; seats?: number; is_active?: boolean }
+  data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean }
 ) {
   return prisma.restaurantTable.update({
     where: { id: tableId },
     data: {
       hall_id: data.hall_id,
+      outlet_id: data.outlet_id ?? undefined,
       table_number: data.table_number,
       seats: data.seats,
       is_active: data.is_active,
     },
-    include: { hall: true },
+    include: { hall: true, outlet: true },
   });
 }
 
@@ -411,7 +419,7 @@ export async function deleteTable(tableId: string) {
 export async function getTableWithHall(restaurantId: string, tableId: string) {
   return prisma.restaurantTable.findFirst({
     where: { id: tableId, restaurant_id: restaurantId },
-    include: { hall: true, restaurant: true },
+    include: { hall: true, outlet: true, restaurant: true },
   });
 }
 
@@ -440,8 +448,10 @@ export async function listTableReservations(params: {
       table: {
         include: {
           hall: true,
+          outlet: true,
         },
       },
+      outlet: true,
     },
     orderBy: [
       { reserved_from: 'asc' },
@@ -458,8 +468,9 @@ export async function getTableReservationById(restaurantId: string, reservationI
     },
     include: {
       table: {
-        include: { hall: true },
+        include: { hall: true, outlet: true },
       },
+      outlet: true,
     },
   });
 }
@@ -467,6 +478,7 @@ export async function getTableReservationById(restaurantId: string, reservationI
 export async function createTableReservation(data: {
   tenant_id: string;
   restaurant_id: string;
+  outlet_id?: string | null;
   table_id: string;
   customer_name: string;
   customer_phone?: string | null;
@@ -482,6 +494,7 @@ export async function createTableReservation(data: {
     data: {
       tenant_id: data.tenant_id,
       restaurant_id: data.restaurant_id,
+      outlet_id: data.outlet_id ?? null,
       table_id: data.table_id,
       customer_name: data.customer_name,
       customer_phone: data.customer_phone ?? null,
@@ -495,14 +508,16 @@ export async function createTableReservation(data: {
     },
     include: {
       table: {
-        include: { hall: true },
+        include: { hall: true, outlet: true },
       },
+      outlet: true,
     },
   });
 }
 
 export async function updateTableReservation(reservationId: string, data: {
   table_id?: string;
+  outlet_id?: string | null;
   customer_name?: string;
   customer_phone?: string | null;
   customer_email?: string | null;
@@ -516,6 +531,7 @@ export async function updateTableReservation(reservationId: string, data: {
     where: { id: reservationId },
     data: {
       ...(data.table_id ? { table_id: data.table_id } : {}),
+      ...(data.outlet_id !== undefined ? { outlet_id: data.outlet_id } : {}),
       ...(data.customer_name ? { customer_name: data.customer_name } : {}),
       ...(data.customer_phone !== undefined ? { customer_phone: data.customer_phone } : {}),
       ...(data.customer_email !== undefined ? { customer_email: data.customer_email } : {}),
@@ -529,8 +545,9 @@ export async function updateTableReservation(reservationId: string, data: {
     },
     include: {
       table: {
-        include: { hall: true },
+        include: { hall: true, outlet: true },
       },
+      outlet: true,
     },
   });
 }
@@ -581,6 +598,7 @@ export async function getReservationContextForTables(restaurantId: string, table
     select: {
       id: true,
       table_id: true,
+      outlet_id: true,
       customer_name: true,
       customer_phone: true,
       customer_email: true,
@@ -607,6 +625,7 @@ export async function listTableAvailability(restaurantId: string, startAt: Date,
       },
       include: {
         hall: true,
+        outlet: true,
         qr_code: true,
       },
       orderBy: { created_at: 'asc' },
@@ -621,6 +640,7 @@ export async function listTableAvailability(restaurantId: string, startAt: Date,
       select: {
         id: true,
         table_id: true,
+        outlet_id: true,
         customer_name: true,
         customer_phone: true,
         customer_email: true,
@@ -669,8 +689,9 @@ export async function listReservationAlerts(restaurantId: string, from: Date, to
     },
     include: {
       table: {
-        include: { hall: true },
+        include: { hall: true, outlet: true },
       },
+      outlet: true,
     },
     orderBy: { reserved_from: 'asc' },
   });

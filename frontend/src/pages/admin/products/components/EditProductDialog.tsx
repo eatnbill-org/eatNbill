@@ -40,6 +40,8 @@ export default function EditProductDialog({
   const [isVeg, setIsVeg] = useState<boolean | null>(null);
   const [preparationTime, setPreparationTime] = useState('');
   const [discountPercent, setDiscountPercent] = useState('0');
+  const [hsnSac, setHsnSac] = useState('');
+  const [gstRatePercent, setGstRatePercent] = useState('');
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -58,6 +60,8 @@ export default function EditProductDialog({
       setIsVeg(product.is_veg);
       setPreparationTime(product.preparation_time_minutes?.toString() || '');
       setDiscountPercent(product.discount_percent || '0');
+      setHsnSac(product.hsn_sac || '');
+      setGstRatePercent(product.gst_rate_percent || '');
 
       // Initialize preview with first image if available
       if (product.images && product.images.length > 0) {
@@ -99,6 +103,8 @@ export default function EditProductDialog({
       isVeg: isVeg,
       preparationTimeMinutes: preparationTime ? parseInt(preparationTime) : undefined,
       discount_percent: discountPercent ? parseFloat(discountPercent) : 0,
+      hsn_sac: hsnSac.trim() || undefined,
+      gst_rate_percent: gstRatePercent ? parseFloat(gstRatePercent) : undefined,
     });
 
     // 2. Handle image replacement if a new file was selected
@@ -298,6 +304,33 @@ export default function EditProductDialog({
                     className="h-12 pr-9 rounded-2xl border-slate-100 focus-visible:ring-indigo-500 shadow-sm font-black italic"
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="hsn-sac" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">HSN / SAC</Label>
+                <Input
+                  id="hsn-sac"
+                  value={hsnSac}
+                  onChange={(e) => setHsnSac(e.target.value)}
+                  placeholder="e.g., 210690"
+                  className="h-12 rounded-2xl border-slate-100 focus-visible:ring-indigo-500 shadow-sm font-medium"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gst-rate" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">GST Rate (%)</Label>
+                <Input
+                  id="gst-rate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={gstRatePercent}
+                  onChange={(e) => setGstRatePercent(e.target.value)}
+                  placeholder="5"
+                  className="h-12 rounded-2xl border-slate-100 focus-visible:ring-indigo-500 shadow-sm font-medium"
+                />
               </div>
             </div>
 

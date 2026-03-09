@@ -32,6 +32,24 @@ import {
   updateThemeController,
   getDashboardController,
 } from './controller';
+import {
+  closeDayEndController,
+  createExportJobController,
+  createOutletController,
+  downloadExportJobController,
+  generateEInvoiceController,
+  getDayEndController,
+  getExportJobController,
+  getGstInvoiceController,
+  getMyPreferencesController,
+  listDayEndController,
+  listExportJobsController,
+  listOutletsController,
+  unlockDayEndController,
+  updateMyPreferencesController,
+  updateOutletController,
+  validateGstInvoiceController,
+} from './enterprise.controller';
 import * as staffService from './staff.service';
 import { z } from 'zod';
 import { validateBody, validateParams } from '../../middlewares/validation.middleware';
@@ -267,6 +285,30 @@ export function restaurantRoutes() {
   router.patch('/table-reservations/:id', updateTableReservationController);
   router.delete('/table-reservations/:id', deleteTableReservationController);
   router.get('/table-reservations/alerts', listReservationAlertsController);
+
+  // Outlets + language preferences
+  router.get('/outlets', listOutletsController);
+  router.post('/outlets', createOutletController);
+  router.patch('/outlets/:id', updateOutletController);
+  router.get('/preferences/me', getMyPreferencesController);
+  router.patch('/preferences/me', updateMyPreferencesController);
+
+  // Day-end reconciliation
+  router.post('/day-end/close', closeDayEndController);
+  router.get('/day-end', listDayEndController);
+  router.get('/day-end/:id', getDayEndController);
+  router.post('/day-end/:id/unlock', unlockDayEndController);
+
+  // Export jobs
+  router.post('/exports/jobs', createExportJobController);
+  router.get('/exports/jobs', listExportJobsController);
+  router.get('/exports/jobs/:id', getExportJobController);
+  router.get('/exports/jobs/:id/download', downloadExportJobController);
+
+  // GST + e-invoice
+  router.post('/invoices/:orderId/validate-gst', validateGstInvoiceController);
+  router.get('/invoices/:orderId', getGstInvoiceController);
+  router.post('/invoices/:orderId/einvoice/generate', generateEInvoiceController);
 
   // QR code generation
   router.get('/tables/:id/qrcode', generateTableQrController);
