@@ -17,11 +17,17 @@ import {
   listUsers,
   removeHall,
   removeTable,
+  removeTableReservation,
   removeUser,
   updateHallInfo,
   updateProfile,
+  updateTableReservationInfo,
   updateSlug,
   updateSettings,
+  addTableReservation,
+  listAllTableReservations,
+  getTableAvailability,
+  getReservationAlerts,
   updateTableStatusInfo,
   updateTableInfo,
   updateThemeSettings,
@@ -45,6 +51,11 @@ import {
   updateRestaurantUserSchema,
   updateTableSchema,
   updateTableStatusSchema,
+  createTableReservationSchema,
+  updateTableReservationSchema,
+  listTableReservationsQuerySchema,
+  tableAvailabilityQuerySchema,
+  reservationAlertsQuerySchema,
   deleteTableQRCodesSchema,
 } from './schema';
 
@@ -455,6 +466,140 @@ export async function deleteTableController(req: Request, res: Response, next: N
     const { user } = requireContext(req);
     const result = await removeTable(user.tenantId, user.userId, req.params.id as string);
     return res.json(result);
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function listTableReservationsController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = req.user?.restaurantRole;
+    if (role !== 'OWNER' && role !== 'MANAGER' && role !== 'WAITER') {
+      throw new AppError('FORBIDDEN', 'Staff role required', 403);
+    }
+
+    const { restaurantId } = requireContext(req);
+    const parsed = listTableReservationsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
+    }
+
+    const reservations = await listAllTableReservations(restaurantId, parsed.data);
+    return res.json({ data: reservations });
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function createTableReservationController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = req.user?.restaurantRole;
+    if (role !== 'OWNER' && role !== 'MANAGER' && role !== 'WAITER') {
+      throw new AppError('FORBIDDEN', 'Staff role required', 403);
+    }
+
+    const { user, restaurantId } = requireContext(req);
+    const parsed = createTableReservationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
+    }
+
+    const reservation = await addTableReservation(
+      user.tenantId,
+      user.userId,
+      restaurantId,
+      parsed.data
+    );
+
+    return res.status(201).json({ data: reservation });
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function updateTableReservationController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = req.user?.restaurantRole;
+    if (role !== 'OWNER' && role !== 'MANAGER' && role !== 'WAITER') {
+      throw new AppError('FORBIDDEN', 'Staff role required', 403);
+    }
+
+    const { user, restaurantId } = requireContext(req);
+    const parsed = updateTableReservationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
+    }
+
+    const reservation = await updateTableReservationInfo(
+      user.tenantId,
+      user.userId,
+      restaurantId,
+      req.params.id as string,
+      parsed.data
+    );
+
+    return res.json({ data: reservation });
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function deleteTableReservationController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = req.user?.restaurantRole;
+    if (role !== 'OWNER' && role !== 'MANAGER' && role !== 'WAITER') {
+      throw new AppError('FORBIDDEN', 'Staff role required', 403);
+    }
+
+    const { user, restaurantId } = requireContext(req);
+    const result = await removeTableReservation(
+      user.tenantId,
+      user.userId,
+      restaurantId,
+      req.params.id as string
+    );
+
+    return res.json(result);
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function listTableAvailabilityController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = req.user?.restaurantRole;
+    if (role !== 'OWNER' && role !== 'MANAGER' && role !== 'WAITER') {
+      throw new AppError('FORBIDDEN', 'Staff role required', 403);
+    }
+
+    const { restaurantId } = requireContext(req);
+    const parsed = tableAvailabilityQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
+    }
+
+    const availability = await getTableAvailability(restaurantId, parsed.data);
+    return res.json({ data: availability });
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function listReservationAlertsController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = req.user?.restaurantRole;
+    if (role !== 'OWNER' && role !== 'MANAGER' && role !== 'WAITER') {
+      throw new AppError('FORBIDDEN', 'Staff role required', 403);
+    }
+
+    const { restaurantId } = requireContext(req);
+    const parsed = reservationAlertsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return next(new AppError('VALIDATION_ERROR', parsed.error.message, 400));
+    }
+
+    const alerts = await getReservationAlerts(restaurantId, parsed.data);
+    return res.json({ data: alerts });
   } catch (error) {
     return next(error as Error);
   }

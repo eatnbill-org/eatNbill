@@ -2,7 +2,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import QROrderNotification from "@/components/QROrderNotification";
+import ReservationAlertPopup from "@/components/ReservationAlertPopup";
 import { useNotificationStore } from "@/stores/notifications.store";
+import { useReservationAlertsStore } from "@/stores/reservation-alerts.store";
 import { useAdminOrdersStore } from "@/stores/orders/adminOrders.store";
 import { useRealtimeStore, type QROrderPayload } from "@/stores/realtime/realtime.store";
 import DemoModeBar from "@/components/DemoModeBar";
@@ -41,9 +43,10 @@ import { useDemoStore } from "@/store/demo-store"; // ✅ Import Store
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { playOrderSound } from "@/lib/sound-notification";
+import { playOrderSound, playReservationSound } from "@/lib/sound-notification";
 import { apiClient } from "@/lib/api-client";
 import type { OrderListResponse, OrderResponse } from "@/types/order";
+import type { ReservationAlert } from "@/types/reservation";
 import { toast } from "sonner";
 import {
   LayoutDashboard,
@@ -384,6 +387,7 @@ export default function AdminLayout() {
   const notifiedQrOrderIds = useRef<Set<string>>(new Set());
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const pollingInitializedRef = useRef(false);
+  const reservationPollCursorRef = useRef<Date | null>(null);
   const { fetchOrders, fetchStats } = useAdminOrdersStore();
 
   const handleQrNotification = React.useCallback(async (
@@ -452,6 +456,8 @@ export default function AdminLayout() {
     notifiedQrOrderIds.current.clear();
     knownOrderIdsRef.current.clear();
     pollingInitializedRef.current = false;
+    reservationPollCursorRef.current = null;
+    useReservationAlertsStore.getState().resetAlerts();
   }, [restaurantId]);
 
   useEffect(() => {
@@ -494,6 +500,48 @@ export default function AdminLayout() {
     };
   }, [restaurantId, connectionMode, handleQrNotification]);
 
+  useEffect(() => {
+    if (!restaurantId) return;
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const pollReservationAlerts = async () => {
+      const now = new Date();
+      const from = reservationPollCursorRef.current
+        ? new Date(reservationPollCursorRef.current.getTime() - 5000)
+        : new Date(now.getTime() - 60_000);
+      const to = new Date(now.getTime() + 5000);
+      reservationPollCursorRef.current = now;
+
+      const params = new URLSearchParams({
+        from: from.toISOString(),
+        to: to.toISOString(),
+      });
+
+      const response = await apiClient.get<{ data: ReservationAlert[] }>(
+        `/restaurant/table-reservations/alerts?${params.toString()}`
+      );
+      if (response.error) return;
+
+      const alerts = response.data?.data || [];
+      if (!alerts.length) return;
+
+      const addedCount = useReservationAlertsStore.getState().enqueueAlerts(alerts);
+      if (addedCount > 0) {
+        playReservationSound();
+      }
+    };
+
+    void pollReservationAlerts();
+    intervalId = setInterval(() => {
+      void pollReservationAlerts();
+    }, 30000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [restaurantId]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DemoModeBar />
@@ -519,6 +567,7 @@ export default function AdminLayout() {
 
         {/* Real-time QR Order Notification Popup */}
         <NotificationWrapper />
+        <ReservationAlertsWrapper basePath="/admin" />
       </div>
     </div>
   );
@@ -551,6 +600,25 @@ function NotificationWrapper() {
       onViewDetails={handleViewDetails}
       onReject={handleReject}
       playSound={false}
+    />
+  );
+}
+
+function ReservationAlertsWrapper({ basePath }: { basePath: string }) {
+  const navigate = useNavigate();
+  const { current, dismissAlert } = useReservationAlertsStore((state) => ({
+    current: state.current,
+    dismissAlert: state.dismissAlert,
+  }));
+
+  return (
+    <ReservationAlertPopup
+      alert={current}
+      onDismiss={dismissAlert}
+      onViewReservations={() => {
+        navigate(`${basePath}/company/tables?tab=reservations`);
+        dismissAlert();
+      }}
     />
   );
 }

@@ -119,6 +119,7 @@ model Restaurant {
   users           RestaurantUser[]
   halls           RestaurantHall[]
   tables          RestaurantTable[]
+  reservations    TableReservation[]
   kds_settings    KdsSettings?
 
   @@unique([slug])
@@ -380,6 +381,13 @@ enum TableStatus {
   OCCUPIED
 }
 
+enum ReservationStatus {
+  BOOKED
+  SEATED
+  CANCELLED
+  COMPLETED
+}
+
 enum FontScale {
   SM
   MD
@@ -488,12 +496,39 @@ model RestaurantTable {
   restaurant    Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   hall          RestaurantHall @relation(fields: [hall_id], references: [id], onDelete: Cascade)
   orders        Order[]
+  reservations  TableReservation[]
   qr_code       TableQRCode?
 
   @@unique([restaurant_id, table_number])
   @@index([restaurant_id])
   @@index([hall_id])
   @@map("restaurant_tables")
+}
+
+model TableReservation {
+  id                 String            @id @default(uuid()) @db.Uuid
+  tenant_id          String            @db.Uuid
+  restaurant_id      String            @db.Uuid
+  table_id           String            @db.Uuid
+  customer_name      String
+  customer_phone     String?
+  customer_email     String?
+  party_size         Int
+  reserved_from      DateTime
+  reserved_to        DateTime
+  notes              String?
+  status             ReservationStatus @default(BOOKED)
+  created_by_user_id String?           @db.Uuid
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
+  cancelled_at       DateTime?
+  restaurant         Restaurant        @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  table              RestaurantTable   @relation(fields: [table_id], references: [id], onDelete: Cascade)
+
+  @@index([restaurant_id, reserved_from])
+  @@index([restaurant_id, status])
+  @@index([table_id, reserved_from, reserved_to])
+  @@map("table_reservations")
 }
 
 model ProductImage {

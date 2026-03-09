@@ -140,6 +140,7 @@ export default function AdminSideSettings() {
                                     { key: 'takeaway', label: 'Takeaway / Walk-in', icon: '🛍️' },
                                     { key: 'zomato', label: 'Zomato Orders', icon: '🍔' },
                                     { key: 'swiggy', label: 'Swiggy Orders', icon: '🍕' },
+                                    { key: 'reservation', label: 'Reservation Alerts', icon: '⏰' },
                                 ].map(({ key, label, icon }) => (
                                     <div key={key} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center gap-3">

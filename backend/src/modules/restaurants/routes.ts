@@ -22,6 +22,12 @@ import {
   updateSlugController,
   updateSettingsController,
   updateTableController,
+  createTableReservationController,
+  deleteTableReservationController,
+  listTableAvailabilityController,
+  listTableReservationsController,
+  listReservationAlertsController,
+  updateTableReservationController,
   updateTableStatusController,
   updateThemeController,
   getDashboardController,
@@ -248,11 +254,19 @@ export function restaurantRoutes() {
 
   // Tables
   router.get('/tables', listTablesController);
+  router.get('/tables/availability', listTableAvailabilityController);
   router.post('/tables', createTableController);
   router.post('/tables/bulk', bulkCreateTablesController);
   router.patch('/tables/:id', updateTableController);
   router.patch('/tables/:id/status', updateTableStatusController);
   router.delete('/tables/:id', deleteTableController);
+
+  // Table reservations
+  router.get('/table-reservations', listTableReservationsController);
+  router.post('/table-reservations', createTableReservationController);
+  router.patch('/table-reservations/:id', updateTableReservationController);
+  router.delete('/table-reservations/:id', deleteTableReservationController);
+  router.get('/table-reservations/alerts', listReservationAlertsController);
 
   // QR code generation
   router.get('/tables/:id/qrcode', generateTableQrController);

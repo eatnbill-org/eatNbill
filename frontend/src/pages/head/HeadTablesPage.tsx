@@ -10,12 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
 import {
     Users,
     Clock,
+    CalendarClock,
     Plus,
     Eye,
     ChevronRight,
@@ -29,9 +31,49 @@ import {
     Check,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "sonner";
 
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 import { WaiterLayoutSkeleton } from "@/components/ui/skeleton";
+
+function formatTime(value?: string | null) {
+    if (!value) return "";
+    return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function toDatetimeLocalInput(value?: string | null) {
+    if (!value) return "";
+    const date = new Date(value);
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 16);
+}
+
+function fromDatetimeLocalInput(value: string) {
+    return new Date(value).toISOString();
+}
+
+function formatDateDayTime(value?: string) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString([], {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+}
 
 export default function HeadTablesPage() {
     const queryClient = useQueryClient();
@@ -43,6 +85,16 @@ export default function HeadTablesPage() {
     const [selectedTable, setSelectedTable] = React.useState<any | null>(null);
     const [detailsOpen, setDetailsOpen] = React.useState(false);
     const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
+    const [reservationDialogOpen, setReservationDialogOpen] = React.useState(false);
+    const [reservationSubmitting, setReservationSubmitting] = React.useState(false);
+    const [reservationTableId, setReservationTableId] = React.useState("");
+    const [reservationName, setReservationName] = React.useState("");
+    const [reservationPhone, setReservationPhone] = React.useState("");
+    const [reservationEmail, setReservationEmail] = React.useState("");
+    const [reservationPartySize, setReservationPartySize] = React.useState("2");
+    const [reservationFrom, setReservationFrom] = React.useState("");
+    const [reservationTo, setReservationTo] = React.useState("");
+    const [reservationNotes, setReservationNotes] = React.useState("");
 
     // Subscribe to realtime updates
     React.useEffect(() => {
@@ -92,10 +144,29 @@ export default function HeadTablesPage() {
         });
     }, [tablesResponse, ordersResponse]);
 
+    const resetReservationForm = React.useCallback((defaultTableId = "") => {
+        const start = new Date(Date.now() + 30 * 60_000);
+        const end = new Date(start.getTime() + 90 * 60_000);
+        setReservationTableId(defaultTableId);
+        setReservationName("");
+        setReservationPhone("");
+        setReservationEmail("");
+        setReservationPartySize("2");
+        setReservationFrom(toDatetimeLocalInput(start.toISOString()));
+        setReservationTo(toDatetimeLocalInput(end.toISOString()));
+        setReservationNotes("");
+    }, []);
+
+    const openReservationDialog = (defaultTableId = "") => {
+        resetReservationForm(defaultTableId);
+        setReservationDialogOpen(true);
+    };
+
     const filteredTables = tables.filter((t: any) =>
         t.table_number?.toLowerCase().includes(headerSearch.toLowerCase()) ||
         t.hall?.name?.toLowerCase().includes(headerSearch.toLowerCase())
     );
+    const reservedNowCount = tables.filter((t: any) => t.is_reserved_now).length;
 
     if (tablesLoading || ordersLoading) {
         return <WaiterLayoutSkeleton />;
@@ -114,10 +185,72 @@ export default function HeadTablesPage() {
         navigate(`/head/menu/${orderId}?table=${tableId}`);
     };
 
+    const handleCreateFutureReservation = async () => {
+        if (!reservationTableId) {
+            toast.error("Please select a table");
+            return;
+        }
+        if (!reservationName.trim()) {
+            toast.error("Customer name is required");
+            return;
+        }
+        if (!reservationPhone.trim()) {
+            toast.error("Mobile number is required");
+            return;
+        }
+        if (!reservationFrom || !reservationTo) {
+            toast.error("Reservation date and time is required");
+            return;
+        }
+        if (new Date(reservationTo) <= new Date(reservationFrom)) {
+            toast.error("End time must be after start time");
+            return;
+        }
+        if (reservationEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reservationEmail.trim())) {
+            toast.error("Enter a valid email");
+            return;
+        }
+
+        setReservationSubmitting(true);
+        try {
+            const response = await apiClient.post('/restaurant/table-reservations', {
+                table_id: reservationTableId,
+                customer_name: reservationName.trim(),
+                customer_phone: reservationPhone.trim(),
+                customer_email: reservationEmail.trim() || null,
+                party_size: Number(reservationPartySize),
+                reserved_from: fromDatetimeLocalInput(reservationFrom),
+                reserved_to: fromDatetimeLocalInput(reservationTo),
+                notes: reservationNotes.trim() || null,
+                status: "BOOKED",
+            });
+
+            if (response.error) {
+                toast.error(response.error.message || "Failed to create reservation");
+                return;
+            }
+
+            toast.success("Future reservation created");
+            setReservationDialogOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['head-tables-status'] });
+        } finally {
+            setReservationSubmitting(false);
+        }
+    };
+
     return (
         <div className="space-y-6 pb-24 max-w-7xl mx-auto">
+            <div className="flex justify-end">
+                <Button
+                    className="rounded-xl h-10 w-full sm:w-auto"
+                    onClick={() => openReservationDialog()}
+                >
+                    <CalendarClock className="h-4 w-4 mr-2" />
+                    Future Reservation
+                </Button>
+            </div>
             {/* High-Density Stats Row */}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-3">
                     <Users className="h-4 w-4 text-emerald-600" />
                     <span className="text-xl font-black text-emerald-700">{tables.filter(t => !t.isOccupied).length}</span>
@@ -127,6 +260,11 @@ export default function HeadTablesPage() {
                     <MapPin className="h-4 w-4 text-rose-600" />
                     <span className="text-xl font-black text-rose-700">{tables.filter(t => t.isOccupied).length}</span>
                     <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Occupied</span>
+                </div>
+                <div className="bg-amber-50 px-4 py-2 rounded-2xl border border-amber-100 flex items-center gap-3">
+                    <CalendarClock className="h-4 w-4 text-amber-600" />
+                    <span className="text-xl font-black text-amber-700">{reservedNowCount}</span>
+                    <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Reserved</span>
                 </div>
             </div>
 
@@ -138,21 +276,45 @@ export default function HeadTablesPage() {
                         onClick={() => table.isOccupied ? handleViewOrder(table) : handleNewOrder(table.id)}
                         className={`bg-white rounded-[2rem] p-3 border-2 transition-all flex flex-col justify-between aspect-square active:scale-95 cursor-pointer ${table.isOccupied
                             ? "border-rose-100 shadow-sm bg-rose-50/20"
-                            : "border-slate-50 hover:border-emerald-100"
+                            : table.is_reserved_now
+                                ? "border-amber-200 bg-amber-50/40"
+                                : "border-slate-50 hover:border-emerald-100"
                             }`}
                     >
                         <div className="flex-1 flex flex-col items-center justify-center text-center">
                             <div className={`h-12 w-12 rounded-2xl flex items-center justify-center mb-2 shadow-sm ${table.isOccupied
                                 ? "bg-rose-50 text-rose-600 border border-rose-100"
-                                : "bg-emerald-50 text-emerald-600 border border-emerald-100 bg-emerald-50/50"
+                                : table.is_reserved_now
+                                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                    : "bg-emerald-50 text-emerald-600 border border-emerald-100 bg-emerald-50/50"
                                 }`}>
-                                <span className="text-xl font-black leading-none">{table.table_number || table.name.replace('Table ', '')}</span>
+                                <span className="text-xl font-black leading-none">{table.table_number || table.name}</span>
                             </div>
                             <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-widest line-clamp-1">{table.hall?.name || "Main"}</h3>
                             {table.isOccupied && table.currentOrder ? (
                                 <div className="mt-1 flex items-center gap-1 text-rose-500 font-bold text-[8px] uppercase">
                                     <Clock className="h-2.5 w-2.5" />
                                     {new Date(table.currentOrder.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            ) : table.is_reserved_now && table.current_reservation ? (
+                                <div className="mt-1 flex flex-col items-center gap-0.5 text-amber-600 font-bold text-[8px] uppercase">
+                                    <div className="flex items-center gap-1">
+                                        <CalendarClock className="h-2.5 w-2.5" />
+                                        Reserved Now
+                                    </div>
+                                    <span className="normal-case text-[9px] font-semibold tracking-normal">
+                                        {table.current_reservation.customer_name} • {formatTime(table.current_reservation.reserved_to)}
+                                    </span>
+                                </div>
+                            ) : table.next_reservation ? (
+                                <div className="mt-1 flex flex-col items-center gap-0.5 text-amber-500 font-bold text-[8px] uppercase">
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-2.5 w-2.5" />
+                                        Next Reservation
+                                    </div>
+                                    <span className="normal-case text-[9px] font-semibold tracking-normal">
+                                        {formatTime(table.next_reservation.reserved_from)}
+                                    </span>
                                 </div>
                             ) : (
                                 <div className="mt-1 flex items-center gap-1 text-emerald-500 font-bold text-[8px] uppercase">
@@ -164,7 +326,7 @@ export default function HeadTablesPage() {
 
                         {/* Minimal Action Badge */}
                         <div className="flex items-center justify-center">
-                            <div className={`h-6 w-6 rounded-full flex items-center justify-center ${table.isOccupied ? 'bg-rose-500' : 'bg-slate-900'} text-white shadow-sm`}>
+                            <div className={`h-6 w-6 rounded-full flex items-center justify-center ${table.isOccupied ? 'bg-rose-500' : table.is_reserved_now ? 'bg-amber-500' : 'bg-slate-900'} text-white shadow-sm`}>
                                 {table.isOccupied ? <Eye className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                             </div>
                         </div>
@@ -180,6 +342,112 @@ export default function HeadTablesPage() {
                     </div>
                 )}
             </div>
+
+            <Dialog open={reservationDialogOpen} onOpenChange={setReservationDialogOpen}>
+                <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle>New Future Reservation</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Table</Label>
+                            <Select value={reservationTableId} onValueChange={setReservationTableId}>
+                                <SelectTrigger className="h-10 rounded-xl">
+                                    <SelectValue placeholder="Select table" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {tables
+                                        .filter((table: any) => table.is_active !== false)
+                                        .map((table: any) => (
+                                            <SelectItem key={table.id} value={table.id}>
+                                                Table {table.table_number} {table.hall?.name ? `(${table.hall.name})` : ""}
+                                            </SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <Label>Name</Label>
+                                <Input className="rounded-xl" value={reservationName} onChange={(e) => setReservationName(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Mobile Number</Label>
+                                <Input className="rounded-xl" value={reservationPhone} onChange={(e) => setReservationPhone(e.target.value)} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Email (optional)</Label>
+                            <Input
+                                className="rounded-xl"
+                                type="email"
+                                value={reservationEmail}
+                                onChange={(e) => setReservationEmail(e.target.value)}
+                                placeholder="name@example.com"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <Label>From (date & time)</Label>
+                                <Input
+                                    className="rounded-xl"
+                                    type="datetime-local"
+                                    value={reservationFrom}
+                                    onChange={(e) => setReservationFrom(e.target.value)}
+                                />
+                                {reservationFrom && (
+                                    <p className="text-xs text-muted-foreground">{formatDateDayTime(reservationFrom)}</p>
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <Label>To (date & time)</Label>
+                                <Input
+                                    className="rounded-xl"
+                                    type="datetime-local"
+                                    value={reservationTo}
+                                    onChange={(e) => setReservationTo(e.target.value)}
+                                />
+                                {reservationTo && (
+                                    <p className="text-xs text-muted-foreground">{formatDateDayTime(reservationTo)}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <Label>Party Size</Label>
+                                <Input
+                                    className="rounded-xl"
+                                    type="number"
+                                    min={1}
+                                    value={reservationPartySize}
+                                    onChange={(e) => setReservationPartySize(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Status</Label>
+                                <Input className="rounded-xl" value="BOOKED" disabled />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Notes</Label>
+                            <Input className="rounded-xl" value={reservationNotes} onChange={(e) => setReservationNotes(e.target.value)} />
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setReservationDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleCreateFutureReservation} disabled={reservationSubmitting}>
+                            {reservationSubmitting ? "Saving..." : "Save Reservation"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Order Details Modal */}
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
