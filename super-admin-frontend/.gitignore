@@ -32,3 +32,6 @@ dist
 /dist-ssr
 .cache
 .next
+
+.next
+/.next
