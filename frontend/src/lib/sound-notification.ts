@@ -3,13 +3,14 @@
  * Manages different notification sounds for different order sources
  */
 
-export type OrderSource = 'QR' | 'TAKEAWAY' | 'ZOMATO' | 'SWIGGY' | 'MANUAL' | 'WEB';
+export type OrderSource = 'QR' | 'TAKEAWAY' | 'ZOMATO' | 'SWIGGY' | 'MANUAL' | 'WEB' | 'RESERVATION';
 
 export interface SoundSettings {
   qr: { enabled: boolean };
   takeaway: { enabled: boolean };
   zomato: { enabled: boolean };
   swiggy: { enabled: boolean };
+  reservation: { enabled: boolean };
 }
 
 const SOUND_FILES: Record<string, string> = {
@@ -17,28 +18,36 @@ const SOUND_FILES: Record<string, string> = {
   takeaway: '/sounds/takeaway-order.mp3',
   zomato: '/sounds/zomato-order.mp3',
   swiggy: '/sounds/swiggy-order.mp3',
+  reservation: '/sounds/notification.mp3',
 };
 
 const STORAGE_KEY = 'eatnbill_sound_settings';
+
+const DEFAULT_SOUND_SETTINGS: SoundSettings = {
+  qr: { enabled: true },
+  takeaway: { enabled: true },
+  zomato: { enabled: true },
+  swiggy: { enabled: true },
+  reservation: { enabled: true },
+};
 
 // Get sound settings from localStorage
 export function getSoundSettings(): SoundSettings {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored) as Partial<SoundSettings>;
+      return {
+        ...DEFAULT_SOUND_SETTINGS,
+        ...parsed,
+      };
     }
   } catch (error) {
     console.error('[SoundNotification] Failed to load settings:', error);
   }
 
   // Default: all enabled
-  return {
-    qr: { enabled: true },
-    takeaway: { enabled: true },
-    zomato: { enabled: true },
-    swiggy: { enabled: true },
-  };
+  return DEFAULT_SOUND_SETTINGS;
 }
 
 // Save sound settings to localStorage
@@ -64,6 +73,7 @@ export function setAllSoundsEnabled(enabled: boolean): void {
     takeaway: { enabled },
     zomato: { enabled },
     swiggy: { enabled },
+    reservation: { enabled },
   };
   saveSoundSettings(settings);
 }
@@ -95,6 +105,9 @@ export function playOrderSound(source: OrderSource): void {
       break;
     case 'SWIGGY':
       soundKey = 'swiggy';
+      break;
+    case 'RESERVATION':
+      soundKey = 'reservation';
       break;
     default:
       soundKey = 'takeaway';
@@ -128,6 +141,24 @@ export function testSound(key: keyof SoundSettings): void {
     });
   } catch (error) {
     console.error(`[SoundNotification] Error testing ${key} sound:`, error);
+  }
+}
+
+export function playReservationSound(): void {
+  const settings = getSoundSettings();
+  if (!settings.reservation.enabled) {
+    console.log('[SoundNotification] Reservation sound disabled');
+    return;
+  }
+
+  try {
+    const audio = new Audio(SOUND_FILES.reservation);
+    audio.volume = 0.6;
+    audio.play().catch((error) => {
+      console.error('[SoundNotification] Failed to play reservation sound:', error);
+    });
+  } catch (error) {
+    console.error('[SoundNotification] Error creating reservation audio:', error);
   }
 }
 
