@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Package, Users, Store, UserCog, LogOut, UtensilsCrossed, Armchair } from "lucide-react";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Package,
+  Users,
+  Store,
+  UserCog,
+  LogOut,
+  UtensilsCrossed,
+  Armchair,
+  WalletCards,
+  FileDown,
+  Languages,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -28,6 +41,8 @@ import { playReservationSound } from "@/lib/sound-notification";
 import { apiClient } from "@/lib/api-client";
 import { logoutStaffSession } from "@/lib/staff-session";
 import type { ReservationAlert } from "@/types/reservation";
+import i18n, { backendLanguageToUi, persistLanguage } from "@/i18n";
+import { fetchMyPreferences } from "@/lib/enterprise-api";
 
 const NAV_ITEMS = [
   { to: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -37,6 +52,9 @@ const NAV_ITEMS = [
   { to: "/manager/company/profile", label: "Restaurant", icon: Store },
   { to: "/manager/company/tables", label: "Tables", icon: Armchair },
   { to: "/manager/company/staff", label: "Staff", icon: UserCog },
+  { to: "/manager/day-end", label: "Day End", icon: WalletCards },
+  { to: "/manager/exports", label: "Exports", icon: FileDown },
+  { to: "/manager/settings", label: "Settings", icon: Languages },
 ];
 
 interface StaffData {
@@ -78,6 +96,17 @@ export default function ManagerLayout() {
         return;
       }
       setStaff(parsed);
+
+      void (async () => {
+        try {
+          const prefs = await fetchMyPreferences();
+          const language = backendLanguageToUi(prefs?.effective_language);
+          await i18n.changeLanguage(language);
+          persistLanguage(language);
+        } catch {
+          // Ignore preference failures in manager layout.
+        }
+      })();
     } catch {
       navigate('/auth/login');
       return;

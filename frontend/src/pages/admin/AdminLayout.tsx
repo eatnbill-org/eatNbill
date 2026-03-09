@@ -64,7 +64,9 @@ import {
   ShieldCheck,
   Smartphone,
   Armchair, // Table Icon
-  Plus
+  Plus,
+  WalletCards,
+  FileDown,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -326,6 +328,24 @@ function AdminSidebar() {
                 <NavLink to="/admin/analytics" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <BarChart3 className="h-[18px] w-[18px] shrink-0" />
                   <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Analytics</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Day End" isActive={pathname === "/admin/day-end"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/day-end" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <WalletCards className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Day End</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Exports" isActive={pathname === "/admin/exports"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/exports" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <FileDown className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Exports</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>

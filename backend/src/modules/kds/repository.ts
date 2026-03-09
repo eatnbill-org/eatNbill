@@ -11,7 +11,7 @@ export interface KdsOrderWithItems {
   id: string;
   tenant_id: string;
   restaurant_id: string;
-  order_number: number;
+  order_number: string;
   customer_name: string;
   customer_phone: string;
   table_number: string | null;

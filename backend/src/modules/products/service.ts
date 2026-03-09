@@ -46,10 +46,12 @@ export async function createRestaurantProduct(
     price: number;
     costPrice?: number;
     categoryId?: string;
-
     isAvailable?: boolean;
     isVeg?: boolean | null;
     preparationTimeMinutes?: number;
+    discount_percent?: number;
+    hsn_sac?: string;
+    gst_rate_percent?: number;
   }
 ) {
   return createProduct(restaurantId, data);
@@ -86,10 +88,12 @@ export async function updateRestaurantProduct(
     price?: number;
     costPrice?: number;
     categoryId?: string;
-
     isAvailable?: boolean;
     isVeg?: boolean | null;
     preparationTimeMinutes?: number;
+    discount_percent?: number;
+    hsn_sac?: string;
+    gst_rate_percent?: number;
   }
 ) {
   const existing = await findProductById(restaurantId, productId);

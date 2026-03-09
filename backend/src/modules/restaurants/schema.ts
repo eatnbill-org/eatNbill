@@ -64,6 +64,7 @@ export const createHallSchema = z
   .object({
     name: z.string().min(2).max(100),
     is_ac: z.boolean().optional(),
+    outlet_id: z.string().uuid().optional(),
   })
   .strict();
 
@@ -71,12 +72,14 @@ export const updateHallSchema = z
   .object({
     name: z.string().min(2).max(100).optional(),
     is_ac: z.boolean().optional(),
+    outlet_id: z.string().uuid().optional(),
   })
   .strict();
 
 export const createTableSchema = z
   .object({
     hall_id: z.string().uuid(),
+    outlet_id: z.string().uuid().optional(),
     table_number: z.string().min(1).max(50),
     seats: z.number().int().min(1).max(50),
     is_active: z.boolean().optional(),
@@ -92,6 +95,7 @@ export const bulkCreateTablesSchema = z
 export const updateTableSchema = z
   .object({
     hall_id: z.string().uuid().optional(),
+    outlet_id: z.string().uuid().optional(),
     table_number: z.string().min(1).max(50).optional(),
     seats: z.number().int().min(1).max(50).optional(),
     is_active: z.boolean().optional(),

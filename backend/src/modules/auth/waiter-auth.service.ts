@@ -72,14 +72,23 @@ export async function loginStaff(identifier: string, password: string) {
         throw new AppError('ACCOUNT_INACTIVE', 'Your account is not active. Please contact admin.', 403);
     }
 
-    const isValidPassword = await verifyPassword(password, staff.password_hash);
+    const staffUserId = staff.user_id;
+    if (!staffUserId) {
+        throw new AppError('AUTH_FAILED', 'Invalid credentials', 401);
+    }
+    const passwordHash = staff.password_hash;
+    if (!passwordHash) {
+        throw new AppError('AUTH_FAILED', 'Invalid credentials', 401);
+    }
+
+    const isValidPassword = await verifyPassword(password, passwordHash);
     if (!isValidPassword) {
         throw new AppError('AUTH_FAILED', 'Invalid credentials', 401);
     }
 
     // Generate access and refresh tokens using local JWT
     const tokenPayload = {
-        userId: staff.user_id,
+        userId: staffUserId,
         tenantId: staff.restaurant.tenant_id,
         role: staff.role as 'OWNER' | 'MANAGER' | 'WAITER',
     };
@@ -91,7 +100,7 @@ export async function loginStaff(identifier: string, password: string) {
         accessToken,
         refreshToken,
         user: {
-            id: staff.user_id,
+            id: staffUserId,
             tenantId: staff.restaurant.tenant_id,
             role: staff.role,
             email: staff.email,

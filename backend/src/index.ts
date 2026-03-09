@@ -5,6 +5,7 @@ import { connectRedis, shutdownRedis, redisClient } from './utils/redis';
 import { applyCommonMiddleware } from './middlewares';
 import { errorHandler } from './middlewares/error.middleware';
 import { registerRoutes } from './routes';
+import { startExportWorker, stopExportWorker } from './modules/restaurants/enterprise.service';
 
 async function bootstrap() {
   try {
@@ -53,6 +54,9 @@ async function bootstrap() {
 
     // Register all routes
     registerRoutes(app);
+
+    // Background workers
+    startExportWorker();
 
     // Error handler (must be last)
     app.use(errorHandler);
@@ -107,6 +111,7 @@ function setupGracefulShutdown(server: any) {
     });
 
     // Close connections
+    stopExportWorker();
     await shutdownPrisma();
     await shutdownRedis();
 
