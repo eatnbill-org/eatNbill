@@ -1168,5 +1168,111 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // ---- Pricing Rules (Happy Hour / Time-based discounts) ----
+
+  router.get('/pricing-rules', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const rules = await prisma.pricingRule.findMany({
+        where: { restaurant_id: restaurantId },
+        orderBy: { created_at: 'asc' },
+      });
+      res.json({ data: rules });
+    } catch (err) { next(err); }
+  });
+
+  router.post('/pricing-rules', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage pricing rules', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const tenantId: string = req.user?.tenantId;
+      const { name, discount_type, discount_value, days_of_week, start_time, end_time, applicable_to, category_ids, product_ids, is_active } = req.body;
+      const rule = await prisma.pricingRule.create({
+        data: {
+          tenant_id: tenantId,
+          restaurant_id: restaurantId,
+          name,
+          discount_type: discount_type ?? 'PERCENTAGE',
+          discount_value: parseFloat(discount_value),
+          days_of_week: days_of_week ?? [],
+          start_time: start_time ?? '00:00',
+          end_time: end_time ?? '23:59',
+          applicable_to: applicable_to ?? 'ALL',
+          category_ids: category_ids ?? [],
+          product_ids: product_ids ?? [],
+          is_active: is_active !== false,
+        },
+      });
+      res.status(201).json({ data: rule });
+    } catch (err) { next(err); }
+  });
+
+  router.patch('/pricing-rules/:ruleId', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage pricing rules', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { ruleId } = req.params;
+      const existing = await prisma.pricingRule.findFirst({ where: { id: ruleId, restaurant_id: restaurantId } });
+      if (!existing) throw new AppError('NOT_FOUND', 'Pricing rule not found', 404);
+      const data: any = {};
+      const fields = ['name', 'discount_type', 'discount_value', 'days_of_week', 'start_time', 'end_time', 'applicable_to', 'category_ids', 'product_ids', 'is_active'];
+      for (const f of fields) {
+        if (req.body[f] !== undefined) {
+          if (f === 'discount_value') data[f] = parseFloat(req.body[f]);
+          else data[f] = req.body[f];
+        }
+      }
+      const rule = await prisma.pricingRule.update({ where: { id: ruleId }, data });
+      res.json({ data: rule });
+    } catch (err) { next(err); }
+  });
+
+  router.delete('/pricing-rules/:ruleId', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can delete pricing rules', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { ruleId } = req.params;
+      const existing = await prisma.pricingRule.findFirst({ where: { id: ruleId, restaurant_id: restaurantId } });
+      if (!existing) throw new AppError('NOT_FOUND', 'Pricing rule not found', 404);
+      await prisma.pricingRule.delete({ where: { id: ruleId } });
+      res.json({ data: { success: true } });
+    } catch (err) { next(err); }
+  });
+
+  // Evaluate active pricing rules for current time and order amount
+  router.get('/pricing-rules/evaluate', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const orderAmount = parseFloat(req.query.amount as string) || 0;
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0=Sun
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const rules = await prisma.pricingRule.findMany({
+        where: { restaurant_id: restaurantId, is_active: true },
+      });
+
+      // Find first matching rule (highest discount wins)
+      let bestDiscount = 0;
+      let bestRule: any = null;
+      for (const rule of rules) {
+        // Check day
+        if (rule.days_of_week.length > 0 && !rule.days_of_week.includes(dayOfWeek)) continue;
+        // Check time window
+        if (currentTime < rule.start_time || currentTime > rule.end_time) continue;
+        // Compute discount
+        let discount = 0;
+        if (rule.discount_type === 'FLAT') {
+          discount = Math.min(Number(rule.discount_value), orderAmount);
+        } else {
+          discount = (orderAmount * Number(rule.discount_value)) / 100;
+        }
+        if (discount > bestDiscount) { bestDiscount = discount; bestRule = rule; }
+      }
+
+      res.json({ data: bestRule ? { rule: bestRule, discount_amount: bestDiscount } : null });
+    } catch (err) { next(err); }
+  });
+
   return router;
 }
