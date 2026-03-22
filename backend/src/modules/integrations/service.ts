@@ -396,3 +396,108 @@ export async function listWebhookLogs(
 export async function getWebhookLogDetail(logId: string) {
   return repository.findWebhookLogById(logId);
 }
+
+// ==========================================
+// Menu Sync (Outbound to Aggregator)
+// ==========================================
+
+/**
+ * Push the mapped menu items to the aggregator platform
+ */
+export async function syncMenu(
+  configId: string,
+  tenantId: string,
+  triggeredBy?: string
+) {
+  const configs = await repository.listConfigsByTenant(tenantId);
+  const config = configs.find((c) => c.id === configId);
+
+  if (!config) {
+    throw new AppError("NOT_FOUND", "Integration config not found", 404);
+  }
+
+  const fullConfig = await repository.getConfigWithMenuMaps(configId);
+  if (!fullConfig) {
+    throw new AppError("NOT_FOUND", "Integration config not found", 404);
+  }
+
+  const adapter = getAdapter(fullConfig.platform);
+
+  if (!adapter.pushMenu) {
+    throw new AppError(
+      "NOT_SUPPORTED",
+      `Menu sync is not supported for ${fullConfig.platform}`,
+      501
+    );
+  }
+
+  // Build items from menu maps
+  const items = fullConfig.menu_maps
+    .filter((m) => m.product.is_active)
+    .map((m) => ({
+      external_item_id: m.external_item_id,
+      name: m.product.name,
+      description: m.product.description ?? null,
+      price: Number(m.product.price),
+      category_name: (m.product as any).category?.name ?? null,
+      is_available: m.product.is_active,
+    }));
+
+  if (items.length === 0) {
+    throw new AppError(
+      "VALIDATION_ERROR",
+      "No active menu mappings found — map products first",
+      400
+    );
+  }
+
+  // Create log entry
+  const syncLog = await repository.createMenuSyncLog({
+    integration_id: configId,
+    triggered_by: triggeredBy,
+  });
+
+  try {
+    const result = await adapter.pushMenu(
+      fullConfig.external_restaurant_id,
+      null, // api_key — future: store encrypted in IntegrationConfig
+      items
+    );
+
+    await repository.updateMenuSyncLog(syncLog.id, {
+      status: result.success ? "SUCCESS" : "FAILED",
+      items_synced: result.items_synced,
+      error_message: result.error,
+    });
+
+    logger.info(`Menu sync ${result.success ? "succeeded" : "failed"} for ${fullConfig.platform}`, {
+      config_id: configId,
+      items_synced: result.items_synced,
+    });
+
+    return { ...result, log_id: syncLog.id };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+
+    await repository.updateMenuSyncLog(syncLog.id, {
+      status: "FAILED",
+      error_message: msg,
+    });
+
+    throw new AppError("INTERNAL_ERROR", `Menu sync failed: ${msg}`, 500);
+  }
+}
+
+/**
+ * Get menu sync log history for a config
+ */
+export async function listMenuSyncLogs(configId: string, tenantId: string) {
+  const configs = await repository.listConfigsByTenant(tenantId);
+  const config = configs.find((c) => c.id === configId);
+
+  if (!config) {
+    throw new AppError("NOT_FOUND", "Integration config not found", 404);
+  }
+
+  return repository.listMenuSyncLogs(configId);
+}

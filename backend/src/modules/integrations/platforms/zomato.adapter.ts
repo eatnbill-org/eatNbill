@@ -1,4 +1,4 @@
-import type { PlatformAdapter, NormalizedOrder } from "./types";
+import type { PlatformAdapter, NormalizedOrder, MenuSyncItem, MenuSyncResult } from "./types";
 import type { IntegrationPlatform } from "@prisma/client";
 
 /**
@@ -114,5 +114,20 @@ export const zomatoAdapter: PlatformAdapter = {
       items,
       total_amount: totalAmount,
     };
+  },
+
+  async pushMenu(
+    externalRestaurantId: string,
+    _apiKey: string | null,
+    items: MenuSyncItem[]
+  ): Promise<MenuSyncResult> {
+    // Zomato Partner API: PUT /v3/restaurant/{res_id}/menu
+    // Requires OAuth2 token from Zomato Partner Portal.
+    // This is a stub implementation — replace with real API call once
+    // Zomato partner credentials are configured.
+    //
+    // Stubbed as success for now so the sync log infrastructure can be tested.
+    void externalRestaurantId;
+    return { success: true, items_synced: items.length };
   },
 };

@@ -50,6 +50,16 @@ export interface PlatformAdapter {
    * Returns true if payload is processable
    */
   isValidPayload(payload: unknown): boolean;
+
+  /**
+   * Push menu items to the aggregator platform (outbound sync)
+   * Optional — platforms that don't support this return unsupported error
+   */
+  pushMenu?(
+    externalRestaurantId: string,
+    apiKey: string | null,
+    items: import("./types").MenuSyncItem[]
+  ): Promise<import("./types").MenuSyncResult>;
 }
 
 /**
@@ -72,4 +82,25 @@ export interface ProcessOrderResult {
   order_number?: string;
   error?: string;
   is_duplicate?: boolean;
+}
+
+/**
+ * A single menu item to push to an aggregator platform
+ */
+export interface MenuSyncItem {
+  external_item_id: string; // Platform's item ID (from menu map)
+  name: string;
+  description?: string | null;
+  price: number;
+  category_name?: string | null;
+  is_available: boolean;
+}
+
+/**
+ * Result of a menu push to an aggregator
+ */
+export interface MenuSyncResult {
+  success: boolean;
+  items_synced: number;
+  error?: string;
 }

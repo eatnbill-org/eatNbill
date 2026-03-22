@@ -541,7 +541,7 @@ export async function updateTableInfo(
   tenantId: string,
   userId: string,
   tableId: string,
-  data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean }
+  data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean; x_position?: number | null; y_position?: number | null; shape?: string | null; }
 ) {
   const table = await updateTable(tableId, data);
   await createAuditLog(tenantId, userId, 'UPDATE', 'RESTAURANT_TABLE', tableId);

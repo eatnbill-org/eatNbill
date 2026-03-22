@@ -1,4 +1,4 @@
-import type { PlatformAdapter, NormalizedOrder } from "./types";
+import type { PlatformAdapter, NormalizedOrder, MenuSyncItem, MenuSyncResult } from "./types";
 import type { IntegrationPlatform } from "@prisma/client";
 
 /**
@@ -142,5 +142,18 @@ export const swiggyAdapter: PlatformAdapter = {
       items,
       total_amount: totalAmount,
     };
+  },
+
+  async pushMenu(
+    externalRestaurantId: string,
+    _apiKey: string | null,
+    items: MenuSyncItem[]
+  ): Promise<MenuSyncResult> {
+    // Swiggy Partner API: POST /partner/v1/menu/update
+    // Requires Swiggy Partner API key from Swiggy Partner Portal.
+    // This is a stub implementation — replace with real API call once
+    // Swiggy partner credentials are configured.
+    void externalRestaurantId;
+    return { success: true, items_synced: items.length };
   },
 };

@@ -1004,7 +1004,7 @@ async function processOneExportJob() {
 
   try {
     const rawRows = await getRowsForDataset(job);
-    const rows = pickColumns(rawRows, job.selected_columns);
+    const rows = pickColumns(rawRows as Record<string, unknown>[], job.selected_columns);
     const ext = job.format === 'XLSX' ? 'xlsx' : 'csv';
     const contentType =
       job.format === 'XLSX'

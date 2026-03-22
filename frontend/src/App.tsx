@@ -60,6 +60,7 @@ const PricingRulesPage = lazy(() => import("./pages/admin/billing/PricingRulesPa
 const PrinterZonesPage = lazy(() => import("./pages/admin/adminSettings/PrinterZonesPage"));
 const DeliveryZonesPage = lazy(() => import("./pages/admin/adminSettings/DeliveryZonesPage"));
 const NotificationChannelsPage = lazy(() => import("./pages/admin/adminSettings/NotificationChannelsPage"));
+const IntegrationsPage = lazy(() => import("./pages/admin/adminSettings/IntegrationsPage"));
 const StaffAnalyticsPage = lazy(() => import("./pages/admin/analytics/StaffAnalyticsPage"));
 const FeedbackPage = lazy(() => import("./pages/admin/analytics/FeedbackPage"));
 const AggregatorAnalyticsPage = lazy(() => import("./pages/admin/analytics/AggregatorAnalyticsPage"));
@@ -163,6 +164,7 @@ const App = () => (
                 <Route path="settings/printer-zones" element={<PrinterZonesPage />} />
                 <Route path="settings/delivery-zones" element={<DeliveryZonesPage />} />
                 <Route path="settings/notifications" element={<NotificationChannelsPage />} />
+                <Route path="settings/integrations" element={<IntegrationsPage />} />
             </Route>
 
             {/* MANAGER */}

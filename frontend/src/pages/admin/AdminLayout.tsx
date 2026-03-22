@@ -79,6 +79,7 @@ import {
   Building2,
   Bell,
   TrendingUp,
+  Plug,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -471,6 +472,7 @@ function AdminSidebar() {
                 { label: "Printer Zones", path: "/admin/settings/printer-zones", icon: Printer },
                 { label: "Delivery Zones", path: "/admin/settings/delivery-zones", icon: MapPin },
                 { label: "Notifications", path: "/admin/settings/notifications", icon: Bell },
+                { label: "Integrations", path: "/admin/settings/integrations", icon: Plug },
               ]}
             />
 
