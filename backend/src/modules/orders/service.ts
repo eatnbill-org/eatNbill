@@ -565,6 +565,7 @@ export async function updatePayment(
     discount_amount?: number;
     tip_amount?: number;
     voucher_id?: string;
+    loyalty_points_to_redeem?: number;
     paid_at?: string;
   }
 ) {
@@ -659,6 +660,38 @@ export async function updatePayment(
         }
       } catch (error) {
         console.error("Failed to award loyalty points:", error);
+      }
+    }
+
+    // Redeem loyalty points when specified
+    if (data.loyalty_points_to_redeem && data.loyalty_points_to_redeem > 0 && isPaid && order.customer_id) {
+      try {
+        const program = await prisma.loyaltyProgram.findUnique({ where: { restaurant_id: order.restaurant_id } });
+        if (program?.is_active) {
+          const loyalty = await prisma.customerLoyalty.findUnique({
+            where: { customer_id_program_id: { customer_id: order.customer_id, program_id: program.id } },
+          });
+          if (loyalty && loyalty.points_balance >= data.loyalty_points_to_redeem) {
+            const updatedLoyalty = await prisma.customerLoyalty.update({
+              where: { id: loyalty.id },
+              data: {
+                points_balance: { decrement: data.loyalty_points_to_redeem },
+                total_redeemed: { increment: data.loyalty_points_to_redeem },
+              },
+            });
+            await prisma.loyaltyTransaction.create({
+              data: {
+                customer_loyalty_id: updatedLoyalty.id,
+                order_id: order.id,
+                points: -data.loyalty_points_to_redeem,
+                type: 'REDEEMED',
+                notes: `Redeemed for Order #${order.order_number}`,
+              },
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to redeem loyalty points:", error);
       }
     }
   }

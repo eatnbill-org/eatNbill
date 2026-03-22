@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useAdminOrdersStore } from '@/stores/orders';
@@ -18,7 +18,8 @@ import {
     UserPlus,
     Undo2,
     AlertCircle,
-    RefreshCw
+    RefreshCw,
+    Gift
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,9 @@ import { Label } from '@/components/ui/label';
 import { useRestaurantStore } from '@/stores/restaurant';
 import { Checkbox } from '@/components/ui/checkbox';
 import { printBill } from '@/lib/print-utils';
+import { toast } from 'sonner';
 import { fetchOrderInvoice, generateOrderEInvoice, validateOrderGst, validateVoucherCode } from '@/lib/enterprise-api';
+import { apiClient } from '@/lib/api-client';
 
 interface MarkPaidDialogProps {
     order: Order | null;
@@ -57,6 +60,9 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const [buyerStateCode, setBuyerStateCode] = useState('');
     const [invoiceMeta, setInvoiceMeta] = useState<{ invoiceNumber?: string; irnStatus?: string } | null>(null);
     const [invoiceLoading, setInvoiceLoading] = useState(false);
+    const [loyaltyBalance, setLoyaltyBalance] = useState<{ points_balance: number; program: { redemption_rate: string; min_points_to_redeem: number } } | null>(null);
+    const [loyaltyPointsInput, setLoyaltyPointsInput] = useState('');
+    const [loyaltyApplied, setLoyaltyApplied] = useState(false);
 
     const handleApplyVoucher = async () => {
         if (!voucherInput.trim() || !order) return;
@@ -85,13 +91,37 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             setBuyerGstin('');
             setBuyerStateCode('');
             setInvoiceMeta(null);
+            setLoyaltyBalance(null);
+            setLoyaltyPointsInput('');
+            setLoyaltyApplied(false);
+            // Fetch loyalty balance if order has a customer
+            if (order.customer_id) {
+                apiClient.get<{ data: any }>(`/restaurant/loyalty/customers/${order.customer_id}`)
+                    .then((res) => {
+                        const d = (res.data as any)?.data;
+                        if (d?.points_balance > 0) setLoyaltyBalance(d);
+                    })
+                    .catch(() => { /* no loyalty data */ });
+            }
         }
     }, [open, order]);
 
     const baseTotal = order ? (parseFloat(order.total_amount) + parseFloat(order.discount_amount || '0') - parseFloat(order.tip_amount || '0')) : 0;
     const currentDiscount = parseFloat(discount) || 0;
     const currentTip = parseFloat(tip) || 0;
-    const finalPayable = Math.max(0, baseTotal - currentDiscount + currentTip);
+    const loyaltyPoints = loyaltyApplied ? (parseInt(loyaltyPointsInput) || 0) : 0;
+    const loyaltyDiscount = loyaltyBalance ? loyaltyPoints * parseFloat(loyaltyBalance.program?.redemption_rate || '0') : 0;
+    const finalPayable = Math.max(0, baseTotal - currentDiscount - loyaltyDiscount + currentTip);
+
+    const handleApplyLoyalty = () => {
+        const pts = parseInt(loyaltyPointsInput) || 0;
+        if (!loyaltyBalance || pts <= 0) return;
+        if (pts > loyaltyBalance.points_balance) { toast.error('Insufficient loyalty points'); return; }
+        const minPts = loyaltyBalance.program?.min_points_to_redeem ?? 0;
+        if (pts < minPts) { toast.error(`Minimum ${minPts} points required to redeem`); return; }
+        setLoyaltyApplied(true);
+        toast.success(`${pts} loyalty points applied — ₹${(pts * parseFloat(loyaltyBalance.program?.redemption_rate || '0')).toFixed(2)} off`);
+    };
 
     const handleRevertPayment = async () => {
         if (!order) return;
@@ -123,9 +153,10 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                 payment_status: isCreditView ? 'PENDING' : 'PAID',
                 payment_method: currentMethod as PaymentMethod,
                 payment_amount: finalPayable,
-                discount_amount: currentDiscount,
+                discount_amount: currentDiscount + loyaltyDiscount,
                 tip_amount: currentTip || undefined,
                 voucher_id: appliedVoucher?.voucher_id,
+                loyalty_points_to_redeem: loyaltyApplied && loyaltyPoints > 0 ? loyaltyPoints : undefined,
             } as any);
 
             if (autoPrint && !isCreditView) {
@@ -343,6 +374,45 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                             <div className="text-[10px] text-emerald-600 font-black flex items-center gap-1">
                                                 <CheckCircle2 className="h-3 w-3" />
                                                 Voucher "{appliedVoucher.code}" applied — {formatINR(appliedVoucher.discount_amount)} off
+                                            </div>
+                                        )}
+
+                                        {/* Loyalty Points Redemption */}
+                                        {loyaltyBalance && loyaltyBalance.points_balance > 0 && (
+                                            <div className="space-y-1.5">
+                                                <div className="flex gap-2">
+                                                    <div className="relative flex-1">
+                                                        <Gift className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-violet-400" />
+                                                        <Input
+                                                            type="number"
+                                                            value={loyaltyPointsInput}
+                                                            onChange={(e) => { setLoyaltyPointsInput(e.target.value); setLoyaltyApplied(false); }}
+                                                            placeholder={`Max ${loyaltyBalance.points_balance} pts`}
+                                                            className="h-9 text-xs font-bold pl-7 border-violet-200 bg-white rounded-xl"
+                                                            disabled={loyaltyApplied}
+                                                            min={1}
+                                                            max={loyaltyBalance.points_balance}
+                                                        />
+                                                    </div>
+                                                    {loyaltyApplied ? (
+                                                        <Button type="button" variant="ghost" size="sm" className="h-9 px-3 rounded-xl text-rose-500 hover:bg-rose-50 text-[10px] font-black" onClick={() => { setLoyaltyApplied(false); setLoyaltyPointsInput(''); }}>Remove</Button>
+                                                    ) : (
+                                                        <Button type="button" variant="outline" size="sm" className="h-9 px-3 rounded-xl text-[10px] font-black border-violet-200 text-violet-700 hover:bg-violet-50" onClick={handleApplyLoyalty} disabled={!loyaltyPointsInput}>
+                                                            Redeem
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                {loyaltyApplied && (
+                                                    <div className="text-[10px] text-violet-600 font-black flex items-center gap-1">
+                                                        <Gift className="h-3 w-3" />
+                                                        {loyaltyPoints} points redeemed — {formatINR(loyaltyDiscount)} off
+                                                    </div>
+                                                )}
+                                                {!loyaltyApplied && (
+                                                    <p className="text-[10px] text-violet-400">
+                                                        {loyaltyBalance.points_balance} pts available · ₹{loyaltyBalance.program?.redemption_rate ?? '?'}/pt
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
 
