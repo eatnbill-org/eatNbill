@@ -62,6 +62,7 @@ const DeliveryZonesPage = lazy(() => import("./pages/admin/adminSettings/Deliver
 const NotificationChannelsPage = lazy(() => import("./pages/admin/adminSettings/NotificationChannelsPage"));
 const StaffAnalyticsPage = lazy(() => import("./pages/admin/analytics/StaffAnalyticsPage"));
 const FeedbackPage = lazy(() => import("./pages/admin/analytics/FeedbackPage"));
+const AggregatorAnalyticsPage = lazy(() => import("./pages/admin/analytics/AggregatorAnalyticsPage"));
 const RestaurantSlugDebugPage = lazy(() => import("./pages/admin/RestaurantSlugDebugPage"));
 const DebugAuthPage = lazy(() => import("./pages/admin/DebugAuthPage"));
 const CustomerEntry = lazy(() => import("./pages/admin/customerSettings/CustomerEntry"));
@@ -138,6 +139,7 @@ const App = () => (
                 <Route path="analytics" element={<AdminAnalyticsPage />} />
                 <Route path="analytics/staff" element={<StaffAnalyticsPage />} />
                 <Route path="analytics/feedback" element={<FeedbackPage />} />
+                <Route path="analytics/aggregator" element={<AggregatorAnalyticsPage />} />
 
                 {/* ✅ COMPANY SECTION */}
                 <Route path="company/profile" element={<CompanyProfilePage />} />
