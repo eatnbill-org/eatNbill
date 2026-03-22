@@ -1274,5 +1274,85 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // ---- Combo Products ----
+
+  router.get('/combos', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const combos = await prisma.comboProduct.findMany({
+        where: { restaurant_id: restaurantId },
+        include: { components: { include: { product: { select: { id: true, name: true, price: true, category_id: true } } } } },
+        orderBy: { created_at: 'asc' },
+      });
+      res.json({ data: combos });
+    } catch (err) { next(err); }
+  });
+
+  router.post('/combos', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage combos', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const tenantId: string = req.user?.tenantId;
+      const { name, description, combo_price, is_active, components } = req.body as {
+        name: string; description?: string; combo_price: number; is_active?: boolean;
+        components?: { product_id: string; quantity: number }[];
+      };
+      const combo = await prisma.comboProduct.create({
+        data: {
+          tenant_id: tenantId,
+          restaurant_id: restaurantId,
+          name,
+          description,
+          combo_price,
+          is_active: is_active !== false,
+          components: components
+            ? { create: components.map((c) => ({ product_id: c.product_id, quantity: c.quantity || 1 })) }
+            : undefined,
+        },
+        include: { components: { include: { product: { select: { id: true, name: true, price: true } } } } },
+      });
+      res.status(201).json({ data: combo });
+    } catch (err) { next(err); }
+  });
+
+  router.patch('/combos/:comboId', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage combos', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { comboId } = req.params;
+      const existing = await prisma.comboProduct.findFirst({ where: { id: comboId, restaurant_id: restaurantId } });
+      if (!existing) throw new AppError('NOT_FOUND', 'Combo not found', 404);
+      const { name, description, combo_price, is_active, components } = req.body;
+      const data: any = {};
+      if (name !== undefined) data.name = name;
+      if (description !== undefined) data.description = description;
+      if (combo_price !== undefined) data.combo_price = combo_price;
+      if (is_active !== undefined) data.is_active = is_active;
+      if (components) {
+        // Replace all components
+        await prisma.comboComponent.deleteMany({ where: { combo_id: comboId } });
+        data.components = { create: components.map((c: any) => ({ product_id: c.product_id, quantity: c.quantity || 1 })) };
+      }
+      const combo = await prisma.comboProduct.update({
+        where: { id: comboId },
+        data,
+        include: { components: { include: { product: { select: { id: true, name: true, price: true } } } } },
+      });
+      res.json({ data: combo });
+    } catch (err) { next(err); }
+  });
+
+  router.delete('/combos/:comboId', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can delete combos', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { comboId } = req.params;
+      const existing = await prisma.comboProduct.findFirst({ where: { id: comboId, restaurant_id: restaurantId } });
+      if (!existing) throw new AppError('NOT_FOUND', 'Combo not found', 404);
+      await prisma.comboProduct.delete({ where: { id: comboId } });
+      res.json({ data: { success: true } });
+    } catch (err) { next(err); }
+  });
+
   return router;
 }
