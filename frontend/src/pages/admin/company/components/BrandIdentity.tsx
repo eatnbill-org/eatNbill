@@ -3,7 +3,7 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Store, Upload, Image as ImageIcon, Pencil, MapPin, Phone, Mail, Utensils, Hash, Clock, Camera } from "lucide-react";
+import { Store, Upload, Image as ImageIcon, Pencil, MapPin, Phone, Mail, Utensils, Hash, Clock, Camera, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
@@ -19,6 +19,7 @@ interface BrandIdentityProps {
     email: string;
     address: string;
     gst_number: string;
+    fssai_license?: string;
     tagline?: string;
     restaurant_type?: string;
     logo_url?: string;
@@ -332,6 +333,21 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                 value={data.gst_number || ""}
                 onChange={(e) => onChange({ ...data, gst_number: e.target.value })}
                 placeholder="GST NUMBER"
+                className="border-border bg-muted/20 rounded-xl h-11 font-bold tracking-tight text-xs text-foreground uppercase placeholder:text-muted-foreground placeholder:opacity-50 focus-visible:ring-primary transition-all hover:bg-white hover:border-primary"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
+                  <ShieldCheck className="h-3 w-3" />
+                </div>
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">FSSAI License No.</Label>
+              </div>
+              <Input
+                value={data.fssai_license || ""}
+                onChange={(e) => onChange({ ...data, fssai_license: e.target.value })}
+                placeholder="FSSAI LICENSE NUMBER"
                 className="border-border bg-muted/20 rounded-xl h-11 font-bold tracking-tight text-xs text-foreground uppercase placeholder:text-muted-foreground placeholder:opacity-50 focus-visible:ring-primary transition-all hover:bg-white hover:border-primary"
               />
             </div>

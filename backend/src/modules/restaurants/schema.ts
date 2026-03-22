@@ -18,6 +18,7 @@ export const updateRestaurantProfileSchema = z
     logo_url: z.string().url().optional().nullable(),
     address: z.string().max(500).optional().nullable(),
     gst_number: z.string().max(50).optional().nullable(),
+    fssai_license: z.string().max(100).optional().nullable(),
     tagline: z.string().max(200).optional().nullable(),
     restaurant_type: z.string().max(100).optional().nullable(),
     opening_hours: z.any().optional().nullable(),

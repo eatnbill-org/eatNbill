@@ -1123,6 +1123,22 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // Loyalty leaderboard (top customers by points)
+  router.get('/loyalty/leaderboard', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const program = await prisma.loyaltyProgram.findUnique({ where: { restaurant_id: restaurantId } });
+      if (!program) return res.json({ data: [] });
+      const entries = await prisma.customerLoyalty.findMany({
+        where: { restaurant_id: restaurantId },
+        include: { customer: { select: { name: true, phone: true } } },
+        orderBy: { points_balance: 'desc' },
+        take: 50,
+      });
+      res.json({ data: entries });
+    } catch (err) { next(err); }
+  });
+
   // Public-ish: validate a voucher code (called by frontend at checkout)
   router.post('/vouchers/validate', async (req: any, res: any, next: any) => {
     try {

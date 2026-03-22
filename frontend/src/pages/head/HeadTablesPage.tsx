@@ -29,7 +29,11 @@ import {
     Calendar,
     Receipt,
     Check,
+    ListOrdered,
+    Trash2,
+    Bell,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -95,6 +99,66 @@ export default function HeadTablesPage() {
     const [reservationFrom, setReservationFrom] = React.useState("");
     const [reservationTo, setReservationTo] = React.useState("");
     const [reservationNotes, setReservationNotes] = React.useState("");
+
+    // Waitlist state
+    const [waitlistOpen, setWaitlistOpen] = React.useState(false);
+    const [wlName, setWlName] = React.useState("");
+    const [wlPhone, setWlPhone] = React.useState("");
+    const [wlPartySize, setWlPartySize] = React.useState("2");
+    const [wlNotes, setWlNotes] = React.useState("");
+    const [wlSubmitting, setWlSubmitting] = React.useState(false);
+
+    const { data: waitlistData, refetch: refetchWaitlist } = useQuery({
+        queryKey: ['head-waitlist'],
+        queryFn: async () => {
+            const { data } = await apiClient.get<{ data: any[] }>('/restaurant/waitlist');
+            return data?.data ?? [];
+        },
+        enabled: waitlistOpen,
+        refetchInterval: waitlistOpen ? 30000 : false,
+    });
+
+    const waitlistEntries: any[] = waitlistData ?? [];
+
+    const handleAddWaitlist = async () => {
+        if (!wlName.trim() || !wlPartySize) return;
+        setWlSubmitting(true);
+        try {
+            const { error } = await apiClient.post('/restaurant/waitlist', {
+                customer_name: wlName.trim(),
+                customer_phone: wlPhone.trim() || undefined,
+                party_size: Number(wlPartySize) || 1,
+                notes: wlNotes.trim() || undefined,
+            });
+            if (error) throw new Error(error.message);
+            toast.success('Added to waitlist');
+            setWlName(""); setWlPhone(""); setWlPartySize("2"); setWlNotes("");
+            refetchWaitlist();
+        } catch (e: any) {
+            toast.error(e.message || 'Failed to add');
+        } finally {
+            setWlSubmitting(false);
+        }
+    };
+
+    const handleWaitlistStatusUpdate = async (id: string, status: string) => {
+        try {
+            await apiClient.patch(`/restaurant/waitlist/${id}`, { status });
+            refetchWaitlist();
+        } catch {
+            toast.error('Failed to update');
+        }
+    };
+
+    const handleWaitlistDelete = async (id: string) => {
+        try {
+            await apiClient.delete(`/restaurant/waitlist/${id}`);
+            refetchWaitlist();
+        } catch {
+            toast.error('Failed to remove');
+        }
+    };
+
 
     // Subscribe to realtime updates
     React.useEffect(() => {
@@ -240,7 +304,20 @@ export default function HeadTablesPage() {
 
     return (
         <div className="space-y-6 pb-24 max-w-7xl mx-auto">
-            <div className="flex justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
+                <Button
+                    variant="outline"
+                    className="rounded-xl h-10 w-full sm:w-auto relative"
+                    onClick={() => setWaitlistOpen(true)}
+                >
+                    <ListOrdered className="h-4 w-4 mr-2" />
+                    Waitlist
+                    {waitlistEntries.length > 0 && (
+                        <span className="ml-2 bg-orange-500 text-white text-[9px] font-black rounded-full h-4 w-4 flex items-center justify-center">
+                            {waitlistEntries.length}
+                        </span>
+                    )}
+                </Button>
                 <Button
                     className="rounded-xl h-10 w-full sm:w-auto"
                     onClick={() => openReservationDialog()}
@@ -575,12 +652,95 @@ export default function HeadTablesPage() {
                 onOpenChange={(open) => {
                     setPaymentDialogOpen(open);
                     if (!open) {
-                        setDetailsOpen(false); // Close details modal after payment attempt (or success)
+                        setDetailsOpen(false);
                         queryClient.invalidateQueries({ queryKey: ['head-tables-status'] });
                         queryClient.invalidateQueries({ queryKey: ['head-orders-for-tables'] });
                     }
                 }}
             />
+
+            {/* Waitlist Sheet */}
+            <Sheet open={waitlistOpen} onOpenChange={setWaitlistOpen}>
+                <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+                    <SheetHeader>
+                        <SheetTitle className="flex items-center gap-2">
+                            <ListOrdered className="h-5 w-5" />
+                            Walk-in Waitlist
+                        </SheetTitle>
+                    </SheetHeader>
+
+                    {/* Add to waitlist form */}
+                    <div className="mt-4 space-y-3 border rounded-xl p-4 bg-slate-50">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Add to Waitlist</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="col-span-2">
+                                <Input placeholder="Customer name *" value={wlName} onChange={e => setWlName(e.target.value)} className="h-9 text-sm" />
+                            </div>
+                            <Input placeholder="Phone" value={wlPhone} onChange={e => setWlPhone(e.target.value)} className="h-9 text-sm" />
+                            <Input type="number" min={1} placeholder="Party size" value={wlPartySize} onChange={e => setWlPartySize(e.target.value)} className="h-9 text-sm" />
+                            <div className="col-span-2">
+                                <Input placeholder="Notes (optional)" value={wlNotes} onChange={e => setWlNotes(e.target.value)} className="h-9 text-sm" />
+                            </div>
+                        </div>
+                        <Button onClick={handleAddWaitlist} disabled={!wlName.trim() || wlSubmitting} className="w-full h-9 text-sm font-bold">
+                            {wlSubmitting ? 'Adding...' : 'Add to Waitlist'}
+                        </Button>
+                    </div>
+
+                    {/* Waitlist entries */}
+                    <div className="mt-4 space-y-2">
+                        {waitlistEntries.length === 0 ? (
+                            <p className="text-center text-sm text-muted-foreground py-8">No one in the waitlist right now.</p>
+                        ) : (
+                            waitlistEntries.map((entry: any, idx: number) => (
+                                <div key={entry.id} className="bg-white border rounded-xl p-3 flex items-start justify-between gap-3">
+                                    <div className="flex items-start gap-3 min-w-0">
+                                        <div className="h-8 w-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-black text-sm shrink-0">
+                                            {idx + 1}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-sm">{entry.customer_name}</p>
+                                            {entry.customer_phone && <p className="text-xs text-muted-foreground">{entry.customer_phone}</p>}
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-[9px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                                                    {entry.party_size} pax
+                                                </span>
+                                                <span className="text-[9px] text-muted-foreground">
+                                                    {new Date(entry.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            {entry.notes && <p className="text-[10px] text-muted-foreground italic mt-0.5">{entry.notes}</p>}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <button
+                                            onClick={() => handleWaitlistStatusUpdate(entry.id, 'NOTIFIED')}
+                                            title="Notify"
+                                            className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-colors"
+                                        >
+                                            <Bell className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleWaitlistStatusUpdate(entry.id, 'SEATED')}
+                                            title="Seated"
+                                            className="h-7 w-7 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-colors"
+                                        >
+                                            <Check className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleWaitlistDelete(entry.id)}
+                                            title="Remove"
+                                            className="h-7 w-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div >
     );
 }

@@ -618,6 +618,49 @@ export async function updatePayment(
     } catch (error) {
       console.error("Failed to sync customer credit balance:", error);
     }
+
+    // Award loyalty points when order transitions to PAID (first time only)
+    if (isPaid && !wasPaid) {
+      try {
+        const program = await prisma.loyaltyProgram.findUnique({
+          where: { restaurant_id: order.restaurant_id },
+        });
+        if (program?.is_active && updated) {
+          const spend = Number(updated.total_amount);
+          const spendUnit = Number(program.spend_unit);
+          const pointsPerUnit = Number(program.points_per_spend_unit);
+          const points = Math.floor((spend / spendUnit) * pointsPerUnit);
+          if (points > 0) {
+            const loyalty = await prisma.customerLoyalty.upsert({
+              where: { customer_id_program_id: { customer_id: order.customer_id, program_id: program.id } },
+              create: {
+                tenant_id: order.tenant_id,
+                restaurant_id: order.restaurant_id,
+                customer_id: order.customer_id,
+                program_id: program.id,
+                points_balance: points,
+                total_earned: points,
+              },
+              update: {
+                points_balance: { increment: points },
+                total_earned: { increment: points },
+              },
+            });
+            await prisma.loyaltyTransaction.create({
+              data: {
+                customer_loyalty_id: loyalty.id,
+                order_id: order.id,
+                points,
+                type: 'EARNED',
+                notes: `Order #${order.order_number}`,
+              },
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to award loyalty points:", error);
+      }
+    }
   }
 
   return updated;

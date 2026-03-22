@@ -9,6 +9,8 @@ import { requireRestaurantRole } from "../../middlewares/restaurantRole.middlewa
 import { env } from "../../env";
 import { redisClient } from "../../utils/redis";
 import * as controller from "./controller";
+import { prisma } from "../../utils/prisma";
+import { AppError } from "../../middlewares/error.middleware";
 
 /**
  * Stricter rate limiter for public order placement
@@ -231,6 +233,16 @@ export function orderRoutes() {
     controller.settleCredit
   );
 
+  // Void or comp an individual order item (MANAGER+ only)
+  router.patch(
+    "/:id/items/:itemId/void",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    requireRole('OWNER', 'MANAGER'),
+    controller.voidOrderItem
+  );
+
   // Delete order
   router.delete(
     "/:id",
@@ -239,6 +251,63 @@ export function orderRoutes() {
     tenantMiddleware,
     requireRole('OWNER', 'MANAGER'),
     controller.deleteOrder
+  );
+
+  // ========================================
+  // REFUND ROUTES
+  // ========================================
+
+  router.post(
+    "/:id/refunds",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    requireRole('OWNER', 'MANAGER'),
+    async (req: any, res: any, next: any) => {
+      try {
+        const { id: orderId } = req.params;
+        const restaurantId: string = req.user?.restaurantId;
+        const tenantId: string = req.user?.tenantId;
+        const userId: string = req.user?.id;
+        const { refund_amount, reason_code, notes, method } = req.body;
+        if (!refund_amount || parseFloat(refund_amount) <= 0) throw new AppError('VALIDATION_ERROR', 'Invalid refund amount', 400);
+        // Verify order belongs to restaurant
+        const order = await prisma.order.findFirst({ where: { id: orderId, restaurant_id: restaurantId } });
+        if (!order) throw new AppError('NOT_FOUND', 'Order not found', 404);
+        if (order.payment_status !== 'PAID') throw new AppError('VALIDATION_ERROR', 'Can only refund paid orders', 400);
+        const refund = await prisma.refund.create({
+          data: {
+            tenant_id: tenantId,
+            restaurant_id: restaurantId,
+            order_id: orderId,
+            refund_amount: parseFloat(refund_amount),
+            reason_code: reason_code || null,
+            notes: notes || null,
+            method: method || 'CASH',
+            approved_by: userId || null,
+          },
+        });
+        res.status(201).json({ data: refund });
+      } catch (err) { next(err); }
+    }
+  );
+
+  router.get(
+    "/:id/refunds",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    async (req: any, res: any, next: any) => {
+      try {
+        const { id: orderId } = req.params;
+        const restaurantId: string = req.user?.restaurantId;
+        const refunds = await prisma.refund.findMany({
+          where: { order_id: orderId, restaurant_id: restaurantId },
+          orderBy: { created_at: 'desc' },
+        });
+        res.json({ data: refunds });
+      } catch (err) { next(err); }
+    }
   );
 
   return router;

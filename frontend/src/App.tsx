@@ -50,6 +50,11 @@ const TablePage = lazy(() => import("./pages/admin/company/TablePage"));
 const StaffPage = lazy(() => import("./pages/admin/company/staff/StaffPage"));
 const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage"));
 const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
+const VouchersPage = lazy(() => import("./pages/admin/billing/VouchersPage"));
+const LoyaltyPage = lazy(() => import("./pages/admin/billing/LoyaltyPage"));
+const PrinterZonesPage = lazy(() => import("./pages/admin/adminSettings/PrinterZonesPage"));
+const StaffAnalyticsPage = lazy(() => import("./pages/admin/analytics/StaffAnalyticsPage"));
+const FeedbackPage = lazy(() => import("./pages/admin/analytics/FeedbackPage"));
 const RestaurantSlugDebugPage = lazy(() => import("./pages/admin/RestaurantSlugDebugPage"));
 const DebugAuthPage = lazy(() => import("./pages/admin/DebugAuthPage"));
 const CustomerEntry = lazy(() => import("./pages/admin/customerSettings/CustomerEntry"));
@@ -121,6 +126,8 @@ const App = () => (
                 <Route path="campaigns" element={<AdminCampaignPage />} />
                 <Route path="customers" element={<AdminCustomersPage />} />
                 <Route path="analytics" element={<AdminAnalyticsPage />} />
+                <Route path="analytics/staff" element={<StaffAnalyticsPage />} />
+                <Route path="analytics/feedback" element={<FeedbackPage />} />
 
                 {/* ✅ COMPANY SECTION */}
                 <Route path="company/profile" element={<CompanyProfilePage />} />
@@ -128,6 +135,8 @@ const App = () => (
                 <Route path="company/staff" element={<StaffPage />} />
                 <Route path="day-end" element={<AdminDayEndPage />} />
                 <Route path="exports" element={<AdminExportCenterPage />} />
+                <Route path="vouchers" element={<VouchersPage />} />
+                <Route path="loyalty" element={<LoyaltyPage />} />
 
                 {/* DEBUG: Restaurant Slug */}
                 <Route path="debug/slug" element={<RestaurantSlugDebugPage />} />
@@ -137,6 +146,7 @@ const App = () => (
                 <Route path="settings" element={<Navigate to="settings/admin" replace />} />
                 <Route path="settings/customer" element={<AdminSettingsPage />} />
                 <Route path="settings/admin" element={<AdminSideSettings />} />
+                <Route path="settings/printer-zones" element={<PrinterZonesPage />} />
             </Route>
 
             {/* MANAGER */}

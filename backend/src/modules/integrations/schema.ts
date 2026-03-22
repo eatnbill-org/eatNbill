@@ -16,6 +16,7 @@ export const updateIntegrationConfigSchema = z.object({
   external_restaurant_id: z.string().min(1).max(100).optional(),
   webhook_secret: z.string().min(16).max(256).optional(),
   auto_accept: z.boolean().optional(),
+  commission_rate_percent: z.number().nonnegative().max(100).optional().nullable(),
 });
 
 // ==========================================
