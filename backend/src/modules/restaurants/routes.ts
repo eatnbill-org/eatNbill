@@ -1726,5 +1726,69 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // ============================================================================
+  // AGGREGATOR COMMISSION ANALYTICS
+  // ============================================================================
+
+  // GET /analytics/aggregator?from_date=&to_date= — per-platform P&L
+  router.get('/analytics/aggregator', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const { from_date, to_date } = req.query as { from_date?: string; to_date?: string };
+      const dateFilter: any = {};
+      if (from_date) dateFilter.gte = new Date(from_date);
+      if (to_date) dateFilter.lte = new Date(to_date + 'T23:59:59.999Z');
+
+      // Get integration configs for this restaurant to find commission rates
+      const configs = await prisma.integrationConfig.findMany({
+        where: { restaurant_id: restaurantId, is_enabled: true },
+        select: { id: true, platform: true, commission_rate_percent: true },
+      });
+      const commissionMap: Record<string, number> = {};
+      for (const c of configs) {
+        if (c.commission_rate_percent) commissionMap[c.platform] = Number(c.commission_rate_percent);
+      }
+
+      // Aggregate orders by source (ZOMATO | SWIGGY | QR | DINE_IN etc.)
+      const orders = await prisma.order.findMany({
+        where: {
+          restaurant_id: restaurantId,
+          payment_status: 'PAID',
+          source: { in: ['ZOMATO', 'SWIGGY'] },
+          ...(Object.keys(dateFilter).length > 0 ? { created_at: dateFilter } : {}),
+        },
+        select: { source: true, total_amount: true },
+      });
+
+      const grouped: Record<string, { orders: number; gross: number; commission: number; net: number }> = {};
+      for (const order of orders) {
+        const src = order.source ?? 'UNKNOWN';
+        if (!grouped[src]) grouped[src] = { orders: 0, gross: 0, commission: 0, net: 0 };
+        const gross = Number(order.total_amount);
+        const commRate = commissionMap[src] ?? 0;
+        const commission = gross * commRate / 100;
+        grouped[src].orders += 1;
+        grouped[src].gross += gross;
+        grouped[src].commission += commission;
+        grouped[src].net += gross - commission;
+      }
+
+      res.json({ data: Object.entries(grouped).map(([platform, stats]) => ({ platform, ...stats, commission_rate: commissionMap[platform] ?? 0 })) });
+    } catch (err) { next(err); }
+  });
+
+  // PATCH /analytics/aggregator/commission-rate — set commission rate for a platform
+  router.patch('/analytics/aggregator/commission-rate', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageStaff(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can update commission rates', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { platform, commission_rate_percent } = req.body;
+      const config = await prisma.integrationConfig.findFirst({ where: { restaurant_id: restaurantId, platform, is_enabled: true } });
+      if (!config) throw new AppError('NOT_FOUND', `No active ${platform} integration found`, 404);
+      await prisma.integrationConfig.update({ where: { id: config.id }, data: { commission_rate_percent: commission_rate_percent ?? null } });
+      res.json({ success: true });
+    } catch (err) { next(err); }
+  });
+
   return router;
 }

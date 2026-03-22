@@ -78,6 +78,7 @@ import {
   Package2,
   Building2,
   Bell,
+  TrendingUp,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -384,6 +385,15 @@ function AdminSidebar() {
                 <NavLink to="/admin/analytics/feedback" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <MessageSquare className="h-[18px] w-[18px] shrink-0" />
                   <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Customer Feedback</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Aggregator P&L" isActive={pathname === "/admin/analytics/aggregator"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/analytics/aggregator" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <TrendingUp className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Aggregator P&L</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
