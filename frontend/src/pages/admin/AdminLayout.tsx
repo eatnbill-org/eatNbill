@@ -75,6 +75,7 @@ import {
   ShoppingBag,
   Calendar,
   MapPin,
+  Package2,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -312,6 +313,15 @@ function AdminSidebar() {
                 <NavLink to="/admin/combos" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <ShoppingBag className="h-[18px] w-[18px] shrink-0" />
                   <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Combos</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Inventory" isActive={pathname === "/admin/inventory"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/inventory" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <Package2 className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Inventory</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
