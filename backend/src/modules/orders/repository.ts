@@ -29,6 +29,7 @@ export interface CreateOrderData {
     product_id: string;
     quantity: number;
     notes?: string;
+    modifier_option_ids?: string[]; // selected ProductModifierOption IDs
   }[];
 }
 
@@ -183,12 +184,26 @@ export async function createOrder(
       }
     }
 
-    // Calculate total (server-side, never trust client)
+    // Load modifier options for all items that have them
+    const allOptionIds = data.items.flatMap((i) => i.modifier_option_ids ?? []);
+    const modifierOptions = allOptionIds.length > 0
+      ? await tx.productModifierOption.findMany({
+          where: { id: { in: allOptionIds } },
+          include: { group: { select: { name: true } } },
+        })
+      : [];
+    const modifierOptionMap = new Map(modifierOptions.map((o) => [o.id, o]));
+
+    // Calculate total (server-side, never trust client) including modifier price deltas
     const total = data.items.reduce((sum, item) => {
       const product = productMap.get(item.product_id)!;
       const discount = Number(product.discount_percent || 0);
-      const discountedPrice = Number(product.price) * (1 - discount / 100);
-      return sum + discountedPrice * item.quantity;
+      const basePrice = Number(product.price) * (1 - discount / 100);
+      const modifiersDelta = (item.modifier_option_ids ?? []).reduce((mSum, optId) => {
+        const opt = modifierOptionMap.get(optId);
+        return mSum + (opt ? Number(opt.price_delta) : 0);
+      }, 0);
+      return sum + (basePrice + modifiersDelta) * item.quantity;
     }, 0);
 
     // Generate unique random alphanumeric order ID
@@ -220,7 +235,12 @@ export async function createOrder(
           create: data.items.map((item) => {
             const product = productMap.get(item.product_id)!;
             const discount = Number(product.discount_percent || 0);
-            const discountedPrice = Number(product.price) * (1 - discount / 100);
+            const basePrice = Number(product.price) * (1 - discount / 100);
+            const selectedOptions = (item.modifier_option_ids ?? [])
+              .map((id) => modifierOptionMap.get(id))
+              .filter(Boolean) as typeof modifierOptions;
+            const modifiersDelta = selectedOptions.reduce((s, o) => s + Number(o.price_delta), 0);
+            const discountedPrice = basePrice + modifiersDelta;
             const taxableAmount = discountedPrice * item.quantity;
             return {
               product_id: item.product_id,
@@ -236,6 +256,14 @@ export async function createOrder(
               total_tax_snapshot: 0,
               quantity: item.quantity,
               notes: item.notes,
+              modifiers_total: modifiersDelta,
+              modifiers: selectedOptions.length > 0 ? {
+                create: selectedOptions.map((o) => ({
+                  option_id: o.id,
+                  name_snapshot: `${o.group.name}: ${o.name}`,
+                  price_delta: Number(o.price_delta),
+                })),
+              } : undefined,
             };
           }),
         },
@@ -291,7 +319,9 @@ export async function updateOrderPayment(
     payment_provider?: string;
     payment_reference?: string;
     payment_amount?: Prisma.Decimal;
-    discount_amount?: Prisma.Decimal; // New field
+    discount_amount?: Prisma.Decimal;
+    tip_amount?: Prisma.Decimal;
+    voucher_id?: string;
     paid_at?: Date | null;
   }
 ) {
@@ -306,16 +336,17 @@ export async function updateOrderPayment(
 
   let newTotal = order.total_amount;
 
-  // Recalculate total if discount is being updated
-  if (data.discount_amount !== undefined) {
+  // Recalculate total if discount or tip is being updated
+  if (data.discount_amount !== undefined || data.tip_amount !== undefined) {
     const subtotal = order.items.reduce((sum, item) => sum + Number(item.price_snapshot) * item.quantity, 0);
-    const discount = Number(data.discount_amount);
+    const discount = Number(data.discount_amount ?? order.discount_amount ?? 0);
+    const tip = Number(data.tip_amount ?? order.tip_amount ?? 0);
 
     if (discount > subtotal) {
       throw new Error("Discount cannot exceed order total");
     }
 
-    newTotal = new Prisma.Decimal(subtotal - discount);
+    newTotal = new Prisma.Decimal(subtotal - discount + tip);
   }
 
   const isPaid = data.payment_status === 'PAID';
@@ -329,8 +360,10 @@ export async function updateOrderPayment(
       payment_provider: data.payment_provider,
       payment_reference: data.payment_reference,
       payment_amount: data.payment_amount,
-      discount_amount: data.discount_amount, // Persist discount
-      total_amount: newTotal,                // Update final total
+      discount_amount: data.discount_amount,
+      tip_amount: data.tip_amount,
+      voucher_id: data.voucher_id,
+      total_amount: newTotal,
       paid_at: data.paid_at ?? (isPaid ? now : null),
       // Automatically complete order if paid OR if it's a CREDIT payment
       ...(isPaid || data.payment_method === 'CREDIT' ? {
@@ -340,6 +373,14 @@ export async function updateOrderPayment(
     },
     include: { items: true },
   });
+
+  // Increment voucher used_count if a voucher was applied
+  if (data.voucher_id) {
+    await prisma.voucherCode.update({
+      where: { id: data.voucher_id },
+      data: { used_count: { increment: 1 } },
+    });
+  }
 
   if (updated.table_id) {
     await syncTableStatus(updated.table_id);
@@ -464,11 +505,14 @@ export async function findOrderById(
       tenant_id: tenantId,
     },
     include: {
-      items: true,
+      items: {
+        include: { modifiers: true },
+        orderBy: { created_at: 'asc' },
+      },
       table: true,
       hall: true,
     },
-  });
+  }) as any;
 }
 
 export async function findOrderItemById(orderItemId: string) {
@@ -480,7 +524,7 @@ export async function findOrderItemById(orderItemId: string) {
 
 export async function addItemsToOrder(
   orderId: string,
-  items: Array<{ product_id: string; quantity: number; notes?: string }>,
+  items: Array<{ product_id: string; quantity: number; notes?: string; modifier_option_ids?: string[] }>,
   shouldResetToPreparing: boolean = false
 ) {
   return prisma.$transaction(async (tx) => {
@@ -529,11 +573,25 @@ export async function addItemsToOrder(
       }
     }
 
+    // Load modifier options for add-items
+    const addItemAllOptionIds = items.flatMap((i) => i.modifier_option_ids ?? []);
+    const addItemModifierOptions = addItemAllOptionIds.length > 0
+      ? await tx.productModifierOption.findMany({
+          where: { id: { in: addItemAllOptionIds } },
+          include: { group: { select: { name: true } } },
+        })
+      : [];
+    const addItemModifierMap = new Map(addItemModifierOptions.map((o) => [o.id, o]));
+
     const newItemsTotal = items.reduce((sum, item) => {
       const product = productMap.get(item.product_id)!;
       const discount = Number(product.discount_percent || 0);
-      const discountedPrice = Number(product.price) * (1 - discount / 100);
-      return sum + discountedPrice * item.quantity;
+      const basePrice = Number(product.price) * (1 - discount / 100);
+      const modDelta = (item.modifier_option_ids ?? []).reduce((s, id) => {
+        const opt = addItemModifierMap.get(id);
+        return s + (opt ? Number(opt.price_delta) : 0);
+      }, 0);
+      return sum + (basePrice + modDelta) * item.quantity;
     }, 0);
 
     const existingTotal = order.items.reduce((sum, item) => {
@@ -554,7 +612,12 @@ export async function addItemsToOrder(
           create: items.map((item) => {
             const product = productMap.get(item.product_id)!;
             const discount = Number(product.discount_percent || 0);
-            const discountedPrice = Number(product.price) * (1 - discount / 100);
+            const basePrice = Number(product.price) * (1 - discount / 100);
+            const selectedOpts = (item.modifier_option_ids ?? [])
+              .map((id) => addItemModifierMap.get(id))
+              .filter(Boolean) as typeof addItemModifierOptions;
+            const modDelta = selectedOpts.reduce((s, o) => s + Number(o.price_delta), 0);
+            const discountedPrice = basePrice + modDelta;
             const taxableAmount = discountedPrice * item.quantity;
             return {
               product_id: item.product_id,
@@ -570,7 +633,15 @@ export async function addItemsToOrder(
               total_tax_snapshot: 0,
               quantity: item.quantity,
               notes: item.notes,
-              status: "REORDER" // 🟢 New items from reorder get REORDER status
+              modifiers_total: modDelta,
+              status: "REORDER", // 🟢 New items from reorder get REORDER status
+              modifiers: selectedOpts.length > 0 ? {
+                create: selectedOpts.map((o) => ({
+                  option_id: o.id,
+                  name_snapshot: `${o.group.name}: ${o.name}`,
+                  price_delta: Number(o.price_delta),
+                })),
+              } : undefined,
             };
           }),
         },
@@ -924,7 +995,10 @@ export async function listOrders(params: {
     prisma.order.findMany({
       where,
       include: {
-        items: true,
+        items: {
+          include: { modifiers: true },
+          orderBy: { created_at: 'asc' },
+        },
         table: true,
         hall: true,
       },
@@ -933,7 +1007,7 @@ export async function listOrders(params: {
       take: params.limit,
     }),
     prisma.order.count({ where }),
-  ]);
+  ]) as any;
 
   return { orders, total };
 }

@@ -188,6 +188,31 @@ export interface PublicMenu {
 }
 
 // ============================================================
+// MODIFIER TYPES
+// ============================================================
+
+export interface ProductModifierOption {
+  id: string;
+  group_id: string;
+  name: string;
+  price_delta: string; // Decimal as string
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface ProductModifierGroup {
+  id: string;
+  product_id: string;
+  name: string;
+  is_required: boolean;
+  min_select: number;
+  max_select: number;
+  sort_order: number;
+  options: ProductModifierOption[];
+}
+
+// ============================================================
 // API RESPONSE TYPES
 // ============================================================
 

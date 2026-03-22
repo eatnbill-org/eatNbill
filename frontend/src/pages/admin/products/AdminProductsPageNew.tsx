@@ -11,11 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Package, Tag, Pencil, Trash2, Image as ImageIcon, TrendingUp, AlertCircle } from 'lucide-react';
+import { Plus, Search, Package, Tag, Pencil, Trash2, Image as ImageIcon, TrendingUp, AlertCircle, SlidersHorizontal } from 'lucide-react';
 import CreateCategoryDialog from './components/CreateCategoryDialog';
 import EditCategoryDialog from './components/EditCategoryDialog';
 import CreateProductDialog from './components/CreateProductDialog';
 import EditProductDialog from './components/EditProductDialog';
+import { ModifierManagerDialog } from './components/ModifierManagerDialog';
 import { apiClient } from '@/lib/api-client';
 import {
   Table,
@@ -72,6 +73,8 @@ export default function AdminProductsPage() {
   const [showProfit, setShowProfit] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [modifierDialogProductId, setModifierDialogProductId] = useState<string | null>(null);
+  const [modifierDialogProductName, setModifierDialogProductName] = useState('');
 
   const calculateTotalProfit = () => {
     return products.reduce((acc, product) => {
@@ -459,6 +462,15 @@ export default function AdminProductsPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-10 w-10 text-slate-400 hover:text-violet-500 hover:bg-violet-50 rounded-xl transition-all"
+                                  onClick={() => { setModifierDialogProductId(product.id); setModifierDialogProductName(product.name); }}
+                                  title="Modifier Groups"
+                                >
+                                  <SlidersHorizontal className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   className="h-10 w-10 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all"
                                   onClick={() => handleEditProduct(product.id)}
                                   title="Refine Specs"
@@ -675,6 +687,15 @@ export default function AdminProductsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {modifierDialogProductId && (
+        <ModifierManagerDialog
+          open={!!modifierDialogProductId}
+          onClose={() => setModifierDialogProductId(null)}
+          productId={modifierDialogProductId}
+          productName={modifierDialogProductName}
+        />
+      )}
     </div>
   );
 }

@@ -25,7 +25,7 @@ export interface CreateInternalOrderInput {
   table_number?: string;
   notes?: string;
   source: "MANUAL" | "ZOMATO" | "SWIGGY";
-  items: { product_id: string; quantity: number; notes?: string }[];
+  items: { product_id: string; quantity: number; notes?: string; modifier_option_ids?: string[] }[];
   order_type?: OrderType;
   table_id?: string;
   arrive_at?: string;
@@ -563,6 +563,8 @@ export async function updatePayment(
     payment_reference?: string;
     payment_amount?: number;
     discount_amount?: number;
+    tip_amount?: number;
+    voucher_id?: string;
     paid_at?: string;
   }
 ) {
@@ -587,6 +589,8 @@ export async function updatePayment(
     payment_reference: data.payment_reference,
     payment_amount: data.payment_amount ? new Decimal(data.payment_amount) : undefined,
     discount_amount: data.discount_amount !== undefined ? new Decimal(data.discount_amount) : undefined,
+    tip_amount: data.tip_amount !== undefined ? new Decimal(data.tip_amount) : undefined,
+    voucher_id: data.voucher_id,
     paid_at: data.paid_at ? new Date(data.paid_at) : undefined,
   });
 

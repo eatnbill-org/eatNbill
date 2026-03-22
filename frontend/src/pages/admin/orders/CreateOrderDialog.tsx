@@ -46,15 +46,20 @@ interface CreateOrderDialogProps {
 }
 
 interface OrderItem {
+  key: string; // unique: product_id + sorted modifier option ids
   product_id: string;
   product: Product;
   quantity: number;
-  unit_price: number;
+  unit_price: number; // base price + modifiers delta
+  modifier_option_ids: string[];
+  modifier_label?: string; // human readable summary
 }
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { printKitchenSlip } from '@/lib/print-utils';
 import { Label } from 'recharts';
+import { ModifierPickerDialog } from './ModifierPickerDialog';
+import { fetchProductModifiers } from '@/lib/enterprise-api';
 
 export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrderDialogProps) {
   const { createOrder, creating, orders } = useAdminOrdersStore();
@@ -72,6 +77,9 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [modifierPickerProduct, setModifierPickerProduct] = useState<Product | null>(null);
+  const [modifierPickerBasePrice, setModifierPickerBasePrice] = useState(0);
+  const [productModifierCache, setProductModifierCache] = useState<Record<string, boolean>>({}); // productId -> hasModifiers
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -115,27 +123,56 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       .filter(Boolean)
   );
 
-  const addItem = (product: Product) => {
-    const existingItem = orderItems.find(item => item.product_id === product.id);
+  const addItemDirect = (product: Product, modifierOptionIds: string[] = [], unitPrice?: number) => {
+    const discount = parseFloat(product.discount_percent || '0');
+    const basePrice = parseFloat(product.price) * (1 - discount / 100);
+    const finalPrice = unitPrice ?? basePrice;
+    const sortedIds = [...modifierOptionIds].sort();
+    const itemKey = [product.id, ...sortedIds].join('|');
+    const existingItem = orderItems.find(item => item.key === itemKey);
     if (existingItem) {
       setOrderItems(orderItems.map(item =>
-        item.product_id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        item.key === itemKey ? { ...item, quantity: item.quantity + 1 } : item
       ));
     } else {
-      const discount = parseFloat(product.discount_percent || '0');
-      const discountedPrice = parseFloat(product.price) * (1 - discount / 100);
-      setOrderItems([...orderItems, {
+      setOrderItems(prev => [...prev, {
+        key: itemKey,
         product_id: product.id,
         product,
         quantity: 1,
-        unit_price: discountedPrice,
+        unit_price: finalPrice,
+        modifier_option_ids: modifierOptionIds,
       }]);
     }
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const addItem = async (product: Product) => {
+    // Check modifier cache first
+    let hasModifiers = productModifierCache[product.id];
+    if (hasModifiers === undefined) {
+      try {
+        const groups = await fetchProductModifiers(product.id);
+        hasModifiers = groups.some(g => g.options.length > 0);
+        setProductModifierCache(prev => ({ ...prev, [product.id]: hasModifiers }));
+      } catch {
+        hasModifiers = false;
+        setProductModifierCache(prev => ({ ...prev, [product.id]: false }));
+      }
+    }
+
+    if (hasModifiers) {
+      const discount = parseFloat(product.discount_percent || '0');
+      const basePrice = parseFloat(product.price) * (1 - discount / 100);
+      setModifierPickerBasePrice(basePrice);
+      setModifierPickerProduct(product);
+    } else {
+      addItemDirect(product);
+    }
+  };
+
+  const updateQuantity = (itemKey: string, delta: number) => {
     setOrderItems(orderItems.map(item => {
-      if (item.product_id === productId) {
+      if (item.key === itemKey) {
         const newQuantity = item.quantity + delta;
         return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
       }
@@ -143,8 +180,8 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
     }).filter(item => item.quantity > 0));
   };
 
-  const removeItem = (productId: string) => {
-    setOrderItems(orderItems.filter(item => item.product_id !== productId));
+  const removeItem = (itemKey: string) => {
+    setOrderItems(orderItems.filter(item => item.key !== itemKey));
   };
 
   const totalAmount = orderItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
@@ -167,6 +204,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
         product_id: item.product_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
+        modifier_option_ids: item.modifier_option_ids.length > 0 ? item.modifier_option_ids : undefined,
       })),
     };
 
@@ -179,6 +217,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       setArriveAt('');
       setOrderItems([]);
       setSelectedCategoryId(null);
+      setProductModifierCache({});
       onOpenChange(false);
       if (printSlip) {
         printKitchenSlip(order);
@@ -307,8 +346,9 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 pb-40">
                     {filteredProducts.map(product => {
-                      const orderItem = orderItems.find(item => item.product_id === product.id);
-                      const quantity = orderItem?.quantity || 0;
+                      // Total quantity across all modifier variants
+                      const quantity = orderItems.filter(item => item.product_id === product.id).reduce((s, i) => s + i.quantity, 0);
+                      const simpleOrderItem = orderItems.find(item => item.product_id === product.id && item.modifier_option_ids.length === 0);
                       const discount = parseFloat(product.discount_percent || '0');
 
                       return (
@@ -349,7 +389,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                               <button
                                 type="button"
                                 className="h-5 w-5 flex items-center justify-center text-indigo-500 hover:bg-indigo-50 rounded-md transition-colors bg-slate-50"
-                                onClick={() => updateQuantity(product.id, -1)}
+                                onClick={() => simpleOrderItem ? updateQuantity(simpleOrderItem.key, -1) : void addItem(product)}
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
@@ -456,7 +496,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                       ) : (
                         orderItems.map(item => (
                           <motion.div
-                            key={item.product_id}
+                            key={item.key}
                             layout
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -465,6 +505,9 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                           >
                             <div className="min-w-0 flex-1 flex flex-col gap-0.5">
                               <p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p>
+                              {item.modifier_label && (
+                                <p className="text-[9px] text-violet-500 font-semibold truncate">{item.modifier_label}</p>
+                              )}
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
                                   {item.quantity}x
@@ -476,7 +519,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                               <span className="text-sm font-black text-slate-900 tracking-tight">{formatINR(item.unit_price * item.quantity)}</span>
                               <button
                                 type="button"
-                                onClick={() => removeItem(item.product_id)}
+                                onClick={() => removeItem(item.key)}
                                 className="h-8 w-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -552,5 +595,17 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
         </form>
       </DialogContent>
     </Dialog>
+
+    <ModifierPickerDialog
+      open={!!modifierPickerProduct}
+      onClose={() => setModifierPickerProduct(null)}
+      product={modifierPickerProduct}
+      basePrice={modifierPickerBasePrice}
+      onConfirm={(selectedOptionIds, totalPrice) => {
+        if (modifierPickerProduct) {
+          addItemDirect(modifierPickerProduct, selectedOptionIds, totalPrice);
+        }
+      }}
+    />
   );
 }

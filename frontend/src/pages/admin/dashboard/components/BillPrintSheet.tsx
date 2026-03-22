@@ -110,6 +110,11 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
               <div className="text-[11px] text-slate-500 font-medium max-w-[200px] mx-auto leading-relaxed">
                 {restaurant?.address || "No Address Provided"}
               </div>
+              {restaurant?.fssai_license && (
+                <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                  FSSAI: {restaurant.fssai_license}
+                </div>
+              )}
             </div>
 
             {/* Info */}
@@ -139,6 +144,11 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
                   <div key={i} className="flex text-xs items-start">
                     <div className="flex-1 flex flex-col">
                       <span className="font-bold uppercase leading-tight">{item.name_snapshot}</span>
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <span className="text-[9px] text-slate-500 font-medium leading-tight">
+                          {item.modifiers.map(m => m.name_snapshot).join(', ')}
+                        </span>
+                      )}
                       <span className="text-[10px] text-slate-400 font-medium">@ {formatINR(parseFloat(item.price_snapshot))}</span>
                     </div>
                     <span className="w-10 text-center font-bold">{item.quantity}</span>

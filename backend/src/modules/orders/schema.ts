@@ -5,6 +5,7 @@ export const orderItemSchema = z.object({
   product_id: z.string().uuid(),
   quantity: z.number().int().min(1).max(100),
   notes: z.string().max(200).optional(),
+  modifier_option_ids: z.array(z.string().uuid()).optional(),
 });
 
 // Public order creation (no auth required)
@@ -67,6 +68,8 @@ export const updatePaymentSchema = z.object({
   payment_reference: z.string().max(200).optional(),
   payment_amount: z.number().positive().optional(),
   discount_amount: z.number().nonnegative().optional(),
+  tip_amount: z.number().nonnegative().optional(),
+  voucher_id: z.string().uuid().optional(),
   paid_at: z.string().datetime().optional(),
 });
 
