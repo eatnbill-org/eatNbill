@@ -139,6 +139,7 @@ model Restaurant {
   combo_products         ComboProduct[]
   printer_zones          PrinterZone[]
   modifier_groups        ProductModifierGroup[]
+  ingredients            Ingredient[]
 
   @@unique([slug])
   @@index([tenant_id])
@@ -169,6 +170,7 @@ model Product {
   combo_components         ComboComponent[]
   discount_percent         Decimal?             @default(0) @db.Decimal(5, 2)
   modifier_groups          ProductModifierGroup[]
+  recipe_lines             RecipeLine[]
 
   @@index([category_id])
   @@index([restaurant_id, is_active])
@@ -1474,4 +1476,62 @@ model OrderItemSplit {
 
   @@index([split_id])
   @@map("order_item_splits")
+}
+
+// ============================================================================
+// Inventory Management — Ingredients, Recipes (BOM), Stock Movements
+// ============================================================================
+
+model Ingredient {
+  id              String          @id @default(uuid()) @db.Uuid
+  tenant_id       String          @db.Uuid
+  restaurant_id   String          @db.Uuid
+  name            String
+  unit            String          @default("pcs") // kg, g, L, ml, pcs, dozen
+  current_stock   Decimal         @default(0) @db.Decimal(12, 3)
+  reorder_level   Decimal?        @db.Decimal(12, 3)  // Alert threshold
+  cost_per_unit   Decimal         @default(0) @db.Decimal(10, 4)
+  category        String?
+  is_active       Boolean         @default(true)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  restaurant      Restaurant      @relation(fields: [restaurant_id], references: [id])
+  recipe_lines    RecipeLine[]
+  stock_movements StockMovement[]
+
+  @@index([restaurant_id])
+  @@map("ingredients")
+}
+
+model RecipeLine {
+  id              String      @id @default(uuid()) @db.Uuid
+  product_id      String      @db.Uuid
+  ingredient_id   String      @db.Uuid
+  quantity        Decimal     @db.Decimal(12, 4)  // Amount consumed per 1 unit of product
+  product         Product     @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  ingredient      Ingredient  @relation(fields: [ingredient_id], references: [id])
+
+  @@unique([product_id, ingredient_id])
+  @@index([product_id])
+  @@map("recipe_lines")
+}
+
+model StockMovement {
+  id              String       @id @default(uuid()) @db.Uuid
+  tenant_id       String       @db.Uuid
+  restaurant_id   String       @db.Uuid
+  ingredient_id   String       @db.Uuid
+  type            String       // PURCHASE | CONSUMPTION | WASTE | ADJUSTMENT
+  quantity        Decimal      @db.Decimal(12, 3) // Positive = in, Negative = out
+  unit_cost       Decimal?     @db.Decimal(10, 4)
+  notes           String?
+  order_id        String?      @db.Uuid  // Set when type = CONSUMPTION (auto-deduct)
+  created_by      String?      @db.Uuid  // RestaurantUser id
+  created_at      DateTime     @default(now())
+  ingredient      Ingredient   @relation(fields: [ingredient_id], references: [id])
+
+  @@index([restaurant_id])
+  @@index([ingredient_id])
+  @@index([created_at])
+  @@map("stock_movements")
 }

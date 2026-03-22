@@ -1354,5 +1354,168 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // ---- Inventory Management ----
+
+  // GET /inventory/ingredients — list all ingredients
+  router.get('/inventory/ingredients', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const ingredients = await prisma.ingredient.findMany({
+        where: { restaurant_id: restaurantId },
+        orderBy: { name: 'asc' },
+      });
+      res.json({ data: ingredients });
+    } catch (err) { next(err); }
+  });
+
+  // POST /inventory/ingredients — create ingredient
+  router.post('/inventory/ingredients', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage inventory', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const tenantId: string = req.user?.tenantId;
+      const { name, unit, current_stock, reorder_level, cost_per_unit, category } = req.body;
+      const ingredient = await prisma.ingredient.create({
+        data: {
+          tenant_id: tenantId,
+          restaurant_id: restaurantId,
+          name,
+          unit: unit ?? 'pcs',
+          current_stock: parseFloat(current_stock ?? '0'),
+          reorder_level: reorder_level ? parseFloat(reorder_level) : null,
+          cost_per_unit: parseFloat(cost_per_unit ?? '0'),
+          category: category ?? null,
+        },
+      });
+      res.status(201).json({ data: ingredient });
+    } catch (err) { next(err); }
+  });
+
+  // PATCH /inventory/ingredients/:id — update ingredient
+  router.patch('/inventory/ingredients/:id', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage inventory', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { id } = req.params;
+      const existing = await prisma.ingredient.findFirst({ where: { id, restaurant_id: restaurantId } });
+      if (!existing) throw new AppError('NOT_FOUND', 'Ingredient not found', 404);
+      const data: any = {};
+      const fields = ['name', 'unit', 'reorder_level', 'cost_per_unit', 'category', 'is_active'];
+      for (const f of fields) {
+        if (req.body[f] !== undefined) {
+          if (['reorder_level', 'cost_per_unit'].includes(f)) data[f] = req.body[f] ? parseFloat(req.body[f]) : null;
+          else data[f] = req.body[f];
+        }
+      }
+      const ingredient = await prisma.ingredient.update({ where: { id }, data });
+      res.json({ data: ingredient });
+    } catch (err) { next(err); }
+  });
+
+  // DELETE /inventory/ingredients/:id — delete ingredient
+  router.delete('/inventory/ingredients/:id', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage inventory', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { id } = req.params;
+      await prisma.ingredient.delete({ where: { id, restaurant_id: restaurantId } });
+      res.json({ data: { success: true } });
+    } catch (err) { next(err); }
+  });
+
+  // POST /inventory/ingredients/:id/adjustment — stock adjustment (PURCHASE/WASTE/ADJUSTMENT)
+  router.post('/inventory/ingredients/:id/adjustment', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can adjust stock', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const tenantId: string = req.user?.tenantId;
+      const userId: string = req.user?.userId;
+      const { id } = req.params;
+      const { type, quantity, unit_cost, notes } = req.body;
+      if (!type || quantity === undefined) throw new AppError('VALIDATION_ERROR', 'type and quantity are required', 400);
+      const ingredient = await prisma.ingredient.findFirst({ where: { id, restaurant_id: restaurantId } });
+      if (!ingredient) throw new AppError('NOT_FOUND', 'Ingredient not found', 404);
+      const qty = parseFloat(quantity);
+      const delta = ['PURCHASE', 'ADJUSTMENT'].includes(type) ? Math.abs(qty) : -Math.abs(qty);
+      const [, movement] = await prisma.$transaction([
+        prisma.ingredient.update({ where: { id }, data: { current_stock: { increment: delta } } }),
+        prisma.stockMovement.create({
+          data: {
+            tenant_id: tenantId,
+            restaurant_id: restaurantId,
+            ingredient_id: id,
+            type,
+            quantity: delta,
+            unit_cost: unit_cost ? parseFloat(unit_cost) : null,
+            notes: notes ?? null,
+            created_by: userId ?? null,
+          },
+        }),
+      ]);
+      res.status(201).json({ data: movement });
+    } catch (err) { next(err); }
+  });
+
+  // GET /inventory/ingredients/:id/movements — movement history
+  router.get('/inventory/ingredients/:id/movements', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const { id } = req.params;
+      const movements = await prisma.stockMovement.findMany({
+        where: { ingredient_id: id, restaurant_id: restaurantId },
+        orderBy: { created_at: 'desc' },
+        take: 100,
+      });
+      res.json({ data: movements });
+    } catch (err) { next(err); }
+  });
+
+  // GET /inventory/recipes/:productId — get recipe for a product
+  router.get('/inventory/recipes/:productId', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const { productId } = req.params;
+      const lines = await prisma.recipeLine.findMany({
+        where: { product: { restaurant_id: restaurantId }, product_id: productId },
+        include: { ingredient: { select: { id: true, name: true, unit: true, cost_per_unit: true } } },
+      });
+      res.json({ data: lines });
+    } catch (err) { next(err); }
+  });
+
+  // PUT /inventory/recipes/:productId — set/replace recipe for a product
+  router.put('/inventory/recipes/:productId', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage recipes', 403);
+      const { productId } = req.params;
+      const { lines } = req.body as { lines: { ingredient_id: string; quantity: number }[] };
+      await prisma.$transaction([
+        prisma.recipeLine.deleteMany({ where: { product_id: productId } }),
+        ...lines.map((l) => prisma.recipeLine.create({ data: { product_id: productId, ingredient_id: l.ingredient_id, quantity: l.quantity } })),
+      ]);
+      const updated = await prisma.recipeLine.findMany({
+        where: { product_id: productId },
+        include: { ingredient: { select: { id: true, name: true, unit: true, cost_per_unit: true } } },
+      });
+      res.json({ data: updated });
+    } catch (err) { next(err); }
+  });
+
+  // GET /inventory/low-stock — ingredients below reorder level
+  router.get('/inventory/low-stock', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const ingredients = await prisma.ingredient.findMany({
+        where: {
+          restaurant_id: restaurantId,
+          is_active: true,
+          reorder_level: { not: null },
+        },
+      });
+      const lowStock = ingredients.filter((i) => i.reorder_level !== null && Number(i.current_stock) <= Number(i.reorder_level));
+      res.json({ data: lowStock });
+    } catch (err) { next(err); }
+  });
+
   return router;
 }
