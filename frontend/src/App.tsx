@@ -52,6 +52,7 @@ const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage
 const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
 const VouchersPage = lazy(() => import("./pages/admin/billing/VouchersPage"));
 const LoyaltyPage = lazy(() => import("./pages/admin/billing/LoyaltyPage"));
+const PricingRulesPage = lazy(() => import("./pages/admin/billing/PricingRulesPage"));
 const PrinterZonesPage = lazy(() => import("./pages/admin/adminSettings/PrinterZonesPage"));
 const StaffAnalyticsPage = lazy(() => import("./pages/admin/analytics/StaffAnalyticsPage"));
 const FeedbackPage = lazy(() => import("./pages/admin/analytics/FeedbackPage"));
@@ -137,6 +138,7 @@ const App = () => (
                 <Route path="exports" element={<AdminExportCenterPage />} />
                 <Route path="vouchers" element={<VouchersPage />} />
                 <Route path="loyalty" element={<LoyaltyPage />} />
+                <Route path="pricing-rules" element={<PricingRulesPage />} />
 
                 {/* DEBUG: Restaurant Slug */}
                 <Route path="debug/slug" element={<RestaurantSlugDebugPage />} />

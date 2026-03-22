@@ -19,7 +19,8 @@ import {
     Undo2,
     AlertCircle,
     RefreshCw,
-    Gift
+    Gift,
+    Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const [loyaltyBalance, setLoyaltyBalance] = useState<{ points_balance: number; program: { redemption_rate: string; min_points_to_redeem: number } } | null>(null);
     const [loyaltyPointsInput, setLoyaltyPointsInput] = useState('');
     const [loyaltyApplied, setLoyaltyApplied] = useState(false);
+    const [happyHourRule, setHappyHourRule] = useState<{ name: string; discount_amount: number } | null>(null);
 
     const handleApplyVoucher = async () => {
         if (!voucherInput.trim() || !order) return;
@@ -94,6 +96,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             setLoyaltyBalance(null);
             setLoyaltyPointsInput('');
             setLoyaltyApplied(false);
+            setHappyHourRule(null);
             // Fetch loyalty balance if order has a customer
             if (order.customer_id) {
                 apiClient.get<{ data: any }>(`/restaurant/loyalty/customers/${order.customer_id}`)
@@ -103,6 +106,14 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                     })
                     .catch(() => { /* no loyalty data */ });
             }
+            // Check for active happy hour pricing rules
+            const orderTotal = parseFloat(order.total_amount) + parseFloat(order.discount_amount || '0') - parseFloat(order.tip_amount || '0');
+            apiClient.get<{ data: any }>(`/restaurant/pricing-rules/evaluate?amount=${orderTotal}`)
+                .then((res) => {
+                    const d = (res.data as any)?.data;
+                    if (d) setHappyHourRule({ name: d.rule.name, discount_amount: d.discount_amount });
+                })
+                .catch(() => { /* ignore */ });
         }
     }, [open, order]);
 
@@ -111,7 +122,8 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const currentTip = parseFloat(tip) || 0;
     const loyaltyPoints = loyaltyApplied ? (parseInt(loyaltyPointsInput) || 0) : 0;
     const loyaltyDiscount = loyaltyBalance ? loyaltyPoints * parseFloat(loyaltyBalance.program?.redemption_rate || '0') : 0;
-    const finalPayable = Math.max(0, baseTotal - currentDiscount - loyaltyDiscount + currentTip);
+    const happyHourDiscount = happyHourRule ? happyHourRule.discount_amount : 0;
+    const finalPayable = Math.max(0, baseTotal - currentDiscount - loyaltyDiscount - happyHourDiscount + currentTip);
 
     const handleApplyLoyalty = () => {
         const pts = parseInt(loyaltyPointsInput) || 0;
@@ -153,7 +165,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                 payment_status: isCreditView ? 'PENDING' : 'PAID',
                 payment_method: currentMethod as PaymentMethod,
                 payment_amount: finalPayable,
-                discount_amount: currentDiscount + loyaltyDiscount,
+                discount_amount: currentDiscount + loyaltyDiscount + happyHourDiscount,
                 tip_amount: currentTip || undefined,
                 voucher_id: appliedVoucher?.voucher_id,
                 loyalty_points_to_redeem: loyaltyApplied && loyaltyPoints > 0 ? loyaltyPoints : undefined,
@@ -351,6 +363,17 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                             <span>ORDER TOTAL</span>
                                             <span className="text-slate-900">{formatINR(baseTotal)}</span>
                                         </div>
+
+                                        {/* Happy Hour Banner */}
+                                        {happyHourRule && (
+                                            <div className="flex items-center justify-between bg-amber-50 border border-amber-100 px-3 py-2 rounded-xl">
+                                                <div className="flex items-center gap-2 text-amber-700 text-xs font-black">
+                                                    <Clock className="h-3.5 w-3.5" />
+                                                    {happyHourRule.name} — {formatINR(happyHourRule.discount_amount)} off
+                                                </div>
+                                                <button type="button" className="text-amber-400 hover:text-amber-600 text-[10px] font-black" onClick={() => setHappyHourRule(null)}>Remove</button>
+                                            </div>
+                                        )}
 
                                         {/* Voucher Code */}
                                         <div className="flex gap-2">
