@@ -115,6 +115,11 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
                   FSSAI: {restaurant.fssai_license}
                 </div>
               )}
+              {restaurant?.gst_number && (
+                <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                  GSTIN: {restaurant.gst_number}
+                </div>
+              )}
             </div>
 
             {/* Info */}
@@ -160,15 +165,37 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
 
             {/* Totals */}
             <div className="border-t-2 border-slate-900 pt-6 space-y-3 mt-auto">
-              <div className="flex justify-between items-center text-sm font-bold">
-                <span className="text-slate-500 uppercase tracking-wider">{billLabel("subtotal")}</span>
-                <span>{formatINR(parseFloat(order.total_amount))}</span>
-              </div>
-
-              <div className="flex justify-between items-center border-t border-slate-200 pt-3">
-                <span className="text-lg font-black uppercase tracking-tighter text-black">{billLabel("totalPayable")}</span>
-                <span className="text-2xl font-black tracking-tighter text-black">{formatINR(parseFloat(order.total_amount))}</span>
-              </div>
+              {(() => {
+                const subtotal = parseFloat(order.total_amount);
+                const discount = order.discount_amount ? parseFloat(order.discount_amount as string) : 0;
+                const tip = order.tip_amount ? parseFloat(order.tip_amount as string) : 0;
+                const afterDiscount = subtotal - discount;
+                const total = afterDiscount + tip;
+                return (
+                  <>
+                    <div className="flex justify-between items-center text-sm font-bold">
+                      <span className="text-slate-500 uppercase tracking-wider">{billLabel("subtotal")}</span>
+                      <span>{formatINR(subtotal)}</span>
+                    </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between items-center text-sm font-bold text-emerald-700">
+                        <span className="uppercase tracking-wider">Discount</span>
+                        <span>- {formatINR(discount)}</span>
+                      </div>
+                    )}
+                    {tip > 0 && (
+                      <div className="flex justify-between items-center text-sm font-bold">
+                        <span className="text-slate-500 uppercase tracking-wider">Tip</span>
+                        <span>{formatINR(tip)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center border-t border-slate-200 pt-3">
+                      <span className="text-lg font-black uppercase tracking-tighter text-black">{billLabel("totalPayable")}</span>
+                      <span className="text-2xl font-black tracking-tighter text-black">{formatINR(total)}</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Footer */}
