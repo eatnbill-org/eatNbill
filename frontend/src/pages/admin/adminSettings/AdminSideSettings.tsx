@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2 } from "lucide-react";
+import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2, Percent } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { SecuritySettings } from "./components/SecuritySettings";
 import { getSoundSettings, updateSoundSetting, setAllSoundsEnabled, areAllSoundsEnabled, testSound, type SoundSettings } from "@/lib/sound-notification";
@@ -33,6 +34,34 @@ export default function AdminSideSettings() {
 
     // Sound settings
     const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings());
+
+    // Billing settings (server-side)
+    const [serviceChargePercent, setServiceChargePercent] = React.useState<string>("");
+    const [tipsEnabled, setTipsEnabled] = React.useState(false);
+    const [billingSaving, setBillingSaving] = React.useState(false);
+
+    React.useEffect(() => {
+        void apiClient.get<{ service_charge_percent?: number | null; tips_enabled?: boolean }>("/restaurant/settings")
+            .then(r => {
+                const s = r.data as any;
+                setServiceChargePercent(s?.service_charge_percent != null ? String(s.service_charge_percent) : "");
+                setTipsEnabled(s?.tips_enabled ?? false);
+            })
+            .catch(() => void 0);
+    }, []);
+
+    const handleSaveBillingSettings = async () => {
+        setBillingSaving(true);
+        try {
+            await apiClient.patch("/restaurant/settings", {
+                service_charge_percent: serviceChargePercent ? parseFloat(serviceChargePercent) : null,
+                tips_enabled: tipsEnabled,
+            });
+            toast.success("Billing settings saved");
+        } catch {
+            toast.error("Failed to save billing settings");
+        } finally { setBillingSaving(false); }
+    };
 
     const updatePrefs = (section: 'sidebar' | 'dashboardFields', key: string, val: boolean) => {
         dispatch({
@@ -207,7 +236,40 @@ export default function AdminSideSettings() {
 
                     <SecuritySettings />
 
-                    {/* 4. CUSTOMER ORDERING RULES */}
+                    {/* 4. BILLING SETTINGS (Service Charge + Tips) */}
+                    <Card className="shadow-sm border border-slate-200">
+                        <CardHeader className="py-3 bg-emerald-50/50 border-b">
+                            <CardTitle className="text-base flex items-center gap-2 text-emerald-700"><Percent className="w-4 h-4" /> Billing Configuration</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Service Charge (%)</Label>
+                                    <Input
+                                        type="number" min={0} max={30} step={0.5}
+                                        value={serviceChargePercent}
+                                        onChange={e => setServiceChargePercent(e.target.value)}
+                                        placeholder="e.g. 10 (leave blank to disable)"
+                                        className="h-9 rounded-xl text-sm"
+                                    />
+                                    <p className="text-[10px] text-slate-400">Auto-added to bills as a separate line item</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Tips</Label>
+                                    <div className="flex items-center gap-3 pt-1">
+                                        <Switch checked={tipsEnabled} onCheckedChange={setTipsEnabled} />
+                                        <span className="text-sm text-slate-600">{tipsEnabled ? "Enabled" : "Disabled"}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400">Allow cashier to collect tip at payment</p>
+                                </div>
+                            </div>
+                            <Button size="sm" onClick={() => void handleSaveBillingSettings()} disabled={billingSaving} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700">
+                                {billingSaving ? "Saving..." : "Save Billing Settings"}
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* 5. CUSTOMER ORDERING RULES */}
                     <Card className="shadow-sm border border-slate-200">
                         <CardHeader className="py-3 bg-indigo-50/50 border-b">
                             <CardTitle className="text-base flex items-center gap-2 text-indigo-700"><SmartphoneIcon className="w-4 h-4" /> Ordering Rules</CardTitle>

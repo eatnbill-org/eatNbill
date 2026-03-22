@@ -190,6 +190,8 @@ export async function updateSettings(
     opening_hours?: any;
     currency?: string;
     tax_included?: boolean;
+    service_charge_percent?: number | null;
+    tips_enabled?: boolean;
   }
 ) {
   const settings = await upsertRestaurantSettings(restaurantId, data);
