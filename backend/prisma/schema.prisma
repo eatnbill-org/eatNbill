@@ -140,6 +140,7 @@ model Restaurant {
   printer_zones          PrinterZone[]
   modifier_groups        ProductModifierGroup[]
   ingredients            Ingredient[]
+  suppliers              Supplier[]
 
   @@unique([slug])
   @@index([tenant_id])
@@ -1496,8 +1497,9 @@ model Ingredient {
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt
   restaurant      Restaurant      @relation(fields: [restaurant_id], references: [id])
-  recipe_lines    RecipeLine[]
-  stock_movements StockMovement[]
+  recipe_lines           RecipeLine[]
+  stock_movements        StockMovement[]
+  purchase_order_lines   PurchaseOrderLine[]
 
   @@index([restaurant_id])
   @@map("ingredients")
@@ -1534,4 +1536,66 @@ model StockMovement {
   @@index([ingredient_id])
   @@index([created_at])
   @@map("stock_movements")
+}
+
+// ============================================================================
+// Supplier / Vendor Management with Purchase Orders
+// ============================================================================
+
+model Supplier {
+  id              String          @id @default(uuid()) @db.Uuid
+  tenant_id       String          @db.Uuid
+  restaurant_id   String          @db.Uuid
+  name            String
+  contact_name    String?
+  phone           String?
+  email           String?
+  address         String?
+  gst_number      String?
+  payment_terms   String?         // e.g. "Net 30", "COD"
+  is_active       Boolean         @default(true)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  restaurant      Restaurant      @relation(fields: [restaurant_id], references: [id])
+  purchase_orders PurchaseOrder[]
+
+  @@index([restaurant_id])
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id              String              @id @default(uuid()) @db.Uuid
+  tenant_id       String              @db.Uuid
+  restaurant_id   String              @db.Uuid
+  supplier_id     String              @db.Uuid
+  po_number       String
+  status          String              @default("DRAFT")  // DRAFT | SENT | RECEIVED | CANCELLED
+  order_date      DateTime            @default(now())
+  expected_date   DateTime?
+  received_date   DateTime?
+  total_amount    Decimal             @default(0) @db.Decimal(10, 2)
+  notes           String?
+  created_at      DateTime            @default(now())
+  updated_at      DateTime            @updatedAt
+  supplier        Supplier            @relation(fields: [supplier_id], references: [id])
+  lines           PurchaseOrderLine[]
+
+  @@index([restaurant_id])
+  @@index([supplier_id])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id              String         @id @default(uuid()) @db.Uuid
+  po_id           String         @db.Uuid
+  ingredient_id   String         @db.Uuid
+  quantity        Decimal        @db.Decimal(12, 3)
+  unit_cost       Decimal        @db.Decimal(10, 4)
+  total_cost      Decimal        @db.Decimal(10, 2)
+  received_qty    Decimal        @default(0) @db.Decimal(12, 3)
+  purchase_order  PurchaseOrder  @relation(fields: [po_id], references: [id], onDelete: Cascade)
+  ingredient      Ingredient     @relation(fields: [ingredient_id], references: [id])
+
+  @@index([po_id])
+  @@map("purchase_order_lines")
 }
