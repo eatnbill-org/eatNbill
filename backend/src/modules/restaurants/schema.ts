@@ -37,6 +37,8 @@ export const updateRestaurantSettingsSchema = z
     opening_hours: z.any().optional(),
     currency: z.string().min(1).max(10).optional(),
     tax_included: z.boolean().optional(),
+    service_charge_percent: z.number().min(0).max(30).nullable().optional(),
+    tips_enabled: z.boolean().optional(),
   })
   .strict();
 

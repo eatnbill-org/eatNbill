@@ -152,6 +152,8 @@ export async function upsertRestaurantSettings(
     opening_hours?: Prisma.InputJsonValue | null;
     currency?: string;
     tax_included?: boolean;
+    service_charge_percent?: number | null;
+    tips_enabled?: boolean;
   }
 ) {
   return prisma.restaurantSettings.upsert({
@@ -161,11 +163,15 @@ export async function upsertRestaurantSettings(
       opening_hours: data.opening_hours ?? undefined,
       currency: data.currency ?? 'INR',
       tax_included: data.tax_included ?? true,
+      service_charge_percent: data.service_charge_percent ?? undefined,
+      tips_enabled: data.tips_enabled ?? undefined,
     },
     update: {
       opening_hours: data.opening_hours ?? undefined,
       currency: data.currency ?? undefined,
       tax_included: data.tax_included ?? undefined,
+      ...(data.service_charge_percent !== undefined && { service_charge_percent: data.service_charge_percent }),
+      ...(data.tips_enabled !== undefined && { tips_enabled: data.tips_enabled }),
     },
   });
 }
