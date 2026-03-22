@@ -598,6 +598,18 @@ export function restaurantRoutes() {
   // RESERVATION DEPOSIT ROUTES
   // ========================================
 
+  router.get('/table-reservations/:id/deposits', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const { id: reservationId } = req.params;
+      const deposits = await prisma.reservationDeposit.findMany({
+        where: { reservation_id: reservationId, restaurant_id: restaurantId },
+        orderBy: { created_at: 'desc' },
+      });
+      res.json({ data: deposits });
+    } catch (err) { next(err); }
+  });
+
   router.post('/table-reservations/:id/deposit', async (req: any, res: any, next: any) => {
     try {
       if (!canManageStaff(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage deposits', 403);
