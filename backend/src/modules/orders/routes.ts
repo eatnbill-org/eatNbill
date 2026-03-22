@@ -310,5 +310,123 @@ export function orderRoutes() {
     }
   );
 
+  // ---- Split Bill ----
+  // POST /:id/splits — create splits for an order
+  router.post(
+    "/:id/splits",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    async (req: any, res: any, next: any) => {
+      try {
+        const { id: orderId } = req.params;
+        const restaurantId: string = req.user?.restaurantId;
+        const { split_type = 'EQUAL', splits } = req.body as {
+          split_type?: string;
+          splits: { payer_label: string; amount: number; item_assignments?: { order_item_id: string; quantity: number; amount: number }[] }[];
+        };
+
+        const order = await prisma.order.findFirst({ where: { id: orderId, restaurant_id: restaurantId } });
+        if (!order) throw new AppError('NOT_FOUND', 'Order not found', 404);
+        if (order.payment_status === 'PAID') throw new AppError('VALIDATION_ERROR', 'Order already paid', 400);
+
+        // Delete any existing splits for this order
+        await prisma.billSplit.deleteMany({ where: { order_id: orderId } });
+
+        const created = await prisma.$transaction(
+          splits.map((s) =>
+            prisma.billSplit.create({
+              data: {
+                order_id: orderId,
+                split_type: split_type as any,
+                payer_label: s.payer_label,
+                amount: s.amount,
+                item_splits: s.item_assignments
+                  ? {
+                      create: s.item_assignments.map((ia) => ({
+                        order_item_id: ia.order_item_id,
+                        quantity: ia.quantity,
+                        amount: ia.amount,
+                      })),
+                    }
+                  : undefined,
+              },
+              include: { item_splits: true },
+            })
+          )
+        );
+
+        res.status(201).json({ data: created });
+      } catch (err) { next(err); }
+    }
+  );
+
+  // GET /:id/splits — list splits for an order
+  router.get(
+    "/:id/splits",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    async (req: any, res: any, next: any) => {
+      try {
+        const { id: orderId } = req.params;
+        const restaurantId: string = req.user?.restaurantId;
+        const order = await prisma.order.findFirst({ where: { id: orderId, restaurant_id: restaurantId } });
+        if (!order) throw new AppError('NOT_FOUND', 'Order not found', 404);
+        const splits = await prisma.billSplit.findMany({
+          where: { order_id: orderId },
+          include: { item_splits: { include: { order_item: { select: { name_snapshot: true, quantity: true } } } } },
+          orderBy: { created_at: 'asc' },
+        });
+        res.json({ data: splits });
+      } catch (err) { next(err); }
+    }
+  );
+
+  // PATCH /:id/splits/:splitId — mark a split as paid
+  router.patch(
+    "/:id/splits/:splitId",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    async (req: any, res: any, next: any) => {
+      try {
+        const { id: orderId, splitId } = req.params;
+        const restaurantId: string = req.user?.restaurantId;
+        const { payment_method, payment_status } = req.body;
+
+        const order = await prisma.order.findFirst({ where: { id: orderId, restaurant_id: restaurantId } });
+        if (!order) throw new AppError('NOT_FOUND', 'Order not found', 404);
+
+        const split = await prisma.billSplit.update({
+          where: { id: splitId },
+          data: {
+            payment_method,
+            payment_status: payment_status ?? 'PAID',
+            paid_at: payment_status === 'PAID' ? new Date() : undefined,
+          },
+        });
+
+        // If all splits are paid, mark order as PAID
+        const allSplits = await prisma.billSplit.findMany({ where: { order_id: orderId } });
+        const allPaid = allSplits.every((s) => s.payment_status === 'PAID');
+        if (allPaid) {
+          const totalPaid = allSplits.reduce((sum, s) => sum + Number(s.amount), 0);
+          await prisma.order.update({
+            where: { id: orderId },
+            data: {
+              payment_status: 'PAID',
+              payment_method: payment_method ?? 'CASH',
+              payment_amount: totalPaid,
+              paid_at: new Date(),
+            },
+          });
+        }
+
+        res.json({ data: split });
+      } catch (err) { next(err); }
+    }
+  );
+
   return router;
 }
