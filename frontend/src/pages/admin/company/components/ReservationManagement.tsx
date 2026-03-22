@@ -1,7 +1,8 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { CalendarClock, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, Pencil, Plus, Trash2, CreditCard } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +68,56 @@ export function ReservationManagement({
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<TableReservation | null>(null);
+
+  // Deposit dialog
+  interface DepositRecord { id: string; amount: string; status: string; payment_ref: string | null; provider: string | null; notes: string | null; created_at: string; }
+  const [depositDialogOpen, setDepositDialogOpen] = React.useState(false);
+  const [depositReservation, setDepositReservation] = React.useState<TableReservation | null>(null);
+  const [deposits, setDeposits] = React.useState<DepositRecord[]>([]);
+  const [depositsLoading, setDepositsLoading] = React.useState(false);
+  const [newDepositAmount, setNewDepositAmount] = React.useState("");
+  const [newDepositRef, setNewDepositRef] = React.useState("");
+  const [newDepositNotes, setNewDepositNotes] = React.useState("");
+  const [savingDeposit, setSavingDeposit] = React.useState(false);
+
+  const openDepositDialog = async (res: TableReservation) => {
+    setDepositReservation(res);
+    setDeposits([]);
+    setNewDepositAmount(""); setNewDepositRef(""); setNewDepositNotes("");
+    setDepositDialogOpen(true);
+    setDepositsLoading(true);
+    try {
+      const r = await apiClient.get<{ data: DepositRecord[] }>(`/restaurant/table-reservations/${res.id}/deposits`);
+      setDeposits((r.data as any)?.data ?? []);
+    } catch { /* ignore */ } finally { setDepositsLoading(false); }
+  };
+
+  const handleAddDeposit = async () => {
+    if (!depositReservation || !newDepositAmount) return;
+    setSavingDeposit(true);
+    try {
+      await apiClient.post(`/restaurant/table-reservations/${depositReservation.id}/deposit`, {
+        amount: parseFloat(newDepositAmount), payment_ref: newDepositRef || undefined, provider: "MANUAL", notes: newDepositNotes || undefined,
+      });
+      toast.success("Deposit recorded");
+      const r = await apiClient.get<{ data: DepositRecord[] }>(`/restaurant/table-reservations/${depositReservation.id}/deposits`);
+      setDeposits((r.data as any)?.data ?? []);
+      setNewDepositAmount(""); setNewDepositRef(""); setNewDepositNotes("");
+    } catch (e: any) { toast.error(e.message || "Failed to record deposit"); }
+    finally { setSavingDeposit(false); }
+  };
+
+  const updateDepositStatus = async (depositId: string, status: string) => {
+    if (!depositReservation) return;
+    try {
+      await apiClient.patch(`/restaurant/table-reservations/${depositReservation.id}/deposit/${depositId}`, { status });
+      const r = await apiClient.get<{ data: DepositRecord[] }>(`/restaurant/table-reservations/${depositReservation.id}/deposits`);
+      setDeposits((r.data as any)?.data ?? []);
+      toast.success("Deposit updated");
+    } catch (e: any) { toast.error(e.message || "Failed to update"); }
+  };
+
+  const DEPOSIT_STATUS_COLORS: Record<string, string> = { HELD: "text-amber-700 bg-amber-50", CAPTURED: "text-emerald-700 bg-emerald-50", RELEASED: "text-slate-600 bg-slate-100", REFUNDED: "text-rose-700 bg-rose-50" };
   const [availability, setAvailability] = React.useState<Record<string, boolean>>({});
 
   const [tableId, setTableId] = React.useState("");
@@ -272,6 +323,9 @@ export function ReservationManagement({
               </div>
             </div>
             <div className="flex items-center justify-end gap-1">
+              <Button size="icon" variant="ghost" title="Manage Deposit" onClick={() => void openDepositDialog(reservation)}>
+                <CreditCard className="h-4 w-4 text-violet-500" />
+              </Button>
               <Button size="icon" variant="ghost" onClick={() => handleOpenEdit(reservation)}>
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -328,6 +382,9 @@ export function ReservationManagement({
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="inline-flex items-center gap-1">
+                    <Button size="icon" variant="ghost" title="Manage Deposit" onClick={() => void openDepositDialog(reservation)}>
+                      <CreditCard className="h-4 w-4 text-violet-500" />
+                    </Button>
                     <Button size="icon" variant="ghost" onClick={() => handleOpenEdit(reservation)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -348,6 +405,68 @@ export function ReservationManagement({
           </TableBody>
         </Table>
       </div>
+
+      {/* Deposit Management Dialog */}
+      <Dialog open={depositDialogOpen} onOpenChange={setDepositDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-violet-500" />
+              Deposit — {depositReservation?.customer_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Existing deposits */}
+            {depositsLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-2">Loading...</p>
+            ) : deposits.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-2">No deposits yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {deposits.map(d => (
+                  <div key={d.id} className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
+                    <div>
+                      <p className="font-bold">₹{Number(d.amount).toFixed(2)}</p>
+                      {d.payment_ref && <p className="text-xs text-muted-foreground">Ref: {d.payment_ref}</p>}
+                      {d.notes && <p className="text-xs text-muted-foreground">{d.notes}</p>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${DEPOSIT_STATUS_COLORS[d.status] ?? "bg-slate-100 text-slate-600"}`}>{d.status}</span>
+                      <select value={d.status}
+                        onChange={e => void updateDepositStatus(d.id, e.target.value)}
+                        className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white h-8">
+                        {["HELD", "CAPTURED", "RELEASED", "REFUNDED"].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new deposit */}
+            <div className="border-t border-border pt-3 space-y-3">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Record New Deposit</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Amount (₹)</Label>
+                  <Input type="number" value={newDepositAmount} onChange={e => setNewDepositAmount(e.target.value)} className="rounded-xl h-9" placeholder="500" min={1} step={1} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Payment Ref (optional)</Label>
+                  <Input value={newDepositRef} onChange={e => setNewDepositRef(e.target.value)} className="rounded-xl h-9" placeholder="Txn ID / Cheque #" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Notes (optional)</Label>
+                <Input value={newDepositNotes} onChange={e => setNewDepositNotes(e.target.value)} className="rounded-xl h-9" placeholder="e.g. Cash received at front desk" />
+              </div>
+              <Button onClick={() => void handleAddDeposit()} disabled={savingDeposit || !newDepositAmount} className="w-full rounded-xl">
+                {savingDeposit ? "Saving..." : "Record Deposit"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
