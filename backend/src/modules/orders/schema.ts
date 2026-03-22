@@ -70,6 +70,7 @@ export const updatePaymentSchema = z.object({
   discount_amount: z.number().nonnegative().optional(),
   tip_amount: z.number().nonnegative().optional(),
   voucher_id: z.string().uuid().optional(),
+  loyalty_points_to_redeem: z.number().int().nonnegative().optional(),
   paid_at: z.string().datetime().optional(),
 });
 
