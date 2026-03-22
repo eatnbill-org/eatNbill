@@ -570,6 +570,7 @@ model IntegrationConfig {
   restaurant              Restaurant              @relation(fields: [restaurant_id], references: [id])
   menu_maps               IntegrationMenuMap[]
   logs                    IntegrationWebhookLog[]
+  menu_sync_logs          MenuSyncLog[]
 
   @@unique([restaurant_id, platform])
   @@unique([external_restaurant_id, platform])
@@ -617,6 +618,22 @@ model IntegrationWebhookLog {
   @@index([received_at])
   @@index([external_event_id, platform])
   @@map("integration_webhook_logs")
+}
+
+model MenuSyncLog {
+  id             String            @id @default(uuid()) @db.Uuid
+  integration_id String            @db.Uuid
+  triggered_by   String?           @db.Uuid
+  status         String            @default("PENDING") // PENDING | SUCCESS | FAILED
+  items_synced   Int               @default(0)
+  error_message  String?
+  started_at     DateTime          @default(now())
+  completed_at   DateTime?
+  integration    IntegrationConfig @relation(fields: [integration_id], references: [id], onDelete: Cascade)
+
+  @@index([integration_id])
+  @@index([started_at])
+  @@map("menu_sync_logs")
 }
 
 enum Role {
@@ -1143,6 +1160,10 @@ model RestaurantTable {
   seats         Int
   is_active     Boolean        @default(true)
   table_status  TableStatus    @default(AVAILABLE)
+  // Floor plan positioning (optional — null = not placed on floor plan)
+  x_position    Int?           // Grid column position (0-based)
+  y_position    Int?           // Grid row position (0-based)
+  shape         String?        // RECTANGLE | CIRCLE (default RECTANGLE)
   created_at    DateTime       @default(now())
   restaurant    Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   outlet        RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)

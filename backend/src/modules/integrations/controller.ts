@@ -412,6 +412,66 @@ export async function getWebhookLogDetail(
 }
 
 // ==========================================
+// Menu Sync (Outbound)
+// ==========================================
+
+/**
+ * POST /integrations/config/:id/menu-sync
+ * Trigger menu sync to aggregator platform
+ */
+export async function triggerMenuSync(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { tenantId, userId } = req.user!;
+    const configId = req.params.id as string | undefined;
+
+    if (!configId || Array.isArray(configId)) {
+      return next(new AppError("VALIDATION_ERROR", "Config ID required", 400));
+    }
+
+    const result = await service.syncMenu(configId, tenantId, userId);
+
+    return res.json({
+      success: result.success,
+      message: result.success
+        ? `Menu synced — ${result.items_synced} items pushed`
+        : "Menu sync failed",
+      data: { items_synced: result.items_synced, log_id: result.log_id },
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/**
+ * GET /integrations/config/:id/menu-sync/logs
+ * List menu sync logs for a config
+ */
+export async function listMenuSyncLogs(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { tenantId } = req.user!;
+    const configId = req.params.id as string | undefined;
+
+    if (!configId || Array.isArray(configId)) {
+      return next(new AppError("VALIDATION_ERROR", "Config ID required", 400));
+    }
+
+    const logs = await service.listMenuSyncLogs(configId, tenantId);
+
+    return res.json({ success: true, data: logs });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+// ==========================================
 // Replay (SUPER_ADMIN only)
 // ==========================================
 

@@ -1,9 +1,11 @@
 import { prisma } from "../../utils/prisma";
 import { encrypt, decrypt } from "../../utils/crypto";
+import {
+  Prisma,
+} from "@prisma/client";
 import type {
   IntegrationPlatform,
   WebhookLogStatus,
-  Prisma,
 } from "@prisma/client";
 
 // ==========================================
@@ -454,6 +456,94 @@ export async function getWebhookLogForReplay(logId: string) {
           },
         },
       },
+    },
+  });
+}
+
+// ==========================================
+// Menu Sync Logs
+// ==========================================
+
+/**
+ * Get a config with its menu maps and product details (for sync)
+ */
+export async function getConfigWithMenuMaps(configId: string) {
+  return prisma.integrationConfig.findUnique({
+    where: { id: configId },
+    include: {
+      menu_maps: {
+        where: { is_active: true },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              price: true,
+              is_active: true,
+              category: { select: { name: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Create a menu sync log entry
+ */
+export async function createMenuSyncLog(data: {
+  integration_id: string;
+  triggered_by?: string;
+}) {
+  return prisma.menuSyncLog.create({
+    data: {
+      integration_id: data.integration_id,
+      triggered_by: data.triggered_by,
+      status: "PENDING",
+    },
+  });
+}
+
+/**
+ * Update a menu sync log entry
+ */
+export async function updateMenuSyncLog(
+  logId: string,
+  data: {
+    status: "SUCCESS" | "FAILED";
+    items_synced?: number;
+    error_message?: string;
+  }
+) {
+  return prisma.menuSyncLog.update({
+    where: { id: logId },
+    data: {
+      status: data.status,
+      items_synced: data.items_synced ?? 0,
+      error_message: data.error_message,
+      completed_at: new Date(),
+    },
+  });
+}
+
+/**
+ * List menu sync logs for an integration config
+ */
+export async function listMenuSyncLogs(integrationId: string, limit = 20) {
+  return prisma.menuSyncLog.findMany({
+    where: { integration_id: integrationId },
+    orderBy: { started_at: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      status: true,
+      items_synced: true,
+      error_message: true,
+      started_at: true,
+      completed_at: true,
+      triggered_by: true,
     },
   });
 }

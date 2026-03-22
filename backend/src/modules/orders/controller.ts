@@ -738,7 +738,8 @@ export async function voidOrderItem(
   try {
     const restaurantId = (req as any).restaurantId;
     const userId = (req as any).user?.restaurantUserId || (req as any).user?.id;
-    const { id: orderId, itemId } = req.params;
+    const orderId = req.params.id as string;
+    const itemId = req.params.itemId as string;
     const { action, reason } = req.body as { action: 'VOIDED' | 'COMPED'; reason?: string };
 
     if (!action || !['VOIDED', 'COMPED'].includes(action)) {
@@ -746,7 +747,7 @@ export async function voidOrderItem(
     }
 
     const order = await prisma.order.findFirst({
-      where: { id: orderId, restaurant_id: restaurantId },
+      where: { id: orderId, restaurant_id: restaurantId as string },
       select: { id: true },
     });
     if (!order) {

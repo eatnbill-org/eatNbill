@@ -391,7 +391,12 @@ export async function createExportJob(data: {
     | 'RESERVATIONS'
     | 'DAY_END'
     | 'GST_INVOICES'
-    | 'TAX_SUMMARY';
+    | 'TAX_SUMMARY'
+    | 'GSTR1_SUMMARY'
+    | 'GSTR3B_SUMMARY'
+    | 'WAITER_PERFORMANCE'
+    | 'PAYROLL'
+    | 'AGGREGATOR_COMMISSION';
   format: 'CSV' | 'XLSX';
   filters?: Prisma.InputJsonValue;
   selected_columns?: string[];
@@ -423,7 +428,12 @@ export async function listExportJobs(params: {
     | 'RESERVATIONS'
     | 'DAY_END'
     | 'GST_INVOICES'
-    | 'TAX_SUMMARY';
+    | 'TAX_SUMMARY'
+    | 'GSTR1_SUMMARY'
+    | 'GSTR3B_SUMMARY'
+    | 'WAITER_PERFORMANCE'
+    | 'PAYROLL'
+    | 'AGGREGATOR_COMMISSION';
   outletId?: string;
 }) {
   return prisma.exportJob.findMany({

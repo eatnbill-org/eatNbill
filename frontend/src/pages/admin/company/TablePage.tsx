@@ -3,18 +3,21 @@ import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { TableManagement } from "./components/TableManagement";
 import { ReservationManagement } from "./components/ReservationManagement";
+import { FloorPlanEditor } from "./components/FloorPlanEditor";
 import { useRestaurantStore } from "@/stores/restaurant";
 
 export default function TablePage() {
   const { restaurant } = useRestaurantStore();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [tab, setTab] = React.useState<"tables" | "reservations">(
-    searchParams.get("tab") === "reservations" ? "reservations" : "tables"
+  const [tab, setTab] = React.useState<"tables" | "reservations" | "floorplan">(
+    searchParams.get("tab") === "reservations" ? "reservations" :
+    searchParams.get("tab") === "floorplan" ? "floorplan" : "tables"
   );
   const shouldOpenReservationDialog = searchParams.get("open") === "new";
 
   React.useEffect(() => {
-    const nextTab = searchParams.get("tab") === "reservations" ? "reservations" : "tables";
+    const t = searchParams.get("tab");
+    const nextTab = t === "reservations" ? "reservations" : t === "floorplan" ? "floorplan" : "tables";
     setTab(nextTab);
   }, [searchParams]);
 
@@ -22,7 +25,7 @@ export default function TablePage() {
     return <div>Loading...</div>;
   }
 
-  const updateTab = (nextTab: "tables" | "reservations") => {
+  const updateTab = (nextTab: "tables" | "reservations" | "floorplan") => {
     setTab(nextTab);
     const next = new URLSearchParams(searchParams);
     next.set("tab", nextTab);
@@ -63,19 +66,28 @@ export default function TablePage() {
         >
           Reservations
         </Button>
+        <Button
+          variant={tab === "floorplan" ? "default" : "outline"}
+          onClick={() => updateTab("floorplan")}
+          className="rounded-lg flex-1 sm:flex-none"
+        >
+          Floor Plan
+        </Button>
       </div>
 
       {/* Main Content */}
       <div className="bg-background rounded-2xl shadow-sm border border-border overflow-hidden">
         {tab === "tables" ? (
           <TableManagement slug={restaurant.slug} />
-        ) : (
+        ) : tab === "reservations" ? (
           <div className="p-4 sm:p-6">
             <ReservationManagement
               openNewDialog={shouldOpenReservationDialog}
               onOpenNewHandled={handleOpenNewHandled}
             />
           </div>
+        ) : (
+          <FloorPlanEditor />
         )}
       </div>
     </div>

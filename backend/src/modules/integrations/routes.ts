@@ -116,6 +116,22 @@ router.post(
 router.delete("/menu-map/:mapId", requireRole("OWNER", "MANAGER"), controller.deleteMenuMapping);
 
 // -----------------------------------------
+// Menu Sync — Outbound Push to Aggregator
+// -----------------------------------------
+
+/**
+ * POST /integrations/config/:id/menu-sync
+ * Push current mapped menu to the aggregator platform
+ */
+router.post("/config/:id/menu-sync", requireRole("OWNER", "MANAGER"), controller.triggerMenuSync);
+
+/**
+ * GET /integrations/config/:id/menu-sync/logs
+ * List menu sync history for a config
+ */
+router.get("/config/:id/menu-sync/logs", requireRole("OWNER", "MANAGER"), controller.listMenuSyncLogs);
+
+// -----------------------------------------
 // Webhook Logs (OWNER can view their own)
 // -----------------------------------------
 

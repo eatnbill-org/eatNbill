@@ -102,6 +102,9 @@ export const updateTableSchema = z
     table_number: z.string().min(1).max(50).optional(),
     seats: z.number().int().min(1).max(50).optional(),
     is_active: z.boolean().optional(),
+    x_position: z.number().int().min(0).max(99).nullable().optional(),
+    y_position: z.number().int().min(0).max(99).nullable().optional(),
+    shape: z.enum(["RECTANGLE", "CIRCLE"]).nullable().optional(),
   })
   .strict();
 
