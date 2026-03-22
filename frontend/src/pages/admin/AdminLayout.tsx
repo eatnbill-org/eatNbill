@@ -77,6 +77,7 @@ import {
   MapPin,
   Package2,
   Building2,
+  Bell,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -459,6 +460,7 @@ function AdminSidebar() {
                 { label: "Customer Side", path: "/admin/settings/customer", icon: Smartphone },
                 { label: "Printer Zones", path: "/admin/settings/printer-zones", icon: Printer },
                 { label: "Delivery Zones", path: "/admin/settings/delivery-zones", icon: MapPin },
+                { label: "Notifications", path: "/admin/settings/notifications", icon: Bell },
               ]}
             />
 

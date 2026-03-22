@@ -1657,5 +1657,62 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // ============================================================================
+  // NOTIFICATION CHANNELS
+  // ============================================================================
+
+  // GET /notification-channels — list all channels
+  router.get('/notification-channels', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const channels = await prisma.notificationChannel.findMany({ where: { restaurant_id: restaurantId } });
+      res.json({ data: channels });
+    } catch (err) { next(err); }
+  });
+
+  // PUT /notification-channels/:type — upsert channel (SMS | WHATSAPP)
+  router.put('/notification-channels/:type', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageStaff(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage notification channels', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { type } = req.params;
+      if (!['SMS', 'WHATSAPP'].includes(type)) throw new AppError('VALIDATION_ERROR', 'Invalid channel type', 400);
+      const { provider, config, is_active, events } = req.body;
+      const channel = await prisma.notificationChannel.upsert({
+        where: { restaurant_id_type: { restaurant_id: restaurantId, type } },
+        create: { restaurant_id: restaurantId, type, provider: provider || 'TWILIO', config: config || {}, is_active: is_active !== false, events: events || [] },
+        update: { provider, config, is_active, events, updated_at: new Date() },
+      });
+      res.json({ data: channel });
+    } catch (err) { next(err); }
+  });
+
+  // DELETE /notification-channels/:type — remove channel
+  router.delete('/notification-channels/:type', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageStaff(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage notification channels', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { type } = req.params;
+      await prisma.notificationChannel.deleteMany({ where: { restaurant_id: restaurantId, type } });
+      res.json({ success: true });
+    } catch (err) { next(err); }
+  });
+
+  // GET /notification-channels/:type/logs — last 50 notification logs
+  router.get('/notification-channels/:type/logs', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const { type } = req.params;
+      const channel = await prisma.notificationChannel.findUnique({ where: { restaurant_id_type: { restaurant_id: restaurantId, type } } });
+      if (!channel) { res.json({ data: [] }); return; }
+      const logs = await prisma.notificationLog.findMany({
+        where: { channel_id: channel.id },
+        orderBy: { created_at: 'desc' },
+        take: 50,
+      });
+      res.json({ data: logs });
+    } catch (err) { next(err); }
+  });
+
   return router;
 }
