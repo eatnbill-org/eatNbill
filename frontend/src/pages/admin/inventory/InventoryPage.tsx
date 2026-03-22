@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Package2, Plus, Trash2, Edit2, AlertTriangle, TrendingDown, TrendingUp,
-  RotateCcw, ChevronDown, ChevronRight, History
+  RotateCcw, ChevronDown, ChevronRight, History, ChefHat, BookOpen, Minus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -33,6 +33,21 @@ interface StockMovement {
   created_at: string;
 }
 
+interface ProductBasic {
+  id: string;
+  name: string;
+  category_id: string | null;
+}
+
+interface RecipeLine {
+  id: string;
+  ingredient_id: string;
+  quantity: string;
+  ingredient: { id: string; name: string; unit: string; cost_per_unit: string };
+}
+
+type Tab = "ingredients" | "recipes";
+
 const UNITS = ["pcs", "kg", "g", "L", "ml", "dozen", "box", "bag"];
 const MOVEMENT_TYPES = ["PURCHASE", "WASTE", "ADJUSTMENT"] as const;
 
@@ -44,9 +59,22 @@ const MOVEMENT_COLORS: Record<string, string> = {
 };
 
 export default function InventoryPage() {
+  const [activeTab, setActiveTab] = React.useState<Tab>("ingredients");
   const [ingredients, setIngredients] = React.useState<Ingredient[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [search, setSearch] = React.useState("");
+
+  // Recipe tab state
+  const [products, setProducts] = React.useState<ProductBasic[]>([]);
+  const [productsLoading, setProductsLoading] = React.useState(false);
+  const [recipeSearch, setRecipeSearch] = React.useState("");
+  const [recipeDialog, setRecipeDialog] = React.useState(false);
+  const [recipeProduct, setRecipeProduct] = React.useState<ProductBasic | null>(null);
+  const [recipeLines, setRecipeLines] = React.useState<RecipeLine[]>([]);
+  const [recipeLoading, setRecipeLoading] = React.useState(false);
+  const [recipeSaving, setRecipeSaving] = React.useState(false);
+  // Draft lines in dialog: { ingredient_id, quantity }
+  const [draftLines, setDraftLines] = React.useState<{ ingredient_id: string; quantity: string }[]>([]);
 
   // Ingredient CRUD dialog
   const [ingredientDialog, setIngredientDialog] = React.useState(false);
@@ -81,6 +109,47 @@ export default function InventoryPage() {
   };
 
   React.useEffect(() => { void load(); }, []);
+
+  const loadProducts = async () => {
+    if (products.length > 0) return;
+    setProductsLoading(true);
+    try {
+      const res = await apiClient.get<{ products: ProductBasic[] }>("/products");
+      setProducts((res.data as any)?.products ?? []);
+    } catch { /* ignore */ } finally { setProductsLoading(false); }
+  };
+
+  React.useEffect(() => {
+    if (activeTab === "recipes") void loadProducts();
+  }, [activeTab]);
+
+  const openRecipeEditor = async (product: ProductBasic) => {
+    setRecipeProduct(product);
+    setDraftLines([]);
+    setRecipeDialog(true);
+    setRecipeLoading(true);
+    try {
+      const res = await apiClient.get<{ data: RecipeLine[] }>(`/restaurant/inventory/recipes/${product.id}`);
+      const lines = (res.data as any)?.data ?? [];
+      setRecipeLines(lines);
+      setDraftLines(lines.map((l: RecipeLine) => ({ ingredient_id: l.ingredient_id, quantity: String(l.quantity) })));
+    } catch { /* ignore */ } finally { setRecipeLoading(false); }
+  };
+
+  const handleSaveRecipe = async () => {
+    if (!recipeProduct) return;
+    const valid = draftLines.filter(l => l.ingredient_id && l.quantity && Number(l.quantity) > 0);
+    setRecipeSaving(true);
+    try {
+      await apiClient.put(`/restaurant/inventory/recipes/${recipeProduct.id}`, {
+        lines: valid.map(l => ({ ingredient_id: l.ingredient_id, quantity: parseFloat(l.quantity) })),
+      });
+      toast.success("Recipe saved");
+      setRecipeDialog(false);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save recipe");
+    } finally { setRecipeSaving(false); }
+  };
 
   const openNewIngredient = () => {
     setEditingIngredient(null);
@@ -186,9 +255,21 @@ export default function InventoryPage() {
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">Track ingredient stock levels, purchases, and waste</p>
         </div>
-        <Button onClick={openNewIngredient} className="rounded-xl gap-2 h-9 text-xs font-bold">
-          <Plus className="h-3.5 w-3.5" /> Add Ingredient
-        </Button>
+        {activeTab === "ingredients" && (
+          <Button onClick={openNewIngredient} className="rounded-xl gap-2 h-9 text-xs font-bold">
+            <Plus className="h-3.5 w-3.5" /> Add Ingredient
+          </Button>
+        )}
+      </div>
+
+      {/* Tab Bar */}
+      <div className="flex rounded-2xl border border-slate-200 bg-white p-1 gap-1 w-fit">
+        {([["ingredients", Package2, "Ingredients"], ["recipes", ChefHat, "Recipes / BOM"]] as const).map(([tab, Icon, label]) => (
+          <button key={tab} type="button" onClick={() => setActiveTab(tab as Tab)}
+            className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all", activeTab === tab ? "bg-teal-600 text-white shadow" : "text-slate-500 hover:bg-slate-50")}>
+            <Icon className="h-3.5 w-3.5" />{label}
+          </button>
+        ))}
       </div>
 
       {/* Low stock alert banner */}
@@ -201,6 +282,7 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {activeTab === "ingredients" && (<>
       {/* Search */}
       <div className="relative">
         <Input
@@ -280,6 +362,106 @@ export default function InventoryPage() {
           </table>
         )}
       </div>
+
+      </>)}
+
+      {/* Recipes / BOM Tab */}
+      {activeTab === "recipes" && (
+        <div className="space-y-4">
+          <div className="relative">
+            <Input value={recipeSearch} onChange={e => setRecipeSearch(e.target.value)} placeholder="Search products..." className="h-10 rounded-xl pl-4" />
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+            {productsLoading ? (
+              <div className="p-8 text-center text-slate-400 text-sm">Loading products...</div>
+            ) : products.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm">
+                <BookOpen className="h-8 w-8 mx-auto mb-2 text-slate-200" />No products found.
+              </div>
+            ) : (
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Product</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.filter(p => p.name.toLowerCase().includes(recipeSearch.toLowerCase())).map(p => (
+                    <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-slate-800">{p.name}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end">
+                          <Button variant="outline" size="sm" className="rounded-xl h-8 text-xs gap-1.5"
+                            onClick={() => void openRecipeEditor(p)}>
+                            <ChefHat className="h-3.5 w-3.5" /> Edit Recipe
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Recipe Edit Dialog */}
+      <Dialog open={recipeDialog} onOpenChange={setRecipeDialog}>
+        <DialogContent className="max-w-lg rounded-2xl p-6 space-y-4 max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogTitle className="text-base font-black uppercase tracking-tight shrink-0">
+            Recipe — {recipeProduct?.name}
+          </DialogTitle>
+          <p className="text-xs text-slate-500 shrink-0">Define which ingredients and quantities are used per serving. Stock will auto-deduct when orders are marked completed.</p>
+
+          {recipeLoading ? (
+            <p className="text-slate-400 text-sm text-center py-4">Loading...</p>
+          ) : (
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {draftLines.map((line, idx) => {
+                const ing = ingredients.find(i => i.id === line.ingredient_id);
+                return (
+                  <div key={idx} className="flex items-center gap-2 bg-slate-50 rounded-xl p-2">
+                    <select value={line.ingredient_id}
+                      onChange={e => setDraftLines(prev => prev.map((l, i) => i === idx ? { ...l, ingredient_id: e.target.value } : l))}
+                      className="flex-1 h-9 rounded-lg border border-slate-200 text-xs px-2 bg-white">
+                      <option value="">Select ingredient...</option>
+                      {ingredients.filter(i => i.is_active).map(i => (
+                        <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Input type="number" value={line.quantity} min={0.001} step={0.1}
+                        onChange={e => setDraftLines(prev => prev.map((l, i) => i === idx ? { ...l, quantity: e.target.value } : l))}
+                        className="w-20 h-9 rounded-lg text-xs text-right" placeholder="Qty" />
+                      {ing && <span className="text-[10px] text-slate-400 w-8 shrink-0">{ing.unit}</span>}
+                    </div>
+                    <button type="button" onClick={() => setDraftLines(prev => prev.filter((_, i) => i !== idx))}
+                      className="h-8 w-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shrink-0">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+              <button type="button"
+                onClick={() => setDraftLines(prev => [...prev, { ingredient_id: "", quantity: "" }])}
+                className="w-full h-9 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 text-xs font-bold hover:border-teal-400 hover:text-teal-600 transition-all flex items-center justify-center gap-2">
+                <Plus className="h-3.5 w-3.5" /> Add Ingredient
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2 shrink-0">
+            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setRecipeDialog(false)}>Cancel</Button>
+            <Button className="flex-1 rounded-xl bg-teal-600 hover:bg-teal-700" onClick={() => void handleSaveRecipe()} disabled={recipeSaving}>
+              {recipeSaving ? "Saving..." : "Save Recipe"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Ingredient Dialog */}
       <Dialog open={ingredientDialog} onOpenChange={setIngredientDialog}>
