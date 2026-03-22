@@ -258,6 +258,7 @@ model Order {
   voucher           VoucherCode?     @relation(fields: [voucher_id], references: [id])
   gst_invoice       GstInvoice?
   refunds           Refund[]
+  bill_splits       BillSplit[]
 
   @@unique([source, external_order_id])
   @@index([restaurant_id, status])
@@ -316,6 +317,7 @@ model OrderItem {
   order          Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product        Product @relation(fields: [product_id], references: [id])
   modifiers      OrderItemModifier[]
+  item_splits    OrderItemSplit[]
 
   @@index([order_id])
   @@index([product_id])
@@ -1432,4 +1434,44 @@ model TableQRCode {
 
   @@index([table_id])
   @@map("table_qrcodes")
+}
+
+// ============================================================================
+// Split Bill — divide one order payment across multiple payers
+// ============================================================================
+
+enum SplitType {
+  EQUAL    // Split evenly N ways
+  BY_ITEM  // Each payer is assigned specific items
+  CUSTOM   // Custom amounts per payer
+}
+
+model BillSplit {
+  id             String      @id @default(uuid()) @db.Uuid
+  order_id       String      @db.Uuid
+  split_type     SplitType   @default(EQUAL)
+  payer_label    String      // "Guest 1", "Card ending 4242", etc.
+  amount         Decimal     @db.Decimal(10, 2)
+  payment_method String?
+  payment_status String      @default("PENDING") // PENDING | PAID
+  paid_at        DateTime?
+  created_at     DateTime    @default(now())
+  order          Order       @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  item_splits    OrderItemSplit[]
+
+  @@index([order_id])
+  @@map("bill_splits")
+}
+
+model OrderItemSplit {
+  id            String     @id @default(uuid()) @db.Uuid
+  split_id      String     @db.Uuid
+  order_item_id String     @db.Uuid
+  quantity      Int        @default(1)
+  amount        Decimal    @db.Decimal(10, 2)
+  split         BillSplit  @relation(fields: [split_id], references: [id], onDelete: Cascade)
+  order_item    OrderItem  @relation(fields: [order_item_id], references: [id], onDelete: Cascade)
+
+  @@index([split_id])
+  @@map("order_item_splits")
 }

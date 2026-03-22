@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { User, Phone, MapPin, Clock, FileText, Wallet, Hash, Utensils, ReceiptText, X, Printer as PrinterIcon, ChefHat, Sparkles, Ban, Gift, RotateCcw } from 'lucide-react';
+import { User, Phone, MapPin, Clock, FileText, Wallet, Hash, Utensils, ReceiptText, X, Printer as PrinterIcon, ChefHat, Sparkles, Ban, Gift, RotateCcw, SplitSquareVertical } from 'lucide-react';
 import type { Order } from '@/types/order';
 import { formatINR } from '@/lib/format';
 import { format } from 'date-fns';
@@ -11,6 +11,7 @@ import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { KotPrintSheet } from '@/pages/admin/dashboard/components/KotPrintSheet';
+import SplitBillDialog from './SplitBillDialog';
 
 // We import Button and Badge separately since they are not exported from @/components/ui/dialog
 import { Button as UIButton } from '@/components/ui/button';
@@ -33,6 +34,7 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
     const [refundAmount, setRefundAmount] = React.useState('');
     const [refundReason, setRefundReason] = React.useState('');
     const [refundLoading, setRefundLoading] = React.useState(false);
+    const [splitOpen, setSplitOpen] = React.useState(false);
 
     const handleRefund = async () => {
         if (!order || !refundAmount) return;
@@ -291,16 +293,26 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                             )}
 
                             {order.payment_status === 'PENDING' && !['CANCELLED'].includes(order.status) && (
-                                <UIButton
-                                    onClick={() => onMarkPaid(order)}
-                                    className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest text-[8px] shadow-md shadow-indigo-100 transition-all border-none relative overflow-hidden group"
-                                >
-                                    <span className="relative z-10 flex items-center justify-center gap-2">
-                                        <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
-                                        Authorize Settlement
-                                    </span>
-                                    <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:left-[100%] transition-all duration-700 pointer-events-none" />
-                                </UIButton>
+                                <>
+                                    <UIButton
+                                        onClick={() => setSplitOpen(true)}
+                                        variant="outline"
+                                        className="h-10 px-3 rounded-lg border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-black text-[9px] uppercase tracking-wider"
+                                        title="Split Bill"
+                                    >
+                                        <SplitSquareVertical className="w-3.5 h-3.5" />
+                                    </UIButton>
+                                    <UIButton
+                                        onClick={() => onMarkPaid(order)}
+                                        className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest text-[8px] shadow-md shadow-indigo-100 transition-all border-none relative overflow-hidden group"
+                                    >
+                                        <span className="relative z-10 flex items-center justify-center gap-2">
+                                            <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
+                                            Authorize Settlement
+                                        </span>
+                                        <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:left-[100%] transition-all duration-700 pointer-events-none" />
+                                    </UIButton>
+                                </>
                             )}
                         </div>
                     </div>
@@ -347,6 +359,14 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
 
         {/* KOT Print Sheet */}
         <KotPrintSheet order={kotOpen ? order : null} onOpenChange={setKotOpen} />
+
+        {/* Split Bill Dialog */}
+        <SplitBillDialog
+            order={order}
+            open={splitOpen}
+            onOpenChange={setSplitOpen}
+            onAllPaid={() => { setSplitOpen(false); onOpenChange(false); }}
+        />
 
         {/* Void / Comp confirmation dialog */}
         <Dialog open={!!voidTarget} onOpenChange={(o) => { if (!o) { setVoidTarget(null); setVoidReason(''); } }}>
