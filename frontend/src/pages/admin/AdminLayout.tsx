@@ -73,6 +73,7 @@ import {
   Printer,
   Clock,
   ShoppingBag,
+  Calendar,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -420,7 +421,8 @@ function AdminSidebar() {
               subItems={[
                 { label: "Restaurant Profile", path: "/admin/company/profile", icon: Store },
                 { label: "Tables", path: "/admin/company/tables", icon: Armchair },
-                { label: "Staff", path: "/admin/company/staff", icon: UserCog }
+                { label: "Staff", path: "/admin/company/staff", icon: UserCog },
+                { label: "Scheduling", path: "/admin/company/scheduling", icon: Calendar }
               ]}
             />
 

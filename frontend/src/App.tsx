@@ -49,6 +49,7 @@ const AdminSideSettings = lazy(() => import("./pages/admin/adminSettings/AdminSi
 const CompanyProfilePage = lazy(() => import("./pages/admin/company/CompanyProfilePage"));
 const TablePage = lazy(() => import("./pages/admin/company/TablePage"));
 const StaffPage = lazy(() => import("./pages/admin/company/staff/StaffPage"));
+const StaffSchedulingPage = lazy(() => import("./pages/admin/company/staff/StaffSchedulingPage"));
 const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage"));
 const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
 const VouchersPage = lazy(() => import("./pages/admin/billing/VouchersPage"));
@@ -136,6 +137,7 @@ const App = () => (
                 <Route path="company/profile" element={<CompanyProfilePage />} />
                 <Route path="company/tables" element={<TablePage />} />
                 <Route path="company/staff" element={<StaffPage />} />
+                <Route path="company/scheduling" element={<StaffSchedulingPage />} />
                 <Route path="day-end" element={<AdminDayEndPage />} />
                 <Route path="exports" element={<AdminExportCenterPage />} />
                 <Route path="vouchers" element={<VouchersPage />} />
