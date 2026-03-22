@@ -74,6 +74,7 @@ import {
   Clock,
   ShoppingBag,
   Calendar,
+  MapPin,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -437,6 +438,7 @@ function AdminSidebar() {
                 { label: "Admin Side", path: "/admin/settings/admin", icon: ShieldCheck },
                 { label: "Customer Side", path: "/admin/settings/customer", icon: Smartphone },
                 { label: "Printer Zones", path: "/admin/settings/printer-zones", icon: Printer },
+                { label: "Delivery Zones", path: "/admin/settings/delivery-zones", icon: MapPin },
               ]}
             />
 

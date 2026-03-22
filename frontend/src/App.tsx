@@ -56,6 +56,7 @@ const VouchersPage = lazy(() => import("./pages/admin/billing/VouchersPage"));
 const LoyaltyPage = lazy(() => import("./pages/admin/billing/LoyaltyPage"));
 const PricingRulesPage = lazy(() => import("./pages/admin/billing/PricingRulesPage"));
 const PrinterZonesPage = lazy(() => import("./pages/admin/adminSettings/PrinterZonesPage"));
+const DeliveryZonesPage = lazy(() => import("./pages/admin/adminSettings/DeliveryZonesPage"));
 const StaffAnalyticsPage = lazy(() => import("./pages/admin/analytics/StaffAnalyticsPage"));
 const FeedbackPage = lazy(() => import("./pages/admin/analytics/FeedbackPage"));
 const RestaurantSlugDebugPage = lazy(() => import("./pages/admin/RestaurantSlugDebugPage"));
@@ -153,6 +154,7 @@ const App = () => (
                 <Route path="settings/customer" element={<AdminSettingsPage />} />
                 <Route path="settings/admin" element={<AdminSideSettings />} />
                 <Route path="settings/printer-zones" element={<PrinterZonesPage />} />
+                <Route path="settings/delivery-zones" element={<DeliveryZonesPage />} />
             </Route>
 
             {/* MANAGER */}
