@@ -6,6 +6,7 @@ import type {
   RestaurantOutlet,
   UserPreferenceResponse,
 } from '@/types/enterprise-billing';
+import type { ProductModifierGroup } from '@/types/product';
 
 function unwrapData<T>(payload: unknown): T {
   const maybe = payload as { data?: T };
@@ -168,4 +169,71 @@ export async function generateOrderEInvoice(orderId: string, provider?: 'mock' |
   });
   if (response.error) throw new Error(response.error.message);
   return unwrapData<GstInvoice>(response.data);
+}
+
+export async function validateVoucherCode(code: string, orderAmount: number) {
+  const response = await apiClient.post<{ data: { voucher_id: string; code: string; discount_amount: number; description: string | null } }>(
+    '/restaurant/vouchers/validate',
+    { code, order_amount: orderAmount }
+  );
+  if (response.error) throw new Error(response.error.message);
+  return unwrapData<{ voucher_id: string; code: string; discount_amount: number; description: string | null }>(response.data);
+}
+
+// ── Modifier Groups ─────────────────────────────────────────────────────────
+
+export async function fetchProductModifiers(productId: string): Promise<ProductModifierGroup[]> {
+  const response = await apiClient.get<{ data: ProductModifierGroup[] }>(`/restaurant/products/${productId}/modifiers`);
+  if (response.error) throw new Error(response.error.message);
+  return unwrapData<ProductModifierGroup[]>(response.data) ?? [];
+}
+
+export async function createModifierGroup(
+  productId: string,
+  data: { name: string; is_required: boolean; min_select: number; max_select: number; sort_order?: number; options?: { name: string; price_delta: number; is_default?: boolean }[] }
+): Promise<ProductModifierGroup> {
+  const response = await apiClient.post<{ data: ProductModifierGroup }>(`/restaurant/products/${productId}/modifiers`, data);
+  if (response.error) throw new Error(response.error.message);
+  return unwrapData<ProductModifierGroup>(response.data);
+}
+
+export async function updateModifierGroup(
+  productId: string,
+  groupId: string,
+  data: { name?: string; is_required?: boolean; min_select?: number; max_select?: number; sort_order?: number }
+): Promise<ProductModifierGroup> {
+  const response = await apiClient.patch<{ data: ProductModifierGroup }>(`/restaurant/products/${productId}/modifiers/${groupId}`, data);
+  if (response.error) throw new Error(response.error.message);
+  return unwrapData<ProductModifierGroup>(response.data);
+}
+
+export async function deleteModifierGroup(productId: string, groupId: string): Promise<void> {
+  const response = await apiClient.delete(`/restaurant/products/${productId}/modifiers/${groupId}`);
+  if (response.error) throw new Error(response.error.message);
+}
+
+export async function addModifierOption(
+  productId: string,
+  groupId: string,
+  data: { name: string; price_delta: number; is_default?: boolean; sort_order?: number }
+) {
+  const response = await apiClient.post(`/restaurant/products/${productId}/modifiers/${groupId}/options`, data);
+  if (response.error) throw new Error(response.error.message);
+  return (response.data as any)?.data;
+}
+
+export async function updateModifierOption(
+  productId: string,
+  groupId: string,
+  optionId: string,
+  data: { name?: string; price_delta?: number; is_default?: boolean; is_active?: boolean; sort_order?: number }
+) {
+  const response = await apiClient.patch(`/restaurant/products/${productId}/modifiers/${groupId}/options/${optionId}`, data);
+  if (response.error) throw new Error(response.error.message);
+  return (response.data as any)?.data;
+}
+
+export async function deleteModifierOption(productId: string, groupId: string, optionId: string): Promise<void> {
+  const response = await apiClient.delete(`/restaurant/products/${productId}/modifiers/${groupId}/options/${optionId}`);
+  if (response.error) throw new Error(response.error.message);
 }

@@ -103,6 +103,7 @@ model Restaurant {
   logo_url        String?
   address         String?
   gst_number      String?
+  fssai_license   String?
   tagline         String?
   restaurant_type String?
   opening_hours   Json?
@@ -128,6 +129,16 @@ model Restaurant {
   invoice_series   InvoiceSeries[]
   gst_invoices     GstInvoice[]
   kds_settings    KdsSettings?
+  waitlist        TableWaitlist[]
+  voucher_codes   VoucherCode[]
+  feedback        CustomerFeedback[]
+  loyalty_program        LoyaltyProgram?
+  pricing_rules          PricingRule[]
+  delivery_zones         DeliveryZone[]
+  notification_channels  NotificationChannel[]
+  combo_products         ComboProduct[]
+  printer_zones          PrinterZone[]
+  modifier_groups        ProductModifierGroup[]
 
   @@unique([slug])
   @@index([tenant_id])
@@ -155,7 +166,9 @@ model Product {
   menu_maps                IntegrationMenuMap[]
   order_items              OrderItem[]
   images                   ProductImage[]
+  combo_components         ComboComponent[]
   discount_percent         Decimal?             @default(0) @db.Decimal(5, 2)
+  modifier_groups          ProductModifierGroup[]
 
   @@index([category_id])
   @@index([restaurant_id, is_active])
@@ -214,6 +227,8 @@ model Order {
   notes             String?
   total_amount      Decimal          @db.Decimal(10, 2)
   discount_amount   Decimal?         @default(0) @db.Decimal(10, 2)
+  tip_amount        Decimal?         @default(0) @db.Decimal(10, 2)
+  voucher_id        String?          @db.Uuid
   status            OrderStatus      @default(ACTIVE)
   source            OrderSource      @default(QR)
   order_type        OrderType        @default(DINE_IN)
@@ -240,7 +255,9 @@ model Order {
   outlet            RestaurantOutlet? @relation(fields: [outlet_id], references: [id])
   customer          Customer?        @relation(fields: [customer_id], references: [id])
   waiter            RestaurantUser?  @relation(fields: [waiter_id], references: [id])
+  voucher           VoucherCode?     @relation(fields: [voucher_id], references: [id])
   gst_invoice       GstInvoice?
+  refunds           Refund[]
 
   @@unique([source, external_order_id])
   @@index([restaurant_id, status])
@@ -249,6 +266,28 @@ model Order {
   @@index([customer_phone])
   @@index([waiter_id])
   @@map("orders")
+}
+
+// ============================================================================
+// Refund Management
+// ============================================================================
+
+model Refund {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenant_id       String    @db.Uuid
+  restaurant_id   String    @db.Uuid
+  order_id        String    @db.Uuid
+  refund_amount   Decimal   @db.Decimal(10, 2)
+  reason_code     String?   // e.g. WRONG_ORDER, QUALITY_ISSUE, OVERCHARGED
+  notes           String?
+  method          String    @default("CASH") // Refund via CASH, CARD, UPI, etc.
+  approved_by     String?   @db.Uuid  // RestaurantUser who approved
+  created_at      DateTime  @default(now())
+  order           Order     @relation(fields: [order_id], references: [id])
+
+  @@index([restaurant_id])
+  @@index([order_id])
+  @@map("refunds")
 }
 
 model OrderItem {
@@ -267,31 +306,265 @@ model OrderItem {
   total_tax_snapshot Decimal? @db.Decimal(10, 2)
   quantity       Int
   notes          String?
-  status         String  @default("PENDING") // Status of individual item (PENDING, REORDER, SERVED)
+  status         String  @default("PENDING") // Status of individual item (PENDING, REORDER, SERVED, VOIDED, COMPED)
+  void_reason    String? // Reason when status = VOIDED
+  comp_reason    String? // Reason when status = COMPED
+  voided_by_user_id String? @db.Uuid // Who voided/comped this item
+  voided_at      DateTime? // When it was voided/comped
+  modifiers_total Decimal @default(0) @db.Decimal(10, 2) // Sum of all modifier price_deltas
   created_at     DateTime @default(now())
   order          Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product        Product @relation(fields: [product_id], references: [id])
+  modifiers      OrderItemModifier[]
 
   @@index([order_id])
   @@index([product_id])
   @@map("order_items")
 }
 
+// ============================================================================
+// Product Modifier Groups & Options (Size, Toppings, Add-ons, etc.)
+// ============================================================================
+
+model ProductModifierGroup {
+  id            String                  @id @default(uuid()) @db.Uuid
+  restaurant_id String                  @db.Uuid
+  product_id    String                  @db.Uuid
+  name          String                  // e.g. "Size", "Toppings", "Spice Level"
+  is_required   Boolean                 @default(false)
+  min_select    Int                     @default(0) // min selections customer must make
+  max_select    Int                     @default(1) // max selections allowed (1 = single-select / radio)
+  sort_order    Int                     @default(0)
+  created_at    DateTime                @default(now())
+  updated_at    DateTime                @updatedAt
+  product       Product                 @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  restaurant    Restaurant              @relation(fields: [restaurant_id], references: [id])
+  options       ProductModifierOption[]
+
+  @@index([product_id])
+  @@index([restaurant_id])
+  @@map("product_modifier_groups")
+}
+
+model ProductModifierOption {
+  id            String               @id @default(uuid()) @db.Uuid
+  group_id      String               @db.Uuid
+  name          String               // e.g. "Large", "Extra Cheese", "Very Spicy"
+  price_delta   Decimal              @default(0) @db.Decimal(10, 2) // +/- price adjustment
+  is_default    Boolean              @default(false)
+  is_active     Boolean              @default(true)
+  sort_order    Int                  @default(0)
+  created_at    DateTime             @default(now())
+  updated_at    DateTime             @updatedAt
+  group         ProductModifierGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  order_item_modifiers OrderItemModifier[]
+
+  @@index([group_id])
+  @@map("product_modifier_options")
+}
+
+model OrderItemModifier {
+  id            String                @id @default(uuid()) @db.Uuid
+  order_item_id String                @db.Uuid
+  option_id     String                @db.Uuid
+  name_snapshot String                // Snapshot: "group: option" e.g. "Size: Large"
+  price_delta   Decimal               @db.Decimal(10, 2) // Snapshot of price at order time
+  order_item    OrderItem             @relation(fields: [order_item_id], references: [id], onDelete: Cascade)
+  option        ProductModifierOption @relation(fields: [option_id], references: [id])
+
+  @@index([order_item_id])
+  @@map("order_item_modifiers")
+}
+
+// ============================================================================
+// Voucher / Discount Codes
+// ============================================================================
+
+enum VoucherDiscountType {
+  FLAT
+  PERCENTAGE
+}
+
+model VoucherCode {
+  id                  String              @id @default(uuid()) @db.Uuid
+  tenant_id           String              @db.Uuid
+  restaurant_id       String              @db.Uuid
+  code                String
+  description         String?
+  discount_type       VoucherDiscountType @default(FLAT)
+  discount_value      Decimal             @db.Decimal(10, 2)
+  min_order_amount    Decimal?            @db.Decimal(10, 2)
+  max_discount_amount Decimal?            @db.Decimal(10, 2) // Cap for PERCENTAGE type
+  usage_limit         Int?
+  used_count          Int                 @default(0)
+  valid_from          DateTime?
+  valid_until         DateTime?
+  is_active           Boolean             @default(true)
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @updatedAt
+  restaurant          Restaurant          @relation(fields: [restaurant_id], references: [id])
+  orders              Order[]
+
+  @@unique([restaurant_id, code])
+  @@index([restaurant_id])
+  @@map("voucher_codes")
+}
+
+// ============================================================================
+// Printer Zone Routing
+// ============================================================================
+
+model PrinterZone {
+  id              String    @id @default(uuid()) @db.Uuid
+  restaurant_id   String    @db.Uuid
+  name            String    // e.g. "Kitchen Printer", "Bar Printer", "Billing Counter"
+  description     String?
+  category_ids    String[]  @default([]) // Products from these categories print here
+  is_active       Boolean   @default(true)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id])
+
+  @@index([restaurant_id])
+  @@map("printer_zones")
+}
+
+// ============================================================================
+// Notification Channels (SMS / WhatsApp)
+// ============================================================================
+
+model NotificationChannel {
+  id            String    @id @default(uuid()) @db.Uuid
+  restaurant_id String    @db.Uuid
+  type          String    // SMS | WHATSAPP
+  provider      String    // TWILIO | MSG91 | META_CLOUD
+  config        Json      // Encrypted/provider-specific config (phone, api_key, etc.)
+  is_active     Boolean   @default(false)
+  events        String[]  @default([]) // ORDER_PLACED, ORDER_READY, RESERVATION_REMINDER
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
+  logs          NotificationLog[]
+
+  @@unique([restaurant_id, type])
+  @@map("notification_channels")
+}
+
+model NotificationLog {
+  id              String              @id @default(uuid()) @db.Uuid
+  restaurant_id   String              @db.Uuid
+  channel_id      String              @db.Uuid
+  event           String
+  recipient       String
+  message         String
+  status          String              @default("PENDING") // PENDING | SENT | FAILED
+  error           String?
+  created_at      DateTime            @default(now())
+  channel         NotificationChannel @relation(fields: [channel_id], references: [id])
+
+  @@index([restaurant_id])
+  @@index([channel_id])
+  @@map("notification_logs")
+}
+
+// ============================================================================
+// Combo / Bundle Offers
+// ============================================================================
+
+model ComboProduct {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenant_id       String    @db.Uuid
+  restaurant_id   String    @db.Uuid
+  name            String
+  description     String?
+  combo_price     Decimal   @db.Decimal(10, 2)
+  is_active       Boolean   @default(true)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id])
+  components      ComboComponent[]
+
+  @@index([restaurant_id])
+  @@map("combo_products")
+}
+
+model ComboComponent {
+  id              String       @id @default(uuid()) @db.Uuid
+  combo_id        String       @db.Uuid
+  product_id      String       @db.Uuid
+  quantity        Int          @default(1)
+  combo           ComboProduct @relation(fields: [combo_id], references: [id], onDelete: Cascade)
+  product         Product      @relation(fields: [product_id], references: [id])
+
+  @@index([combo_id])
+  @@map("combo_components")
+}
+
+// ============================================================================
+// Delivery Zone Management
+// ============================================================================
+
+model DeliveryZone {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenant_id       String    @db.Uuid
+  restaurant_id   String    @db.Uuid
+  name            String    // e.g. "Zone A - 5km", "Inner City"
+  radius_km       Decimal?  @db.Decimal(8, 2)  // Circular zone radius
+  delivery_fee    Decimal   @default(0) @db.Decimal(10, 2)
+  min_order_amount Decimal? @db.Decimal(10, 2)
+  eta_minutes     Int?      // Estimated delivery time
+  is_active       Boolean   @default(true)
+  sort_order      Int       @default(0)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id])
+
+  @@index([restaurant_id])
+  @@map("delivery_zones")
+}
+
+// ============================================================================
+// Happy Hour / Time-based Pricing Rules
+// ============================================================================
+
+model PricingRule {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenant_id       String    @db.Uuid
+  restaurant_id   String    @db.Uuid
+  name            String
+  discount_type   String    @default("PERCENTAGE") // PERCENTAGE | FLAT
+  discount_value  Decimal   @db.Decimal(10, 2)
+  days_of_week    Int[]     @default([]) // 0=Sun, 1=Mon, ..., 6=Sat (empty = all days)
+  start_time      String    // HH:MM format e.g. "15:00"
+  end_time        String    // HH:MM format e.g. "18:00"
+  applicable_to   String    @default("ALL") // ALL | CATEGORY | PRODUCT
+  category_ids    String[]  @default([])
+  product_ids     String[]  @default([])
+  is_active       Boolean   @default(true)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id])
+
+  @@index([restaurant_id])
+  @@map("pricing_rules")
+}
+
 model IntegrationConfig {
-  id                     String                  @id @default(uuid()) @db.Uuid
-  restaurant_id          String                  @db.Uuid
-  platform               IntegrationPlatform
-  is_enabled             Boolean                 @default(false)
-  external_restaurant_id String
-  encrypted_secret       String
-  iv                     String
-  auto_accept            Boolean                 @default(false)
-  created_at             DateTime                @default(now())
-  updated_at             DateTime                @updatedAt
-  rotated_at             DateTime?
-  restaurant             Restaurant              @relation(fields: [restaurant_id], references: [id])
-  menu_maps              IntegrationMenuMap[]
-  logs                   IntegrationWebhookLog[]
+  id                      String                  @id @default(uuid()) @db.Uuid
+  restaurant_id           String                  @db.Uuid
+  platform                IntegrationPlatform
+  is_enabled              Boolean                 @default(false)
+  external_restaurant_id  String
+  encrypted_secret        String
+  iv                      String
+  auto_accept             Boolean                 @default(false)
+  commission_rate_percent Decimal?                @db.Decimal(5, 2) // Platform commission %
+  created_at              DateTime                @default(now())
+  updated_at              DateTime                @updatedAt
+  rotated_at              DateTime?
+  restaurant              Restaurant              @relation(fields: [restaurant_id], references: [id])
+  menu_maps               IntegrationMenuMap[]
+  logs                    IntegrationWebhookLog[]
 
   @@unique([restaurant_id, platform])
   @@unique([external_restaurant_id, platform])
@@ -428,6 +701,14 @@ enum TaxPricingMode {
   TAX_EXCLUSIVE
 }
 
+enum TaxRegime {
+  GST_INDIA     // India: CGST + SGST / IGST
+  VAT_UK        // UK: 20% standard, 5% reduced, 0% zero-rated
+  SALES_TAX_US  // US: State sales tax
+  HST_CANADA    // Canada: HST / GST+PST
+  NONE          // No tax
+}
+
 enum DayEndStatus {
   OPEN
   CLOSED
@@ -449,6 +730,11 @@ enum ExportDataset {
   DAY_END
   GST_INVOICES
   TAX_SUMMARY
+  GSTR1_SUMMARY
+  GSTR3B_SUMMARY
+  WAITER_PERFORMANCE
+  AGGREGATOR_COMMISSION
+  PAYROLL
 }
 
 enum ExportFormat {
@@ -505,13 +791,15 @@ enum WebhookLogStatus {
 // ============================================================================
 
 model RestaurantSettings {
-  restaurant_id String     @id @db.Uuid
-  opening_hours Json?
-  currency      String     @default("INR")
-  tax_included  Boolean    @default(true)
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @updatedAt
-  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  restaurant_id          String     @id @db.Uuid
+  opening_hours          Json?
+  currency               String     @default("INR")
+  tax_included           Boolean    @default(true)
+  tips_enabled           Boolean    @default(false)
+  service_charge_percent Decimal?   @db.Decimal(5, 2) // Optional service charge %
+  created_at             DateTime   @default(now())
+  updated_at             DateTime   @updatedAt
+  restaurant             Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
 
   @@map("restaurant_settings")
 }
@@ -545,6 +833,8 @@ model RestaurantOutlet {
   variance_lock_amount  Decimal             @default(0) @db.Decimal(10, 2)
   variance_lock_percent Decimal             @default(0) @db.Decimal(5, 2)
   tax_pricing_mode      TaxPricingMode      @default(TAX_INCLUSIVE)
+  tax_regime            TaxRegime           @default(GST_INDIA)
+  vat_number            String?             // UK VAT registration number
   is_einvoice_enabled   Boolean             @default(false)
   is_default            Boolean             @default(false)
   created_at            DateTime            @default(now())
@@ -807,9 +1097,11 @@ model RestaurantUser {
   shift_detail           String? // Shift timing (e.g., "9 AM - 6 PM")
   completed_orders_count Int      @default(0) // Total completed+paid orders
 
-  restaurant Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
-  user       User?      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  orders     Order[] // Orders handled by this waiter
+  restaurant   Restaurant       @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  user         User?            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  orders       Order[]          // Orders handled by this waiter
+  schedules    StaffSchedule[]
+  time_entries StaffTimeEntry[]
 
   @@unique([restaurant_id, user_id])
   @@index([restaurant_id, role])
@@ -879,15 +1171,71 @@ model TableReservation {
   created_at         DateTime          @default(now())
   updated_at         DateTime          @updatedAt
   cancelled_at       DateTime?
-  restaurant         Restaurant        @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
-  outlet             RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)
-  table              RestaurantTable   @relation(fields: [table_id], references: [id], onDelete: Cascade)
+  restaurant         Restaurant          @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  outlet             RestaurantOutlet?   @relation(fields: [outlet_id], references: [id], onDelete: SetNull)
+  table              RestaurantTable     @relation(fields: [table_id], references: [id], onDelete: Cascade)
+  deposits           ReservationDeposit[]
 
   @@index([restaurant_id, reserved_from])
   @@index([outlet_id, reserved_from])
   @@index([restaurant_id, status])
   @@index([table_id, reserved_from, reserved_to])
   @@map("table_reservations")
+}
+
+// ============================================================================
+// Reservation Deposit (Pre-authorization / No-show Protection)
+// ============================================================================
+
+model ReservationDeposit {
+  id              String          @id @default(uuid()) @db.Uuid
+  restaurant_id   String          @db.Uuid
+  reservation_id  String          @db.Uuid
+  amount          Decimal         @db.Decimal(10, 2)
+  payment_ref     String?         // Payment gateway reference
+  provider        String?         // RAZORPAY | STRIPE | MANUAL
+  status          String          @default("HELD") // HELD | CAPTURED | RELEASED | REFUNDED
+  notes           String?
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  reservation     TableReservation @relation(fields: [reservation_id], references: [id])
+
+  @@index([reservation_id])
+  @@map("reservation_deposits")
+}
+
+// ============================================================================
+// Table Waitlist
+// ============================================================================
+
+enum WaitlistStatus {
+  WAITING
+  SEATED
+  LEFT
+  NOTIFIED
+}
+
+model TableWaitlist {
+  id                 String         @id @default(uuid()) @db.Uuid
+  tenant_id          String         @db.Uuid
+  restaurant_id      String         @db.Uuid
+  outlet_id          String?        @db.Uuid
+  customer_name      String
+  customer_phone     String?
+  party_size         Int
+  notes              String?
+  status             WaitlistStatus @default(WAITING)
+  joined_at          DateTime       @default(now())
+  estimated_wait_minutes Int?
+  notified_at        DateTime?
+  seated_at          DateTime?
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
+  restaurant         Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  @@index([restaurant_id, status])
+  @@index([restaurant_id, joined_at])
+  @@map("table_waitlist")
 }
 
 model ProductImage {
@@ -916,8 +1264,9 @@ model Customer {
   credit_balance Decimal    @default(0) @db.Decimal(10, 2)
   created_at     DateTime   @default(now())
   updated_at     DateTime   @updatedAt
-  restaurant     Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  restaurant     Restaurant      @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   orders         Order[]
+  loyalty        CustomerLoyalty[]
 
   @@unique([restaurant_id, phone])
   @@index([tenant_id])
@@ -925,6 +1274,129 @@ model Customer {
   @@index([restaurant_id, tags])
   @@index([phone])
   @@map("customers")
+}
+
+// ============================================================================
+// Loyalty Program
+// ============================================================================
+
+model LoyaltyProgram {
+  id                      String              @id @default(uuid()) @db.Uuid
+  restaurant_id           String              @unique @db.Uuid
+  name                    String              @default("Rewards Program")
+  points_per_spend_unit   Decimal             @default(1) @db.Decimal(10, 2)  // e.g., 1 point per ₹10 spent
+  spend_unit              Decimal             @default(10) @db.Decimal(10, 2) // ₹10 per unit
+  redemption_rate         Decimal             @default(1) @db.Decimal(10, 2)  // ₹1 discount per point
+  min_points_to_redeem    Int                 @default(10)
+  is_active               Boolean             @default(true)
+  created_at              DateTime            @default(now())
+  updated_at              DateTime            @updatedAt
+  restaurant              Restaurant          @relation(fields: [restaurant_id], references: [id])
+  customer_loyalty        CustomerLoyalty[]
+
+  @@map("loyalty_programs")
+}
+
+model CustomerLoyalty {
+  id                String         @id @default(uuid()) @db.Uuid
+  tenant_id         String         @db.Uuid
+  restaurant_id     String         @db.Uuid
+  customer_id       String         @db.Uuid
+  program_id        String         @db.Uuid
+  points_balance    Int            @default(0)
+  total_earned      Int            @default(0)
+  total_redeemed    Int            @default(0)
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+  customer          Customer       @relation(fields: [customer_id], references: [id])
+  program           LoyaltyProgram @relation(fields: [program_id], references: [id])
+  transactions      LoyaltyTransaction[]
+
+  @@unique([customer_id, program_id])
+  @@index([restaurant_id])
+  @@map("customer_loyalty")
+}
+
+model LoyaltyTransaction {
+  id                String          @id @default(uuid()) @db.Uuid
+  customer_loyalty_id String        @db.Uuid
+  order_id          String?         @db.Uuid
+  points            Int             // Positive = earned, negative = redeemed
+  type              String          // EARNED | REDEEMED | ADJUSTED
+  notes             String?
+  created_at        DateTime        @default(now())
+  customer_loyalty  CustomerLoyalty @relation(fields: [customer_loyalty_id], references: [id])
+
+  @@index([customer_loyalty_id])
+  @@map("loyalty_transactions")
+}
+
+// ============================================================================
+// Staff Scheduling & Timesheet
+// ============================================================================
+
+model StaffSchedule {
+  id            String          @id @default(uuid()) @db.Uuid
+  tenant_id     String          @db.Uuid
+  restaurant_id String          @db.Uuid
+  user_id       String          @db.Uuid
+  date          DateTime        @db.Date
+  start_time    String          // HH:MM
+  end_time      String          // HH:MM
+  role          String?         // Role for this shift
+  notes         String?
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  user          RestaurantUser  @relation(fields: [user_id], references: [id])
+
+  @@index([restaurant_id])
+  @@index([user_id])
+  @@index([restaurant_id, date])
+  @@map("staff_schedules")
+}
+
+model StaffTimeEntry {
+  id            String          @id @default(uuid()) @db.Uuid
+  tenant_id     String          @db.Uuid
+  restaurant_id String          @db.Uuid
+  user_id       String          @db.Uuid
+  clock_in      DateTime
+  clock_out     DateTime?
+  total_minutes Int?            // Computed on clock-out
+  notes         String?
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  user          RestaurantUser  @relation(fields: [user_id], references: [id])
+
+  @@index([restaurant_id])
+  @@index([user_id])
+  @@index([restaurant_id, clock_in])
+  @@map("staff_time_entries")
+}
+
+// ============================================================================
+// Customer Feedback
+// ============================================================================
+
+model CustomerFeedback {
+  id            String     @id @default(uuid()) @db.Uuid
+  tenant_id     String     @db.Uuid
+  restaurant_id String     @db.Uuid
+  order_id      String?    @db.Uuid
+  customer_id   String?    @db.Uuid
+  customer_name String?
+  rating        Int        // 1-5 star rating
+  comment       String?
+  categories    String[]   @default([]) // e.g. ["food", "service", "ambience"]
+  source        String     @default("MANUAL") // MANUAL, QR, SMS, EMAIL
+  is_public     Boolean    @default(false)
+  created_at    DateTime   @default(now())
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id])
+
+  @@index([restaurant_id])
+  @@index([restaurant_id, rating])
+  @@index([order_id])
+  @@map("customer_feedback")
 }
 
 // ============================================================================

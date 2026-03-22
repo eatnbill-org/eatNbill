@@ -43,6 +43,13 @@ export type PaymentStatus =
 // ORDER ITEM TYPES
 // ============================================================
 
+export interface OrderItemModifier {
+  id: string;
+  option_id: string;
+  name_snapshot: string; // e.g. "Size: Large"
+  price_delta: string;   // Decimal as string
+}
+
 export interface OrderItem {
   id: string;
   order_id: string;
@@ -50,10 +57,16 @@ export interface OrderItem {
   name_snapshot: string;      // Product name at time of order
   price_snapshot: string;     // Product price at time of order (Decimal as string)
   cost_snapshot?: string | null;  // Product cost at time of order (for profit calculation)
+  modifiers_total?: string;   // Sum of modifier price deltas
   quantity: number;
   notes: string | null;
+  status: string;
+  void_reason?: string | null;
+  comp_reason?: string | null;
+  voided_at?: string | null;
   created_at: string;
   updated_at: string;
+  modifiers?: OrderItemModifier[];
 }
 
 // ============================================================
@@ -76,7 +89,8 @@ export interface Order {
   table_number: string | null;
   notes: string | null;
   total_amount: string;  // Decimal as string
-  discount_amount?: string; // Decimal as string - New field
+  discount_amount?: string; // Decimal as string
+  tip_amount?: string; // Decimal as string
 
 
   // Status & Lifecycle
@@ -141,6 +155,7 @@ export interface CreateOrderPayload {
     product_id: string;
     quantity: number;
     notes?: string;
+    modifier_option_ids?: string[];
   }>;
   // Note: source is NOT included - backend defaults to 'MANUAL' for internal orders
 }
@@ -157,6 +172,7 @@ export interface UpdatePaymentPayload {
   payment_reference?: string;
   payment_amount?: number;
   discount_amount?: number;
+  tip_amount?: number;
 }
 
 export interface AddOrderItemsPayload {
@@ -164,6 +180,7 @@ export interface AddOrderItemsPayload {
     product_id: string;
     quantity: number;
     notes?: string;
+    modifier_option_ids?: string[];
   }>;
 }
 
