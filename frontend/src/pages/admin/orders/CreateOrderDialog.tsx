@@ -16,7 +16,7 @@ import { useCategoriesStore } from '@/stores/categories';
 import { useTableStore } from '@/stores/tables';
 import type { CreateOrderPayload } from '@/types/order';
 import type { Product } from '@/types/product';
-import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check } from 'lucide-react';
+import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check, Package } from 'lucide-react';
 import { formatINR } from '@/lib/format';
 import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -45,6 +45,21 @@ interface CreateOrderDialogProps {
   onSuccess?: () => void;
 }
 
+interface ComboComponent {
+  product_id: string;
+  quantity: number;
+  unit_price: number; // prorated price
+}
+
+interface ComboProduct {
+  id: string;
+  name: string;
+  description?: string | null;
+  combo_price: number;
+  is_active: boolean;
+  components: { product_id: string; quantity: number; product: { id: string; name: string; price: string } }[];
+}
+
 interface OrderItem {
   key: string; // unique: product_id + sorted modifier option ids
   product_id: string;
@@ -53,11 +68,15 @@ interface OrderItem {
   unit_price: number; // base price + modifiers delta
   modifier_option_ids: string[];
   modifier_label?: string; // human readable summary
+  // combo-specific
+  is_combo?: true;
+  combo_components?: ComboComponent[];
 }
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { printKitchenSlip } from '@/lib/print-utils';
 import { Label } from 'recharts';
+import { apiClient } from '@/lib/api-client';
 import { ModifierPickerDialog } from './ModifierPickerDialog';
 import { fetchProductModifiers } from '@/lib/enterprise-api';
 
@@ -80,6 +99,9 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
   const [modifierPickerProduct, setModifierPickerProduct] = useState<Product | null>(null);
   const [modifierPickerBasePrice, setModifierPickerBasePrice] = useState(0);
   const [productModifierCache, setProductModifierCache] = useState<Record<string, boolean>>({}); // productId -> hasModifiers
+  const [showCombos, setShowCombos] = useState(false);
+  const [combos, setCombos] = useState<ComboProduct[]>([]);
+  const [combosLoading, setCombosLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -104,8 +126,16 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       if (products.length === 0) fetchProducts();
       if (categories.length === 0) fetchCategories();
       if (tables.length === 0) fetchTables();
+      // Fetch combos lazily
+      if (combos.length === 0) {
+        setCombosLoading(true);
+        apiClient.get<{ data: ComboProduct[] }>('/restaurant/combos')
+          .then(r => setCombos(r.data.data.filter(c => c.is_active)))
+          .catch(() => void 0)
+          .finally(() => setCombosLoading(false));
+      }
     }
-  }, [open, products.length, categories.length, tables.length, fetchProducts, fetchCategories, fetchTables]);
+  }, [open, products.length, categories.length, tables.length, fetchProducts, fetchCategories, fetchTables, combos.length]);
 
   const activeCats = activeCategories();
 
@@ -142,6 +172,38 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
         quantity: 1,
         unit_price: finalPrice,
         modifier_option_ids: modifierOptionIds,
+      }]);
+    }
+  };
+
+  const addCombo = (combo: ComboProduct) => {
+    const componentTotal = combo.components.reduce(
+      (sum, c) => sum + parseFloat(c.product.price) * c.quantity,
+      0
+    );
+    const ratio = componentTotal > 0 ? combo.combo_price / componentTotal : 1;
+    const comboComponents: ComboComponent[] = combo.components.map(c => ({
+      product_id: c.product_id,
+      quantity: c.quantity,
+      unit_price: parseFloat(c.product.price) * ratio,
+    }));
+
+    const existingKey = `combo:${combo.id}`;
+    const existing = orderItems.find(item => item.key === existingKey);
+    if (existing) {
+      setOrderItems(orderItems.map(item =>
+        item.key === existingKey ? { ...item, quantity: item.quantity + 1 } : item
+      ));
+    } else {
+      setOrderItems(prev => [...prev, {
+        key: existingKey,
+        product_id: existingKey,
+        product: { id: combo.id, name: combo.name, price: String(combo.combo_price), is_active: true, category_id: '', discount_percent: '0', is_veg: null, image_url: null, description: null, sort_order: 0, created_at: '', updated_at: '' } as Product,
+        quantity: 1,
+        unit_price: combo.combo_price,
+        modifier_option_ids: [],
+        is_combo: true,
+        combo_components: comboComponents,
       }]);
     }
   };
@@ -200,12 +262,16 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       notes: notes || undefined,
       arrive_at: arriveAt || undefined,
       order_type: tableNumber ? 'DINE_IN' : 'TAKEAWAY',
-      items: orderItems.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        modifier_option_ids: item.modifier_option_ids.length > 0 ? item.modifier_option_ids : undefined,
-      })),
+      items: orderItems.flatMap(item => {
+        if (item.is_combo && item.combo_components) {
+          return item.combo_components.map(comp => ({
+            product_id: comp.product_id,
+            quantity: comp.quantity * item.quantity,
+            unit_price: comp.unit_price,
+          }));
+        }
+        return [{ product_id: item.product_id, quantity: item.quantity, unit_price: item.unit_price, modifier_option_ids: item.modifier_option_ids.length > 0 ? item.modifier_option_ids : undefined }];
+      }),
     };
 
     const order = await createOrder(payload);
@@ -217,6 +283,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       setArriveAt('');
       setOrderItems([]);
       setSelectedCategoryId(null);
+      setShowCombos(false);
       setProductModifierCache({});
       onOpenChange(false);
       if (printSlip) {
@@ -294,14 +361,29 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     variant="ghost"
                     className={cn(
                       "flex flex-col items-center gap-1.5 h-auto py-2.5 px-4 rounded-2xl transition-all min-w-[80px]",
-                      selectedCategoryId === null ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
+                      !showCombos && selectedCategoryId === null ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
                     )}
-                    onClick={() => setSelectedCategoryId(null)}
+                    onClick={() => { setSelectedCategoryId(null); setShowCombos(false); }}
                   >
-                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border-2 transition-all", selectedCategoryId === null ? "bg-white/20 border-white/30" : "bg-white border-slate-100")}>
-                      <UtensilsCrossed className={cn("w-6 h-6", selectedCategoryId === null ? "text-white" : "text-primary")} />
+                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border-2 transition-all", !showCombos && selectedCategoryId === null ? "bg-white/20 border-white/30" : "bg-white border-slate-100")}>
+                      <UtensilsCrossed className={cn("w-6 h-6", !showCombos && selectedCategoryId === null ? "text-white" : "text-primary")} />
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-wider">Catalog</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 h-auto py-2.5 px-4 rounded-2xl transition-all min-w-[80px]",
+                      showCombos ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-amber-600"
+                    )}
+                    onClick={() => { setShowCombos(true); setSelectedCategoryId(null); }}
+                  >
+                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border-2 transition-all", showCombos ? "bg-white/20 border-white/30" : "bg-white border-slate-100")}>
+                      <Package className={cn("w-6 h-6", showCombos ? "text-white" : "text-amber-500")} />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Combos</span>
                   </Button>
                   {activeCats.map(category => (
                     <Button
@@ -312,7 +394,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                         "flex flex-col items-center gap-1.5 h-auto py-2.5 px-4 rounded-2xl transition-all min-w-[80px]",
                         selectedCategoryId === category.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
                       )}
-                      onClick={() => setSelectedCategoryId(category.id)}
+                      onClick={() => { setSelectedCategoryId(category.id); setShowCombos(false); }}
                     >
                       <div className={cn("h-12 w-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all", selectedCategoryId === category.id ? "border-white/40" : "border-slate-100")}>
                         {category.image_url ? (
@@ -339,7 +421,43 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
               </div>
 
               <div className="flex-1 overflow-y-auto no-scrollbar pr-2">
-                {productsLoading ? (
+                {showCombos ? (
+                  combosLoading ? (
+                    <div className="py-4"><TableSkeleton rows={4} /></div>
+                  ) : combos.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-48 text-slate-300">
+                      <Package className="w-10 h-10 mb-2" />
+                      <p className="text-[10px] font-bold uppercase tracking-widest">No active combos</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 pb-40">
+                      {combos.map(combo => {
+                        const qty = orderItems.find(i => i.key === `combo:${combo.id}`)?.quantity ?? 0;
+                        return (
+                          <motion.div
+                            layout key={combo.id}
+                            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                            className={cn(
+                              "relative p-3 rounded-xl border-2 transition-all cursor-pointer group flex flex-col gap-1.5 h-28 overflow-hidden",
+                              qty > 0 ? "border-amber-400 bg-amber-50/40 shadow-sm" : "border-slate-50 bg-slate-50/30 hover:border-amber-100 hover:bg-white"
+                            )}
+                            onClick={() => addCombo(combo)}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 rounded">COMBO</span>
+                            </div>
+                            <p className="text-[12px] font-bold text-slate-900 leading-snug line-clamp-2">{combo.name}</p>
+                            <p className="text-sm font-extrabold text-amber-600">{formatINR(combo.combo_price)}</p>
+                            {qty > 0 && (
+                              <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center">{qty}</div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )
+                ) : productsLoading ? (
                   <div className="py-4">
                     <TableSkeleton rows={6} />
                   </div>
@@ -413,8 +531,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                 )}
               </div>
             </div>
-
-            {/* Right: Checkout Flow (Ultra-Premium POS Design) */}
+            {/* End product grid outer ternary */}
             <div className="lg:col-span-4 bg-slate-50/40 flex flex-col border-t lg:border-t-0 lg:border-l border-indigo-50/50 h-full overflow-hidden">
               <div className="p-3 sm:p-4 lg:p-6 flex flex-col h-full overflow-hidden space-y-4">
 
@@ -504,7 +621,12 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                             className="flex items-center justify-between bg-slate-50/50 hover:bg-white group px-4 py-3 rounded-2xl border border-transparent hover:border-indigo-50 hover:shadow-sm transition-all"
                           >
                             <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-                              <p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p>
+                                {item.is_combo && (
+                                  <span className="text-[8px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 px-1 py-0.5 rounded shrink-0">COMBO</span>
+                                )}
+                              </div>
                               {item.modifier_label && (
                                 <p className="text-[9px] text-violet-500 font-semibold truncate">{item.modifier_label}</p>
                               )}
