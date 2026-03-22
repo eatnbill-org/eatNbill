@@ -1423,6 +1423,146 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // ---- Supplier Management ----
+
+  router.get('/suppliers', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const suppliers = await prisma.supplier.findMany({ where: { restaurant_id: restaurantId }, orderBy: { name: 'asc' } });
+      res.json({ data: suppliers });
+    } catch (err) { next(err); }
+  });
+
+  router.post('/suppliers', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage suppliers', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const tenantId: string = req.user?.tenantId;
+      const { name, contact_name, phone, email, address, gst_number, payment_terms } = req.body;
+      const supplier = await prisma.supplier.create({ data: { tenant_id: tenantId, restaurant_id: restaurantId, name, contact_name, phone, email, address, gst_number, payment_terms } });
+      res.status(201).json({ data: supplier });
+    } catch (err) { next(err); }
+  });
+
+  router.patch('/suppliers/:id', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage suppliers', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { id } = req.params;
+      const fields = ['name', 'contact_name', 'phone', 'email', 'address', 'gst_number', 'payment_terms', 'is_active'];
+      const data: any = {};
+      for (const f of fields) { if (req.body[f] !== undefined) data[f] = req.body[f]; }
+      const supplier = await prisma.supplier.update({ where: { id, restaurant_id: restaurantId }, data });
+      res.json({ data: supplier });
+    } catch (err) { next(err); }
+  });
+
+  router.delete('/suppliers/:id', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can delete suppliers', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { id } = req.params;
+      await prisma.supplier.delete({ where: { id, restaurant_id: restaurantId } });
+      res.json({ data: { success: true } });
+    } catch (err) { next(err); }
+  });
+
+  // ---- Purchase Orders ----
+
+  router.get('/purchase-orders', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const pos = await prisma.purchaseOrder.findMany({
+        where: { restaurant_id: restaurantId },
+        include: { supplier: { select: { name: true } }, lines: { include: { ingredient: { select: { name: true, unit: true } } } } },
+        orderBy: { created_at: 'desc' },
+        take: 100,
+      });
+      res.json({ data: pos });
+    } catch (err) { next(err); }
+  });
+
+  router.post('/purchase-orders', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage purchase orders', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const tenantId: string = req.user?.tenantId;
+      const { supplier_id, expected_date, notes, lines } = req.body as {
+        supplier_id: string;
+        expected_date?: string;
+        notes?: string;
+        lines: { ingredient_id: string; quantity: number; unit_cost: number }[];
+      };
+      const poCount = await prisma.purchaseOrder.count({ where: { restaurant_id: restaurantId } });
+      const poNumber = `PO-${String(poCount + 1).padStart(4, '0')}`;
+      const totalAmount = lines.reduce((sum, l) => sum + l.quantity * l.unit_cost, 0);
+      const po = await prisma.purchaseOrder.create({
+        data: {
+          tenant_id: tenantId,
+          restaurant_id: restaurantId,
+          supplier_id,
+          po_number: poNumber,
+          expected_date: expected_date ? new Date(expected_date) : null,
+          notes,
+          total_amount: totalAmount,
+          lines: {
+            create: lines.map((l) => ({
+              ingredient_id: l.ingredient_id,
+              quantity: l.quantity,
+              unit_cost: l.unit_cost,
+              total_cost: l.quantity * l.unit_cost,
+            })),
+          },
+        },
+        include: { supplier: { select: { name: true } }, lines: { include: { ingredient: { select: { name: true, unit: true } } } } },
+      });
+      res.status(201).json({ data: po });
+    } catch (err) { next(err); }
+  });
+
+  router.patch('/purchase-orders/:id/receive', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can receive purchase orders', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const tenantId: string = req.user?.tenantId;
+      const { id } = req.params;
+      const po = await prisma.purchaseOrder.findFirst({ where: { id, restaurant_id: restaurantId }, include: { lines: true } });
+      if (!po) throw new AppError('NOT_FOUND', 'Purchase order not found', 404);
+      // Mark as received and create stock movements for each line
+      await prisma.$transaction([
+        prisma.purchaseOrder.update({ where: { id }, data: { status: 'RECEIVED', received_date: new Date() } }),
+        ...po.lines.map((line) =>
+          prisma.ingredient.update({ where: { id: line.ingredient_id }, data: { current_stock: { increment: Number(line.quantity) }, cost_per_unit: Number(line.unit_cost) } })
+        ),
+        ...po.lines.map((line) =>
+          prisma.stockMovement.create({
+            data: {
+              tenant_id: tenantId,
+              restaurant_id: restaurantId,
+              ingredient_id: line.ingredient_id,
+              type: 'PURCHASE',
+              quantity: Number(line.quantity),
+              unit_cost: Number(line.unit_cost),
+              notes: `PO ${po.po_number}`,
+            },
+          })
+        ),
+      ]);
+      res.json({ data: { success: true, po_number: po.po_number } });
+    } catch (err) { next(err); }
+  });
+
+  router.patch('/purchase-orders/:id/status', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can update PO status', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const { id } = req.params;
+      const { status } = req.body;
+      const po = await prisma.purchaseOrder.update({ where: { id, restaurant_id: restaurantId }, data: { status } });
+      res.json({ data: po });
+    } catch (err) { next(err); }
+  });
+
   // POST /inventory/ingredients/:id/adjustment — stock adjustment (PURCHASE/WASTE/ADJUSTMENT)
   router.post('/inventory/ingredients/:id/adjustment', async (req: any, res: any, next: any) => {
     try {
