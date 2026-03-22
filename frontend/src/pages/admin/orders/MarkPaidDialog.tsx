@@ -26,7 +26,7 @@ import { Label } from '@/components/ui/label';
 import { useRestaurantStore } from '@/stores/restaurant';
 import { Checkbox } from '@/components/ui/checkbox';
 import { printBill } from '@/lib/print-utils';
-import { fetchOrderInvoice, generateOrderEInvoice, validateOrderGst } from '@/lib/enterprise-api';
+import { fetchOrderInvoice, generateOrderEInvoice, validateOrderGst, validateVoucherCode } from '@/lib/enterprise-api';
 
 interface MarkPaidDialogProps {
     order: Order | null;
@@ -48,15 +48,36 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const [isCreditView, setIsCreditView] = useState(false);
     const [autoPrint, setAutoPrint] = useState(false);
     const [discount, setDiscount] = useState<string>('');
+    const [tip, setTip] = useState<string>('');
+    const [voucherInput, setVoucherInput] = useState('');
+    const [appliedVoucher, setAppliedVoucher] = useState<{ voucher_id: string; code: string; discount_amount: number; description: string | null } | null>(null);
+    const [voucherLoading, setVoucherLoading] = useState(false);
     const [buyerName, setBuyerName] = useState('');
     const [buyerGstin, setBuyerGstin] = useState('');
     const [buyerStateCode, setBuyerStateCode] = useState('');
     const [invoiceMeta, setInvoiceMeta] = useState<{ invoiceNumber?: string; irnStatus?: string } | null>(null);
     const [invoiceLoading, setInvoiceLoading] = useState(false);
 
+    const handleApplyVoucher = async () => {
+        if (!voucherInput.trim() || !order) return;
+        setVoucherLoading(true);
+        try {
+            const result = await validateVoucherCode(voucherInput.trim(), baseTotal);
+            setAppliedVoucher(result);
+            setDiscount(String(result.discount_amount));
+        } catch (e: any) {
+            toast.error(e.message || 'Invalid voucher code');
+        } finally {
+            setVoucherLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (open && order) {
             setDiscount(order.discount_amount ? String(order.discount_amount) : '');
+            setTip(order.tip_amount ? String(order.tip_amount) : '');
+            setAppliedVoucher(null);
+            setVoucherInput('');
             setMethod('UPI');
             setAutoPrint(false);
             setIsCreditView(false);
@@ -67,9 +88,10 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
         }
     }, [open, order]);
 
-    const baseTotal = order ? (parseFloat(order.total_amount) + parseFloat(order.discount_amount || '0')) : 0;
+    const baseTotal = order ? (parseFloat(order.total_amount) + parseFloat(order.discount_amount || '0') - parseFloat(order.tip_amount || '0')) : 0;
     const currentDiscount = parseFloat(discount) || 0;
-    const finalPayable = Math.max(0, baseTotal - currentDiscount);
+    const currentTip = parseFloat(tip) || 0;
+    const finalPayable = Math.max(0, baseTotal - currentDiscount + currentTip);
 
     const handleRevertPayment = async () => {
         if (!order) return;
@@ -102,7 +124,9 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                 payment_method: currentMethod as PaymentMethod,
                 payment_amount: finalPayable,
                 discount_amount: currentDiscount,
-            });
+                tip_amount: currentTip || undefined,
+                voucher_id: appliedVoucher?.voucher_id,
+            } as any);
 
             if (autoPrint && !isCreditView) {
                 const updatedOrder = {
@@ -297,6 +321,31 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                             <span className="text-slate-900">{formatINR(baseTotal)}</span>
                                         </div>
 
+                                        {/* Voucher Code */}
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={voucherInput}
+                                                onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+                                                placeholder="VOUCHER CODE"
+                                                className="h-9 text-xs font-bold tracking-widest border-slate-200 bg-white rounded-xl flex-1"
+                                                disabled={!!appliedVoucher}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleApplyVoucher(); } }}
+                                            />
+                                            {appliedVoucher ? (
+                                                <Button type="button" variant="ghost" size="sm" className="h-9 px-3 rounded-xl text-rose-500 hover:bg-rose-50 text-[10px] font-black" onClick={() => { setAppliedVoucher(null); setVoucherInput(''); setDiscount(''); }}>Remove</Button>
+                                            ) : (
+                                                <Button type="button" variant="outline" size="sm" className="h-9 px-3 rounded-xl text-[10px] font-black" onClick={() => void handleApplyVoucher()} disabled={voucherLoading || !voucherInput.trim()}>
+                                                    {voucherLoading ? '...' : 'Apply'}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        {appliedVoucher && (
+                                            <div className="text-[10px] text-emerald-600 font-black flex items-center gap-1">
+                                                <CheckCircle2 className="h-3 w-3" />
+                                                Voucher "{appliedVoucher.code}" applied — {formatINR(appliedVoucher.discount_amount)} off
+                                            </div>
+                                        )}
+
                                         <div className="flex items-center justify-between gap-4 py-1">
                                             <Label htmlFor="discount" className="text-xs text-rose-500 font-black flex items-center gap-1.5 uppercase tracking-wider">
                                                 <Sparkles className="h-3 w-3" /> Discount
@@ -311,6 +360,24 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                                     className="h-10 w-28 pl-6 text-right text-sm font-black border-slate-200 bg-white rounded-xl focus:border-rose-300 focus:ring-rose-100 transition-all"
                                                     min={0}
                                                     max={baseTotal}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-4 py-1">
+                                            <Label htmlFor="tip" className="text-xs text-amber-500 font-black flex items-center gap-1.5 uppercase tracking-wider">
+                                                <Wallet className="h-3 w-3" /> Tip
+                                            </Label>
+                                            <div className="relative">
+                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-black">₹</span>
+                                                <Input
+                                                    id="tip"
+                                                    type="number"
+                                                    value={tip}
+                                                    onChange={(e) => setTip(e.target.value)}
+                                                    className="h-10 w-28 pl-6 text-right text-sm font-black border-slate-200 bg-white rounded-xl focus:border-amber-300 focus:ring-amber-100 transition-all"
+                                                    min={0}
+                                                    placeholder="0"
                                                 />
                                             </div>
                                         </div>

@@ -14,6 +14,23 @@ import {
 import { createExportJob, downloadExportJob, fetchOutlets, listExportJobs } from '@/lib/enterprise-api';
 import type { ExportDataset, ExportFormat, ExportJob, RestaurantOutlet } from '@/types/enterprise-billing';
 
+const DATASET_LABELS: Record<ExportDataset, string> = {
+  ORDERS: 'Orders',
+  SALES: 'Sales',
+  USERS: 'Users',
+  CUSTOMERS: 'Customers',
+  PRODUCTS: 'Products',
+  RESERVATIONS: 'Reservations',
+  DAY_END: 'Day-End Closures',
+  GST_INVOICES: 'GST Invoices',
+  TAX_SUMMARY: 'Tax Summary',
+  GSTR1_SUMMARY: 'GSTR-1 Summary (India)',
+  GSTR3B_SUMMARY: 'GSTR-3B Summary (India)',
+  WAITER_PERFORMANCE: 'Waiter Performance',
+  AGGREGATOR_COMMISSION: 'Aggregator Commission (Zomato/Swiggy)',
+  PAYROLL: 'Payroll / Timesheet',
+};
+
 const datasets: ExportDataset[] = [
   'ORDERS',
   'SALES',
@@ -24,6 +41,11 @@ const datasets: ExportDataset[] = [
   'DAY_END',
   'GST_INVOICES',
   'TAX_SUMMARY',
+  'GSTR1_SUMMARY',
+  'GSTR3B_SUMMARY',
+  'WAITER_PERFORMANCE',
+  'AGGREGATOR_COMMISSION',
+  'PAYROLL',
 ];
 
 const formats: ExportFormat[] = ['CSV', 'XLSX'];
@@ -111,7 +133,7 @@ export default function ExportCenterPage() {
               <SelectTrigger className="h-10 rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {datasets.map((item) => (
-                  <SelectItem key={item} value={item}>{item}</SelectItem>
+                  <SelectItem key={item} value={item}>{DATASET_LABELS[item]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

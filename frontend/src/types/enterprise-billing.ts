@@ -71,7 +71,12 @@ export type ExportDataset =
   | 'RESERVATIONS'
   | 'DAY_END'
   | 'GST_INVOICES'
-  | 'TAX_SUMMARY';
+  | 'TAX_SUMMARY'
+  | 'GSTR1_SUMMARY'
+  | 'GSTR3B_SUMMARY'
+  | 'WAITER_PERFORMANCE'
+  | 'AGGREGATOR_COMMISSION'
+  | 'PAYROLL';
 
 export type ExportFormat = 'CSV' | 'XLSX';
 export type ExportJobStatus = 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED';

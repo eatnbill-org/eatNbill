@@ -47,6 +47,7 @@ export async function getRestaurantById(tenantId: string, userId: string, restau
       logo_url: true,
       address: true,
       gst_number: true,
+      fssai_license: true,
       tagline: true,
       restaurant_type: true,
       phone: true,
@@ -89,6 +90,7 @@ export async function updateRestaurantProfile(
     logo_url?: string | null;
     address?: string | null;
     gst_number?: string | null;
+    fssai_license?: string | null;
     tagline?: string | null;
     restaurant_type?: string | null;
     phone?: string | null;
@@ -105,6 +107,7 @@ export async function updateRestaurantProfile(
       logo_url: data.logo_url ?? undefined,
       address: data.address ?? undefined,
       gst_number: data.gst_number ?? undefined,
+      fssai_license: data.fssai_license ?? undefined,
       tagline: data.tagline ?? undefined,
       restaurant_type: data.restaurant_type ?? undefined,
       phone: data.phone ?? undefined,
@@ -1037,5 +1040,62 @@ export async function upsertTableQRCode(data: {
       qr_png_url: data.qr_png_url,
       qr_pdf_url: data.qr_pdf_url,
     },
+  });
+}
+
+export async function getStaffPerformanceAnalytics(
+  restaurantId: string,
+  filters: { from_date?: string; to_date?: string; outlet_id?: string }
+) {
+  const where: any = {
+    restaurant_id: restaurantId,
+    waiter_id: { not: null },
+    status: 'COMPLETED',
+    payment_status: 'PAID',
+  };
+
+  if (filters.from_date) {
+    where.placed_at = { ...(where.placed_at || {}), gte: new Date(filters.from_date) };
+  }
+  if (filters.to_date) {
+    const toDate = new Date(filters.to_date);
+    toDate.setDate(toDate.getDate() + 1);
+    where.placed_at = { ...(where.placed_at || {}), lt: toDate };
+  }
+  if (filters.outlet_id) {
+    where.outlet_id = filters.outlet_id;
+  }
+
+  const orders = await prisma.order.groupBy({
+    by: ['waiter_id'],
+    where,
+    _count: { id: true },
+    _sum: { total_amount: true, discount_amount: true },
+    _avg: { total_amount: true },
+  });
+
+  if (orders.length === 0) return [];
+
+  const waiterIds = orders.map((o) => o.waiter_id as string);
+  const waiters = await prisma.restaurantUser.findMany({
+    where: { id: { in: waiterIds } },
+    select: { id: true, name: true, email: true, role: true, shift_detail: true, is_active: true },
+  });
+
+  const waiterMap = new Map(waiters.map((w) => [w.id, w]));
+
+  return orders.map((row) => {
+    const waiter = waiterMap.get(row.waiter_id as string);
+    return {
+      waiter_id: row.waiter_id,
+      name: waiter?.name || waiter?.email || 'Unknown',
+      role: waiter?.role,
+      shift_detail: waiter?.shift_detail,
+      is_active: waiter?.is_active,
+      order_count: row._count.id,
+      total_revenue: Number(row._sum.total_amount ?? 0),
+      total_discount: Number(row._sum.discount_amount ?? 0),
+      avg_order_value: Number(row._avg.total_amount ?? 0),
+    };
   });
 }

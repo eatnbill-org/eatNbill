@@ -18,7 +18,12 @@ type ExportDataset =
   | 'RESERVATIONS'
   | 'DAY_END'
   | 'GST_INVOICES'
-  | 'TAX_SUMMARY';
+  | 'TAX_SUMMARY'
+  | 'GSTR1_SUMMARY'
+  | 'GSTR3B_SUMMARY'
+  | 'WAITER_PERFORMANCE'
+  | 'AGGREGATOR_COMMISSION'
+  | 'PAYROLL';
 type ExportFormat = 'CSV' | 'XLSX';
 
 type TaxLine = {
@@ -845,6 +850,149 @@ async function getRowsForDataset(job: Awaited<ReturnType<typeof repo.claimNextEx
       total_tax_amount: round2(item.total_tax_amount),
       grand_total_amount: round2(item.grand_total_amount),
     }));
+  }
+
+  // ---- GSTR-1 Summary (B2B + B2C breakdown, HSN summary) ----
+  if (job.dataset === 'GSTR1_SUMMARY') {
+    const invoices = await prisma.gstInvoice.findMany({
+      where: {
+        restaurant_id: job.restaurant_id,
+        ...(outletId ? { outlet_id: outletId } : {}),
+        ...((from || to) ? { created_at: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+      },
+      include: { lines: true },
+      orderBy: { created_at: 'asc' },
+    });
+
+    return invoices.map((inv) => ({
+      invoice_number: inv.invoice_number,
+      invoice_date: inv.issued_at?.toISOString().slice(0, 10) ?? inv.created_at.toISOString().slice(0, 10),
+      invoice_type: inv.invoice_type,
+      buyer_name: inv.buyer_name ?? 'Consumer',
+      buyer_gstin: inv.buyer_gstin ?? '',
+      buyer_state_code: inv.buyer_state_code ?? '',
+      seller_gstin: inv.seller_gstin ?? '',
+      taxable_amount: round2(Number(inv.taxable_amount)),
+      cgst_amount: round2(Number(inv.cgst_amount)),
+      sgst_amount: round2(Number(inv.sgst_amount)),
+      igst_amount: round2(Number(inv.igst_amount)),
+      total_tax_amount: round2(Number(inv.total_tax_amount)),
+      grand_total_amount: round2(Number(inv.grand_total_amount)),
+    }));
+  }
+
+  // ---- GSTR-3B Summary (Aggregate Table 3.1 format) ----
+  if (job.dataset === 'GSTR3B_SUMMARY') {
+    const invoices = await prisma.gstInvoice.findMany({
+      where: {
+        restaurant_id: job.restaurant_id,
+        ...(outletId ? { outlet_id: outletId } : {}),
+        ...((from || to) ? { created_at: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+      },
+      orderBy: { created_at: 'asc' },
+    });
+
+    // Group by month for GSTR-3B table 3.1
+    const monthMap = new Map<string, { taxable: number; cgst: number; sgst: number; igst: number; total_tax: number; grand_total: number; invoice_count: number }>();
+    for (const inv of invoices) {
+      const month = inv.created_at.toISOString().slice(0, 7); // YYYY-MM
+      const cur = monthMap.get(month) ?? { taxable: 0, cgst: 0, sgst: 0, igst: 0, total_tax: 0, grand_total: 0, invoice_count: 0 };
+      cur.taxable += Number(inv.taxable_amount);
+      cur.cgst += Number(inv.cgst_amount);
+      cur.sgst += Number(inv.sgst_amount);
+      cur.igst += Number(inv.igst_amount);
+      cur.total_tax += Number(inv.total_tax_amount);
+      cur.grand_total += Number(inv.grand_total_amount);
+      cur.invoice_count += 1;
+      monthMap.set(month, cur);
+    }
+
+    return Array.from(monthMap.entries()).map(([month, v]) => ({
+      tax_period: month,
+      description: 'Outward taxable supplies (other than zero rated, nil & exempt)',
+      taxable_value: round2(v.taxable),
+      integrated_tax: round2(v.igst),
+      central_tax: round2(v.cgst),
+      state_ut_tax: round2(v.sgst),
+      cess: 0,
+      invoice_count: v.invoice_count,
+    }));
+  }
+
+  // ---- Waiter Performance Export ----
+  if (job.dataset === 'WAITER_PERFORMANCE') {
+    const { getStaffPerformanceAnalytics } = await import('./repository');
+    const rows = await getStaffPerformanceAnalytics(job.restaurant_id, {});
+    return rows.map((r) => ({
+      waiter_name: r.name,
+      role: r.role,
+      shift: r.shift_detail ?? '',
+      is_active: r.is_active ? 'Yes' : 'No',
+      order_count: r.order_count,
+      total_revenue: round2(r.total_revenue),
+      total_discount_given: round2(r.total_discount),
+      avg_order_value: round2(r.avg_order_value),
+    }));
+  }
+
+  // ---- Payroll / Timesheet Export ----
+  if (job.dataset === 'PAYROLL') {
+    const entries = await prisma.staffTimeEntry.findMany({
+      where: {
+        restaurant_id: job.restaurant_id,
+        ...(from ? { clock_in: { gte: from } } : {}),
+        ...(to ? { clock_in: { lte: to } } : {}),
+        clock_out: { not: null },
+      },
+      include: { user: { select: { name: true, role: true, salary: true } } },
+      orderBy: { clock_in: 'asc' },
+    });
+    return entries.map((e) => ({
+      staff_name: e.user?.name ?? 'Unknown',
+      role: e.user?.role ?? '',
+      clock_in: e.clock_in.toISOString(),
+      clock_out: e.clock_out ? e.clock_out.toISOString() : '',
+      total_hours: e.total_minutes ? round2(e.total_minutes / 60) : 0,
+      monthly_salary: e.user?.salary ? round2(Number(e.user.salary)) : '',
+    }));
+  }
+
+  // ---- Aggregator Commission Report ----
+  if (job.dataset === 'AGGREGATOR_COMMISSION') {
+    const integrations = await prisma.integrationConfig.findMany({
+      where: { restaurant_id: job.restaurant_id, is_enabled: true },
+    });
+    if (integrations.length === 0) return [];
+    const platform_order_rows: object[] = [];
+    for (const integration of integrations) {
+      if (!integration.commission_rate_percent) continue;
+      const commissionRate = Number(integration.commission_rate_percent);
+      const orders = await prisma.order.findMany({
+        where: {
+          restaurant_id: job.restaurant_id,
+          source: integration.platform as any,
+          ...(from ? { placed_at: { gte: from } } : {}),
+          ...(to ? { placed_at: { lte: to } } : {}),
+          status: 'COMPLETED',
+        },
+        select: { id: true, order_number: true, placed_at: true, total_amount: true, external_order_id: true },
+      });
+      for (const order of orders) {
+        const revenue = Number(order.total_amount);
+        const commission = round2(revenue * commissionRate / 100);
+        platform_order_rows.push({
+          platform: integration.platform,
+          order_number: order.order_number,
+          external_order_id: order.external_order_id ?? '',
+          placed_at: order.placed_at.toISOString(),
+          order_amount: round2(revenue),
+          commission_rate_percent: commissionRate,
+          commission_amount: commission,
+          net_after_commission: round2(revenue - commission),
+        });
+      }
+    }
+    return platform_order_rows;
   }
 
   return [];

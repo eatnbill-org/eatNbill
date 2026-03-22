@@ -1,11 +1,16 @@
+import * as React from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { User, Phone, MapPin, Clock, FileText, Wallet, Hash, Utensils, ReceiptText, X, Printer as PrinterIcon, Sparkles } from 'lucide-react';
+import { User, Phone, MapPin, Clock, FileText, Wallet, Hash, Utensils, ReceiptText, X, Printer as PrinterIcon, ChefHat, Sparkles, Ban, Gift, RotateCcw } from 'lucide-react';
 import type { Order } from '@/types/order';
 import { formatINR } from '@/lib/format';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { apiClient } from '@/lib/api-client';
+import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { KotPrintSheet } from '@/pages/admin/dashboard/components/KotPrintSheet';
 
 // We import Button and Badge separately since they are not exported from @/components/ui/dialog
 import { Button as UIButton } from '@/components/ui/button';
@@ -20,6 +25,55 @@ interface OrderDetailsDialogProps {
 }
 
 export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPaid, onReversePayment }: OrderDetailsDialogProps) {
+    const [voidTarget, setVoidTarget] = React.useState<{ itemId: string; action: 'VOIDED' | 'COMPED' } | null>(null);
+    const [voidReason, setVoidReason] = React.useState('');
+    const [voidLoading, setVoidLoading] = React.useState(false);
+    const [kotOpen, setKotOpen] = React.useState(false);
+    const [refundOpen, setRefundOpen] = React.useState(false);
+    const [refundAmount, setRefundAmount] = React.useState('');
+    const [refundReason, setRefundReason] = React.useState('');
+    const [refundLoading, setRefundLoading] = React.useState(false);
+
+    const handleRefund = async () => {
+        if (!order || !refundAmount) return;
+        setRefundLoading(true);
+        try {
+            const { error } = await apiClient.post(`/orders/${order.id}/refunds`, {
+                refund_amount: parseFloat(refundAmount),
+                reason_code: refundReason || undefined,
+                method: 'CASH',
+            });
+            if (error) throw new Error(error.message);
+            toast.success('Refund recorded');
+            setRefundOpen(false);
+            setRefundAmount('');
+            setRefundReason('');
+        } catch (e: any) {
+            toast.error(e.message || 'Failed to record refund');
+        } finally {
+            setRefundLoading(false);
+        }
+    };
+
+    const handleVoidItem = async () => {
+        if (!order || !voidTarget) return;
+        setVoidLoading(true);
+        try {
+            const { error } = await apiClient.patch(`/orders/${order.id}/items/${voidTarget.itemId}/void`, {
+                action: voidTarget.action,
+                reason: voidReason || undefined,
+            });
+            if (error) throw new Error(error.message);
+            toast.success(voidTarget.action === 'VOIDED' ? 'Item voided' : 'Item marked as complimentary');
+            setVoidTarget(null);
+            setVoidReason('');
+        } catch (e: any) {
+            toast.error(e.message || 'Failed to update item');
+        } finally {
+            setVoidLoading(false);
+        }
+    };
+
     if (!order) return null;
 
     const getStatusStyles = (status: string) => {
@@ -94,17 +148,15 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                                                 <p className="font-bold text-slate-800 text-sm tracking-tight truncate leading-none uppercase">{item.name_snapshot}</p>
                                                 {/* Item Status Badge */}
                                                 {(item as any).status === 'SERVED' ? (
-                                                    <span className="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest">
-                                                        Served
-                                                    </span>
+                                                    <span className="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest">Served</span>
                                                 ) : (item as any).status === 'CANCELLED' ? (
-                                                    <span className="bg-rose-100 text-rose-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest">
-                                                        Cancelled
-                                                    </span>
+                                                    <span className="bg-rose-100 text-rose-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest">Cancelled</span>
+                                                ) : (item as any).status === 'VOIDED' ? (
+                                                    <span className="bg-red-100 text-red-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest">Voided</span>
+                                                ) : (item as any).status === 'COMPED' ? (
+                                                    <span className="bg-purple-100 text-purple-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest">Comp</span>
                                                 ) : (item as any).status === 'REORDER' ? (
-                                                    <span className="bg-orange-100 text-orange-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest">
-                                                        Re-Order
-                                                    </span>
+                                                    <span className="bg-orange-100 text-orange-700 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest">Re-Order</span>
                                                 ) : (
                                                     <span className="bg-blue-50 text-blue-500 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-blue-100">
                                                         {order.status === 'PREPARING' ? 'Cooking' : order.status === 'READY' ? 'Ready' : 'Pending'}
@@ -114,8 +166,26 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{formatINR(parseFloat(item.price_snapshot))}</p>
                                         </div>
                                     </div>
-                                    <div className="text-right ml-4 shrink-0">
+                                    <div className="flex items-center gap-2 ml-4 shrink-0">
                                         <p className="text-sm font-black text-slate-900 tracking-tight">{formatINR(parseFloat(item.price_snapshot) * item.quantity)}</p>
+                                        {order.status === 'ACTIVE' && !['VOIDED','COMPED','CANCELLED'].includes((item as any).status) && (
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => { setVoidTarget({ itemId: item.id, action: 'VOIDED' }); setVoidReason(''); }}
+                                                    title="Void item"
+                                                    className="h-6 w-6 rounded flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                                                >
+                                                    <Ban className="h-3 w-3" />
+                                                </button>
+                                                <button
+                                                    onClick={() => { setVoidTarget({ itemId: item.id, action: 'COMPED' }); setVoidReason(''); }}
+                                                    title="Complimentary"
+                                                    className="h-6 w-6 rounded flex items-center justify-center bg-purple-50 text-purple-500 hover:bg-purple-100 transition-colors"
+                                                >
+                                                    <Gift className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </motion.div>
                             ))}
@@ -201,6 +271,24 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                             <UIButton variant="outline" className="h-10 w-10 shrink-0 rounded-lg text-indigo-500 border-indigo-50 hover:bg-indigo-50 transition-all" onClick={() => window.print()}>
                                 <PrinterIcon className="w-3.5 h-3.5" />
                             </UIButton>
+                            <UIButton
+                                variant="outline"
+                                title="Print KOT"
+                                className="h-10 w-10 shrink-0 rounded-lg text-orange-500 border-orange-50 hover:bg-orange-50 transition-all"
+                                onClick={() => setKotOpen(true)}
+                            >
+                                <ChefHat className="w-3.5 h-3.5" />
+                            </UIButton>
+                            {order.payment_status === 'PAID' && (
+                                <UIButton
+                                    variant="outline"
+                                    title="Issue Refund"
+                                    className="h-10 w-10 shrink-0 rounded-lg text-rose-500 border-rose-50 hover:bg-rose-50 transition-all"
+                                    onClick={() => { setRefundAmount(order.total_amount); setRefundOpen(true); }}
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                </UIButton>
+                            )}
 
                             {order.payment_status === 'PENDING' && !['CANCELLED'].includes(order.status) && (
                                 <UIButton
@@ -216,6 +304,81 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                             )}
                         </div>
                     </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        {/* Refund Dialog */}
+        <Dialog open={refundOpen} onOpenChange={(o) => { if (!o) { setRefundOpen(false); setRefundAmount(''); setRefundReason(''); } }}>
+            <DialogContent className="max-w-sm rounded-2xl p-6">
+                <DialogTitle className="text-base font-black uppercase tracking-tight text-rose-700">Issue Refund</DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">Record a refund for order #{order?.order_number}</p>
+                <div className="mt-4 space-y-3">
+                    <div>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Refund Amount (₹)</label>
+                        <Input
+                            type="number"
+                            value={refundAmount}
+                            onChange={(e) => setRefundAmount(e.target.value)}
+                            className="h-9 text-sm mt-1"
+                            min={0.01}
+                            max={order ? parseFloat(order.total_amount) : undefined}
+                            step={0.01}
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Reason (optional)</label>
+                        <Input
+                            value={refundReason}
+                            onChange={(e) => setRefundReason(e.target.value)}
+                            placeholder="e.g. Wrong order, Quality issue..."
+                            className="h-9 text-sm mt-1"
+                        />
+                    </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                    <UIButton variant="outline" className="flex-1" onClick={() => setRefundOpen(false)}>Cancel</UIButton>
+                    <UIButton onClick={handleRefund} disabled={refundLoading || !refundAmount} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold">
+                        {refundLoading ? 'Processing...' : 'Issue Refund'}
+                    </UIButton>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        {/* KOT Print Sheet */}
+        <KotPrintSheet order={kotOpen ? order : null} onOpenChange={setKotOpen} />
+
+        {/* Void / Comp confirmation dialog */}
+        <Dialog open={!!voidTarget} onOpenChange={(o) => { if (!o) { setVoidTarget(null); setVoidReason(''); } }}>
+            <DialogContent className="max-w-sm rounded-2xl p-6">
+                <DialogTitle className="text-base font-black uppercase tracking-tight">
+                    {voidTarget?.action === 'VOIDED' ? 'Void Item' : 'Complimentary Item'}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                    {voidTarget?.action === 'VOIDED'
+                        ? 'This item will be marked as void and excluded from billing.'
+                        : 'This item will be marked as complimentary (on the house).'}
+                </p>
+                <div className="mt-4 space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Reason (optional)</label>
+                    <Input
+                        value={voidReason}
+                        onChange={(e) => setVoidReason(e.target.value)}
+                        placeholder={voidTarget?.action === 'VOIDED' ? 'e.g. Wrong order, spillage...' : 'e.g. Customer birthday, manager approval...'}
+                        className="h-9 text-sm"
+                    />
+                </div>
+                <div className="flex gap-2 mt-4">
+                    <UIButton variant="outline" className="flex-1" onClick={() => { setVoidTarget(null); setVoidReason(''); }}>
+                        Cancel
+                    </UIButton>
+                    <UIButton
+                        onClick={handleVoidItem}
+                        disabled={voidLoading}
+                        className={cn("flex-1 font-bold", voidTarget?.action === 'VOIDED' ? "bg-red-600 hover:bg-red-700 text-white" : "bg-purple-600 hover:bg-purple-700 text-white")}
+                    >
+                        {voidLoading ? 'Saving...' : voidTarget?.action === 'VOIDED' ? 'Void Item' : 'Mark as Comp'}
+                    </UIButton>
                 </div>
             </DialogContent>
         </Dialog>

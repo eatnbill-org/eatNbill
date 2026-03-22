@@ -269,6 +269,7 @@ export async function updateConfig(
     external_restaurant_id?: string;
     webhook_secret?: string;
     auto_accept?: boolean;
+    commission_rate_percent?: number | null;
   }
 ) {
   // Verify ownership via config lookup

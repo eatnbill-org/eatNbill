@@ -110,12 +110,16 @@ export async function updateIntegrationConfig(
     external_restaurant_id?: string;
     webhook_secret?: string;
     auto_accept?: boolean;
+    commission_rate_percent?: number | null;
   }
 ) {
   const updateData: Prisma.IntegrationConfigUpdateInput = {
     is_enabled: data.is_enabled,
     external_restaurant_id: data.external_restaurant_id,
     auto_accept: data.auto_accept,
+    commission_rate_percent: data.commission_rate_percent !== undefined
+      ? (data.commission_rate_percent === null ? null : new Prisma.Decimal(data.commission_rate_percent))
+      : undefined,
   };
 
   // Re-encrypt if secret changed

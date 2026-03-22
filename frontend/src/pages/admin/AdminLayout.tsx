@@ -67,6 +67,10 @@ import {
   Plus,
   WalletCards,
   FileDown,
+  MessageSquare,
+  Tag,
+  Gift,
+  Printer,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -333,6 +337,24 @@ function AdminSidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Staff Performance" isActive={pathname === "/admin/analytics/staff"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/analytics/staff" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <UserCog className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Staff Performance</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Customer Feedback" isActive={pathname === "/admin/analytics/feedback"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/analytics/feedback" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <MessageSquare className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Customer Feedback</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Day End" isActive={pathname === "/admin/day-end"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/day-end" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <WalletCards className="h-[18px] w-[18px] shrink-0" />
@@ -346,6 +368,24 @@ function AdminSidebar() {
                 <NavLink to="/admin/exports" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <FileDown className="h-[18px] w-[18px] shrink-0" />
                   <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Exports</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Vouchers" isActive={pathname === "/admin/vouchers"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/vouchers" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <Tag className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Vouchers</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Loyalty Program" isActive={pathname === "/admin/loyalty"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/loyalty" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <Gift className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Loyalty</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -373,7 +413,8 @@ function AdminSidebar() {
               isCollapsed={isCollapsed}
               subItems={[
                 { label: "Admin Side", path: "/admin/settings/admin", icon: ShieldCheck },
-                { label: "Customer Side", path: "/admin/settings/customer", icon: Smartphone }
+                { label: "Customer Side", path: "/admin/settings/customer", icon: Smartphone },
+                { label: "Printer Zones", path: "/admin/settings/printer-zones", icon: Printer },
               ]}
             />
 

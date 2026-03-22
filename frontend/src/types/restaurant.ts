@@ -13,6 +13,7 @@ export type Restaurant = {
   logo_url: string | null;
   address: string | null;
   gst_number: string | null;
+  fssai_license: string | null;
   tagline: string | null;
   restaurant_type: string | null;
   opening_hours: Record<string, unknown> | null;
@@ -57,6 +58,7 @@ export type UpdateRestaurantProfilePayload = {
   logo_url?: string | null;
   address?: string | null;
   gst_number?: string | null;
+  fssai_license?: string | null;
   tagline?: string | null;
   restaurant_type?: string | null;
   opening_hours?: Record<string, unknown> | null;
