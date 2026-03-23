@@ -771,4 +771,68 @@ export async function voidOrderItem(
   }
 }
 
+/**
+ * GET /public/:restaurant_slug/orders/:orderId/receipt
+ * Public receipt — no auth, returns read-only order data for digital receipt page
+ */
+export async function getPublicReceipt(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { restaurant_slug, orderId } = req.params as { restaurant_slug: string; orderId: string };
 
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { slug: restaurant_slug },
+      select: {
+        id: true,
+        tenant_id: true,
+        name: true,
+        tagline: true,
+        address: true,
+        gst_number: true,
+        fssai_license: true,
+      },
+    });
+
+    if (!restaurant) {
+      return next(new AppError("NOT_FOUND", "Restaurant not found", 404));
+    }
+
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, restaurant_id: restaurant.id },
+      select: {
+        id: true,
+        order_number: true,
+        status: true,
+        payment_status: true,
+        total_amount: true,
+        discount_amount: true,
+        tip_amount: true,
+        customer_name: true,
+        order_type: true,
+        placed_at: true,
+        created_at: true,
+        items: {
+          select: {
+            id: true,
+            name_snapshot: true,
+            price_snapshot: true,
+            quantity: true,
+            modifiers: { select: { name_snapshot: true } },
+          },
+          orderBy: { created_at: "asc" },
+        },
+      },
+    });
+
+    if (!order) {
+      return next(new AppError("NOT_FOUND", "Order not found", 404));
+    }
+
+    return res.json({ success: true, data: { order, restaurant } });
+  } catch (error) {
+    return next(error);
+  }
+}

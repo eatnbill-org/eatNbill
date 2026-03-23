@@ -12,6 +12,7 @@ import { RouteLoadingFallback, type RouteRole } from "@/components/loading";
 import { AuthLayout as AuthLayoutShell, CustomerLayout as CustomerLayoutShell } from "@/layouts";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
+const ReceiptPage = lazy(() => import("./pages/public/ReceiptPage"));
 const LandingPage = lazy(() => import("./pages/website/LandingPage"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
@@ -89,6 +90,7 @@ const App = () => (
             {/* PUBLIC MENU - /:slug/menu */}
             <Route path="/:slug/menu" element={withRoleSuspense("customer", <CustomerLayoutShell><PublicMenuPage /></CustomerLayoutShell>)} />
             <Route path="/:slug/customer" element={withRoleSuspense("customer", <CustomerLayoutShell><UserMenuPage /></CustomerLayoutShell>)} />
+            <Route path="/:slug/orders/:orderId/receipt" element={withRoleSuspense("customer", <ReceiptPage />)} />
 
             {/* AUTH */}
             <Route path="/auth" element={withRoleSuspense("auth", <AuthLayoutShell><Outlet /></AuthLayoutShell>)}>

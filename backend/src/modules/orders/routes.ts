@@ -56,6 +56,12 @@ export function publicOrderRoutes() {
     controller.placePublicOrder
   );
 
+  // Public receipt endpoint — no auth, returns safe order data for receipt page
+  router.get(
+    "/:restaurant_slug/orders/:orderId/receipt",
+    controller.getPublicReceipt
+  );
+
   return router;
 }
 
