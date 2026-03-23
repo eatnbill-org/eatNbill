@@ -1167,6 +1167,8 @@ model RestaurantTable {
   x_position    Int?           // Grid column position (0-based)
   y_position    Int?           // Grid row position (0-based)
   shape         String?        // RECTANGLE | CIRCLE (default RECTANGLE)
+  table_width   Int            @default(1) // Grid colspan (1 or 2)
+  table_height  Int            @default(1) // Grid rowspan (1 or 2)
   created_at    DateTime       @default(now())
   restaurant    Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   outlet        RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)

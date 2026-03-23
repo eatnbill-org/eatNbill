@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2, Percent } from "lucide-react";
+import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2, Percent, Moon, Sun, SunMoon } from "lucide-react";
+import { useDarkMode } from "@/hooks/use-dark-mode";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { SecuritySettings } from "./components/SecuritySettings";
@@ -31,6 +32,9 @@ export default function AdminSideSettings() {
     // Security
     const [pin, setPin] = React.useState(state.ui?.adminPin || "1234"); // Safe Access
     const [showPin, setShowPin] = React.useState(false);
+
+    // Dark mode
+    const { isDark, preference, setDarkMode } = useDarkMode();
 
     // Sound settings
     const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings());
@@ -111,6 +115,35 @@ export default function AdminSideSettings() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
+
+                {/* 0. APPEARANCE */}
+                <Card className="shadow-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+                    <CardHeader className="py-3 bg-slate-50 dark:bg-slate-900 border-b dark:border-slate-700">
+                        <CardTitle className="text-base flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                            {isDark ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />} Appearance
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Choose your preferred color scheme for the admin panel.</p>
+                        <div className="flex gap-2">
+                            {([
+                                { value: "light", label: "Light", icon: Sun },
+                                { value: "dark", label: "Dark", icon: Moon },
+                                { value: "system", label: "System", icon: SunMoon },
+                            ] as const).map(({ value, label, icon: Icon }) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setDarkMode(value)}
+                                    className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all font-bold text-sm ${preference === value ? "border-primary bg-primary/5 text-primary" : "border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-300"}`}
+                                >
+                                    <Icon className="h-5 w-5" />
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* 1. INTERFACE CUSTOMIZATION */}
                 <Card className="shadow-sm border border-slate-200">

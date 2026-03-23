@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom
 import { DemoStoreProvider } from "@/store/demo-store";
 import AdminRoute from "@/components/AdminRoute";
 import { AuthProvider } from "@/hooks/use-auth";
+import { useDarkMode } from "@/hooks/use-dark-mode";
 import ManagerRoute from "@/components/ManagerRoute";
 import { RouteLoadingFallback, type RouteRole } from "@/components/loading";
 import { AuthLayout as AuthLayoutShell, CustomerLayout as CustomerLayoutShell } from "@/layouts";
@@ -80,8 +81,15 @@ const withRoleSuspense = (role: RouteRole, element: ReactElement) => (
   <Suspense fallback={<RouteLoadingFallback role={role} />}>{element}</Suspense>
 );
 
+// Applies dark class to <html> based on stored/system preference on initial render
+function DarkModeInit() {
+  useDarkMode(); // side-effect only — applies class on mount
+  return null;
+}
+
 const App = () => (
   <TooltipProvider>
+    <DarkModeInit />
     <Toaster />
     <Sonner />
     <DemoStoreProvider>
