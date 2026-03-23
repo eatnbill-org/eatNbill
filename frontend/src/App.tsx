@@ -24,6 +24,7 @@ const OrderConfirmationPage = lazy(() => import("./pages/user/OrderConfirmationP
 const RestaurantSetupPage = lazy(() => import("./pages/restaurant/RestaurantSetupPage"));
 const PublicMenuPage = lazy(() => import("./pages/customer/PublicMenuPage"));
 const HeadLayoutPage = lazy(() => import("./pages/head/HeadLayout"));
+const CaptainLayoutPage = lazy(() => import("./pages/captain/CaptainLayout"));
 const HeadOrdersPage = lazy(() => import("./pages/head/HeadOrdersPage"));
 const HeadStockPage = lazy(() => import("./pages/head/HeadStockPage"));
 const HeadMenuPage = lazy(() => import("./pages/head/HeadMenuPage"));
@@ -126,6 +127,15 @@ const App = () => (
                 <Route path="stock" element={<HeadStockPage />} />
                 <Route path="settings" element={<HeadSettingsPage />} />
             </Route>
+            {/* CAPTAIN MODE — stripped mobile UI for senior waiters */}
+            <Route path="/captain" element={<Navigate to="/captain/tables" replace />} />
+            <Route path="/captain" element={withRoleSuspense("waiter", <CaptainLayoutPage />)}>
+                <Route path="tables" element={<HeadTablesPage />} />
+                <Route path="orders" element={<HeadOrdersPage />} />
+                <Route path="menu" element={<HeadMenuPage />} />
+                <Route path="menu/:orderId" element={<HeadMenuPage />} />
+            </Route>
+
             {/* BACKWARD COMPATIBILITY: Redirect /staff and /waiter to /head */}
             <Route path="/staff" element={<Navigate to="/head/orders" replace />} />
             <Route path="/staff/orders" element={<Navigate to="/head/orders" replace />} />
