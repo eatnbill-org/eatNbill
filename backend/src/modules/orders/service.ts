@@ -24,7 +24,7 @@ export interface CreateInternalOrderInput {
   customer_phone?: string;
   table_number?: string;
   notes?: string;
-  source: "MANUAL" | "ZOMATO" | "SWIGGY";
+  source: "MANUAL" | "ZOMATO" | "SWIGGY" | "BAR_TAB";
   items: { product_id: string; quantity: number; notes?: string; modifier_option_ids?: string[] }[];
   order_type?: OrderType;
   table_id?: string;
@@ -38,6 +38,7 @@ export interface UpdateOrderStatusInput {
 
 export interface ListOrdersInput {
   status?: OrderStatus;
+  source?: string;
   from_date?: string;
   to_date?: string;
   page: number;
@@ -280,6 +281,7 @@ export async function listOrders(
     tenantId,
     restaurantId,
     status: input.status,
+    source: input.source as any,
     fromDate: input.from_date ? new Date(input.from_date) : undefined,
     toDate: input.to_date ? new Date(input.to_date) : undefined,
     page: input.page,

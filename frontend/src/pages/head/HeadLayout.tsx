@@ -44,6 +44,23 @@ export default function HeadLayout() {
     const knownOrderIdsRef = useRef<Set<string>>(new Set());
     const pollingInitializedRef = useRef(false);
 
+    // Swipe navigation (mobile only)
+    const swipeTouchStart = useRef<{ x: number; y: number } | null>(null);
+    const handleSwipeTouchStart = useCallback((e: React.TouchEvent) => {
+        swipeTouchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }, []);
+    const handleSwipeTouchEnd = useCallback((e: React.TouchEvent) => {
+        if (!swipeTouchStart.current) return;
+        const dx = e.changedTouches[0].clientX - swipeTouchStart.current.x;
+        const dy = e.changedTouches[0].clientY - swipeTouchStart.current.y;
+        swipeTouchStart.current = null;
+        if (Math.abs(dx) < 80 || Math.abs(dy) > 60) return; // not a horizontal swipe
+        const navPaths = NAV_ITEMS.map(n => n.to);
+        const currentIdx = navPaths.findIndex(p => location.pathname.startsWith(p));
+        if (dx < 0 && currentIdx < navPaths.length - 1) navigate(navPaths[currentIdx + 1]);
+        if (dx > 0 && currentIdx > 0) navigate(navPaths[currentIdx - 1]);
+    }, [location.pathname, navigate]);
+
     const handleQrNotification = useCallback(async (
         orderId: string,
         fallback?: Partial<{ order_number: string; customer_name: string; table_number: string; total_amount: number }>
@@ -251,7 +268,11 @@ export default function HeadLayout() {
             </header>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-24 md:pb-10 relative bg-slate-50/50">
+            <div
+                className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-24 md:pb-10 relative bg-slate-50/50"
+                onTouchStart={handleSwipeTouchStart}
+                onTouchEnd={handleSwipeTouchEnd}
+            >
                 <Button
                     onClick={() => navigate("/head/menu")}
                     className="hidden lg:flex fixed top-20 right-6 z-30 h-11 rounded-full px-5 shadow-lg shadow-primary/20"

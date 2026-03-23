@@ -1877,6 +1877,34 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // Audit Logs (owner/manager only)
+  router.get('/audit-logs', async (req: any, res: any, next: any) => {
+    try {
+      const role = req.user?.restaurantRole;
+      if (role !== 'OWNER' && role !== 'MANAGER') throw new AppError('FORBIDDEN', 'Only owner/manager can view audit logs', 403);
+      const { tenantId } = req as any;
+      const page = parseInt((req.query.page as string) || '1', 10);
+      const limit = parseInt((req.query.limit as string) || '50', 10);
+      const skip = (page - 1) * limit;
+      const where: any = { tenant_id: tenantId };
+      if (req.query.entity) where.entity = req.query.entity as string;
+      if (req.query.action) where.action = req.query.action as string;
+      if (req.query.from) where.created_at = { ...(where.created_at || {}), gte: new Date(req.query.from as string) };
+      if (req.query.to) where.created_at = { ...(where.created_at || {}), lte: new Date(req.query.to as string) };
+      const [total, logs] = await Promise.all([
+        prisma.auditLog.count({ where }),
+        prisma.auditLog.findMany({
+          where,
+          orderBy: { created_at: 'desc' },
+          skip,
+          take: limit,
+          include: { user: { select: { id: true, email: true } } },
+        }),
+      ]);
+      res.json({ data: logs, total, page, limit, pages: Math.ceil(total / limit) });
+    } catch (err) { next(err); }
+  });
+
   router.patch('/gift-cards/:id/deactivate', async (req: any, res: any, next: any) => {
     try {
       if (!canManageGiftCards(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage gift cards', 403);

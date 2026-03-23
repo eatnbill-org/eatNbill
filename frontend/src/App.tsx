@@ -60,6 +60,7 @@ const CustomerFacingDisplay = lazy(() => import("./pages/admin/display/CustomerF
 const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage"));
 const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
 const VouchersPage = lazy(() => import("./pages/admin/billing/VouchersPage"));
+const BarTabPage = lazy(() => import("./pages/admin/billing/BarTabPage"));
 const GiftCardsPage = lazy(() => import("./pages/admin/billing/GiftCardsPage"));
 const EmbedMenuPage = lazy(() => import("./pages/public/EmbedMenuPage"));
 const EmbedWidgetPage = lazy(() => import("./pages/admin/adminSettings/EmbedWidgetPage"));
@@ -69,6 +70,7 @@ const PrinterZonesPage = lazy(() => import("./pages/admin/adminSettings/PrinterZ
 const DeliveryZonesPage = lazy(() => import("./pages/admin/adminSettings/DeliveryZonesPage"));
 const NotificationChannelsPage = lazy(() => import("./pages/admin/adminSettings/NotificationChannelsPage"));
 const IntegrationsPage = lazy(() => import("./pages/admin/adminSettings/IntegrationsPage"));
+const AuditLogPage = lazy(() => import("./pages/admin/adminSettings/AuditLogPage"));
 const StaffAnalyticsPage = lazy(() => import("./pages/admin/analytics/StaffAnalyticsPage"));
 const FeedbackPage = lazy(() => import("./pages/admin/analytics/FeedbackPage"));
 const AggregatorAnalyticsPage = lazy(() => import("./pages/admin/analytics/AggregatorAnalyticsPage"));
@@ -174,6 +176,7 @@ const App = () => (
                 <Route path="day-end" element={<AdminDayEndPage />} />
                 <Route path="exports" element={<AdminExportCenterPage />} />
                 <Route path="vouchers" element={<VouchersPage />} />
+                <Route path="bar-tabs" element={<BarTabPage />} />
                 <Route path="gift-cards" element={<GiftCardsPage />} />
                 <Route path="loyalty" element={<LoyaltyPage />} />
                 <Route path="pricing-rules" element={<PricingRulesPage />} />
@@ -191,6 +194,7 @@ const App = () => (
                 <Route path="settings/notifications" element={<NotificationChannelsPage />} />
                 <Route path="settings/integrations" element={<IntegrationsPage />} />
                 <Route path="settings/embed-widget" element={<EmbedWidgetPage />} />
+                <Route path="settings/audit-log" element={<AuditLogPage />} />
             </Route>
 
             {/* MANAGER */}

@@ -85,6 +85,8 @@ import {
   Monitor,
   ExternalLink,
   CreditCard,
+  ScrollText,
+  Beer,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -479,6 +481,15 @@ function AdminSidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Bar Tabs" isActive={pathname === "/admin/bar-tabs"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/bar-tabs" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <Beer className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Bar Tabs</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Happy Hour Pricing" isActive={pathname === "/admin/pricing-rules"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/pricing-rules" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <Clock className="h-[18px] w-[18px] shrink-0" />
@@ -518,6 +529,7 @@ function AdminSidebar() {
                 { label: "Notifications", path: "/admin/settings/notifications", icon: Bell },
                 { label: "Integrations", path: "/admin/settings/integrations", icon: Plug },
                 { label: "Embed Widget", path: "/admin/settings/embed-widget", icon: ExternalLink },
+                { label: "Audit Log", path: "/admin/settings/audit-log", icon: ScrollText },
               ]}
             />
 

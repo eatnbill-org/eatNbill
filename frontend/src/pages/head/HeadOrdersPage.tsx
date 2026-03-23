@@ -93,6 +93,31 @@ export default function HeadOrdersPage() {
     const [orderToCancel, setOrderToCancel] = React.useState<any | null>(null);
     const [cancelReason, setCancelReason] = React.useState("");
 
+    // Pull-to-refresh
+    const pullTouchStartY = React.useRef<number | null>(null);
+    const [pullOffset, setPullOffset] = React.useState(0);
+    const [isRefreshing, setIsRefreshing] = React.useState(false);
+    const handlePullTouchStart = React.useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+        const el = e.currentTarget;
+        if (el.scrollTop === 0) {
+            pullTouchStartY.current = e.touches[0].clientY;
+        }
+    }, []);
+    const handlePullTouchMove = React.useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+        if (pullTouchStartY.current === null) return;
+        const dy = e.touches[0].clientY - pullTouchStartY.current;
+        if (dy > 0) setPullOffset(Math.min(dy * 0.4, 64));
+    }, []);
+    const handlePullTouchEnd = React.useCallback(async () => {
+        if (pullOffset >= 40 && !isRefreshing) {
+            setIsRefreshing(true);
+            await queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+            setIsRefreshing(false);
+        }
+        setPullOffset(0);
+        pullTouchStartY.current = null;
+    }, [pullOffset, isRefreshing, queryClient]);
+
     // Order Details Dialog State
     const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
 
@@ -295,8 +320,21 @@ export default function HeadOrdersPage() {
 
 
     return (
-        <div className="space-y-4 max-w-7xl mx-auto">
-
+        <div
+            className="space-y-4 max-w-7xl mx-auto"
+            onTouchStart={handlePullTouchStart}
+            onTouchMove={handlePullTouchMove}
+            onTouchEnd={handlePullTouchEnd}
+        >
+            {/* Pull-to-refresh indicator */}
+            {(pullOffset > 0 || isRefreshing) && (
+                <div
+                    className="flex items-center justify-center transition-all duration-150"
+                    style={{ height: isRefreshing ? 40 : pullOffset, overflow: "hidden" }}
+                >
+                    <RefreshCw className={`h-5 w-5 text-primary ${isRefreshing ? "animate-spin" : ""}`} style={{ transform: `rotate(${pullOffset * 3}deg)` }} />
+                </div>
+            )}
 
             {/* Filter Buttons Row */}
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">

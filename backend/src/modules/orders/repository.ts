@@ -971,6 +971,7 @@ export async function listOrders(params: {
   tenantId: string;
   restaurantId: string;
   status?: OrderStatus;
+  source?: string;
   fromDate?: Date;
   toDate?: Date;
   page: number;
@@ -983,6 +984,10 @@ export async function listOrders(params: {
 
   if (params.status) {
     where.status = params.status;
+  }
+
+  if (params.source) {
+    where.source = params.source as any;
   }
 
   if (params.fromDate || params.toDate) {

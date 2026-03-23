@@ -36,12 +36,15 @@ export const createInternalOrderSchema = z.object({
   table_number: z.string().max(20).optional(),
   notes: z.string().max(500).optional(),
   items: z.array(orderItemSchema).min(1).max(50),
-  source: z.enum(["MANUAL", "ZOMATO", "SWIGGY"]).default("MANUAL"),
+  source: z.enum(["MANUAL", "ZOMATO", "SWIGGY", "BAR_TAB"]).default("MANUAL"),
   order_type: z.enum(["DINE_IN", "TAKEAWAY", "DELIVERY"]).optional(),
   table_id: z.string().uuid().optional(),
   arrive_at: z.string().optional(),
 }).superRefine((data, ctx) => {
   const orderType = data.order_type;
+
+  // BAR_TAB orders don't require a table
+  if (data.source === "BAR_TAB") return;
 
   if (orderType === "DINE_IN" && !data.table_id) {
     ctx.addIssue({
@@ -88,6 +91,9 @@ export const updateOrderStatusSchema = z.object({
 export const listOrdersQuerySchema = z.object({
   status: z
     .enum(["ACTIVE", "COMPLETED", "CANCELLED"])
+    .optional(),
+  source: z
+    .enum(["QR", "WEB", "MANUAL", "ZOMATO", "SWIGGY", "BAR_TAB"])
     .optional(),
   from_date: z.string().datetime().optional(),
   to_date: z.string().datetime().optional(),

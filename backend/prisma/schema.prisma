@@ -670,6 +670,7 @@ enum OrderSource {
   MANUAL
   ZOMATO
   SWIGGY
+  BAR_TAB
 }
 
 enum OrderType {
