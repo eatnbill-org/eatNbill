@@ -82,6 +82,8 @@ import {
   Plug,
   ClipboardList,
   Timer,
+  Monitor,
+  ExternalLink,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -416,6 +418,17 @@ function AdminSidebar() {
                   <BarChart3 className="h-[18px] w-[18px] shrink-0" />
                   <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Menu Performance</span>
                 </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Customer Display" className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <a href="/admin/display" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <Monitor className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden flex items-center gap-1">
+                    Customer Display <ExternalLink className="h-3 w-3 opacity-50" />
+                  </span>
+                </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
