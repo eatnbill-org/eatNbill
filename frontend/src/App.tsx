@@ -60,6 +60,8 @@ const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage
 const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
 const VouchersPage = lazy(() => import("./pages/admin/billing/VouchersPage"));
 const GiftCardsPage = lazy(() => import("./pages/admin/billing/GiftCardsPage"));
+const EmbedMenuPage = lazy(() => import("./pages/public/EmbedMenuPage"));
+const EmbedWidgetPage = lazy(() => import("./pages/admin/adminSettings/EmbedWidgetPage"));
 const LoyaltyPage = lazy(() => import("./pages/admin/billing/LoyaltyPage"));
 const PricingRulesPage = lazy(() => import("./pages/admin/billing/PricingRulesPage"));
 const PrinterZonesPage = lazy(() => import("./pages/admin/adminSettings/PrinterZonesPage"));
@@ -133,6 +135,9 @@ const App = () => (
             {/* CUSTOMER MENU */}
             <Route path="/menu" element={withRoleSuspense("customer", <CustomerLayoutShell><CustomerEntry /></CustomerLayoutShell>)} />
 
+            {/* EMBED WIDGET — stripped layout for iframe use */}
+            <Route path="/embed/:slug" element={<Suspense fallback={null}><EmbedMenuPage /></Suspense>} />
+
             {/* ADMIN */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin" element={withRoleSuspense("admin", <AdminRoute><AdminLayoutPage /></AdminRoute>)} >
@@ -177,6 +182,7 @@ const App = () => (
                 <Route path="settings/delivery-zones" element={<DeliveryZonesPage />} />
                 <Route path="settings/notifications" element={<NotificationChannelsPage />} />
                 <Route path="settings/integrations" element={<IntegrationsPage />} />
+                <Route path="settings/embed-widget" element={<EmbedWidgetPage />} />
             </Route>
 
             {/* MANAGER */}

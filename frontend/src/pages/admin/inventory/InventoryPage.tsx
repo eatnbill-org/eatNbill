@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Package2, Plus, Trash2, Edit2, AlertTriangle, TrendingDown, TrendingUp,
-  RotateCcw, ChevronDown, ChevronRight, History, ChefHat, BookOpen, Minus
+  RotateCcw, ChevronDown, ChevronRight, History, ChefHat, BookOpen, Minus, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +21,7 @@ interface Ingredient {
   reorder_level: string | null;
   cost_per_unit: string;
   category: string | null;
+  expiry_date: string | null;
   is_active: boolean;
 }
 
@@ -47,7 +48,7 @@ interface RecipeLine {
   ingredient: { id: string; name: string; unit: string; cost_per_unit: string };
 }
 
-type Tab = "ingredients" | "recipes" | "low-stock" | "food-cost";
+type Tab = "ingredients" | "recipes" | "low-stock" | "food-cost" | "expiring";
 
 const UNITS = ["pcs", "kg", "g", "L", "ml", "dozen", "box", "bag"];
 const MOVEMENT_TYPES = ["PURCHASE", "WASTE", "ADJUSTMENT"] as const;
@@ -84,7 +85,7 @@ export default function InventoryPage() {
   // Ingredient CRUD dialog
   const [ingredientDialog, setIngredientDialog] = React.useState(false);
   const [editingIngredient, setEditingIngredient] = React.useState<Ingredient | null>(null);
-  const [iForm, setIForm] = React.useState({ name: "", unit: "pcs", reorder_level: "", cost_per_unit: "0", category: "", is_active: true });
+  const [iForm, setIForm] = React.useState({ name: "", unit: "pcs", reorder_level: "", cost_per_unit: "0", category: "", expiry_date: "", is_active: true });
   const [saving, setSaving] = React.useState(false);
 
   // Adjustment dialog
@@ -192,13 +193,13 @@ export default function InventoryPage() {
 
   const openNewIngredient = () => {
     setEditingIngredient(null);
-    setIForm({ name: "", unit: "pcs", reorder_level: "", cost_per_unit: "0", category: "", is_active: true });
+    setIForm({ name: "", unit: "pcs", reorder_level: "", cost_per_unit: "0", category: "", expiry_date: "", is_active: true });
     setIngredientDialog(true);
   };
 
   const openEditIngredient = (i: Ingredient) => {
     setEditingIngredient(i);
-    setIForm({ name: i.name, unit: i.unit, reorder_level: i.reorder_level ?? "", cost_per_unit: String(i.cost_per_unit), category: i.category ?? "", is_active: i.is_active });
+    setIForm({ name: i.name, unit: i.unit, reorder_level: i.reorder_level ?? "", cost_per_unit: String(i.cost_per_unit), category: i.category ?? "", expiry_date: i.expiry_date ? i.expiry_date.split('T')[0] : "", is_active: i.is_active });
     setIngredientDialog(true);
   };
 
@@ -283,6 +284,23 @@ export default function InventoryPage() {
 
   const lowStockCount = ingredients.filter((i) => i.reorder_level && Number(i.current_stock) <= Number(i.reorder_level)).length;
 
+  const now = new Date();
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const expiringIngredients = ingredients.filter((i) => i.expiry_date && new Date(i.expiry_date) <= sevenDaysFromNow);
+  const expiredIngredients = ingredients.filter((i) => i.expiry_date && new Date(i.expiry_date) < now);
+  const expiringCount = expiringIngredients.length;
+
+  const getExpiryBadge = (expiry_date: string | null) => {
+    if (!expiry_date) return null;
+    const d = new Date(expiry_date);
+    const daysLeft = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysLeft < 0) return { label: "Expired", cls: "bg-rose-100 text-rose-700" };
+    if (daysLeft === 0) return { label: "Expires today", cls: "bg-rose-100 text-rose-700" };
+    if (daysLeft <= 3) return { label: `${daysLeft}d left`, cls: "bg-rose-100 text-rose-700" };
+    if (daysLeft <= 7) return { label: `${daysLeft}d left`, cls: "bg-amber-100 text-amber-700" };
+    return { label: `${daysLeft}d left`, cls: "bg-slate-100 text-slate-500" };
+  };
+
   return (
     <div className="space-y-4 p-4">
       {/* Header */}
@@ -316,6 +334,16 @@ export default function InventoryPage() {
           {lowStockCount > 0 && (
             <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center", activeTab === "low-stock" ? "bg-white text-amber-600" : "bg-amber-100 text-amber-700")}>
               {lowStockCount}
+            </span>
+          )}
+        </button>
+        <button type="button" onClick={() => setActiveTab("expiring")}
+          className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all", activeTab === "expiring" ? "bg-rose-500 text-white shadow" : "text-slate-500 hover:bg-slate-50")}>
+          <Clock className="h-3.5 w-3.5" />
+          Expiring
+          {expiringCount > 0 && (
+            <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center", activeTab === "expiring" ? "bg-white text-rose-600" : "bg-rose-100 text-rose-700")}>
+              {expiringCount}
             </span>
           )}
         </button>
@@ -369,11 +397,19 @@ export default function InventoryPage() {
             <tbody>
               {filtered.map((ing) => {
                 const isLow = ing.reorder_level !== null && Number(ing.current_stock) <= Number(ing.reorder_level);
+                const expiryBadge = getExpiryBadge(ing.expiry_date);
                 return (
                   <tr key={ing.id} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-3">
                       <p className="font-semibold text-slate-800">{ing.name}</p>
-                      {ing.category && <p className="text-[11px] text-slate-400">{ing.category}</p>}
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {ing.category && <p className="text-[11px] text-slate-400">{ing.category}</p>}
+                        {expiryBadge && (
+                          <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-full", expiryBadge.cls)}>
+                            {expiryBadge.label}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={cn("font-black tabular-nums", isLow ? "text-rose-600" : "text-slate-700")}>
@@ -591,6 +627,63 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {/* Expiring Tab */}
+      {activeTab === "expiring" && (
+        <div className="space-y-4">
+          {expiringIngredients.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+              <Clock className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+              <p className="text-slate-500 font-medium">No ingredients expiring within 7 days</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-rose-200 bg-white overflow-hidden">
+              <div className="px-4 py-3 bg-rose-50 border-b border-rose-100 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-rose-500" />
+                <span className="text-sm font-bold text-rose-700">
+                  {expiredIngredients.length > 0 ? `${expiredIngredients.length} expired, ` : ''}{expiringIngredients.length - expiredIngredients.length} expiring within 7 days
+                </span>
+              </div>
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider">Ingredient</th>
+                    <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-wider">Stock</th>
+                    <th className="px-4 py-3 text-center text-[10px] font-black uppercase tracking-wider">Expiry Date</th>
+                    <th className="px-4 py-3 text-center text-[10px] font-black uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {expiringIngredients.sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime()).map((ing) => {
+                    const expiryBadge = getExpiryBadge(ing.expiry_date)!;
+                    return (
+                      <tr key={ing.id} className="border-t border-slate-100 hover:bg-slate-50">
+                        <td className="px-4 py-3 font-semibold text-slate-800">{ing.name}</td>
+                        <td className="px-4 py-3 text-right font-mono text-slate-600">{Number(ing.current_stock).toFixed(2)} {ing.unit}</td>
+                        <td className="px-4 py-3 text-center text-slate-500">
+                          {ing.expiry_date ? format(new Date(ing.expiry_date), 'd MMM yyyy') : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={cn("text-[10px] font-black px-2 py-0.5 rounded-full", expiryBadge.cls)}>
+                            {expiryBadge.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button onClick={() => openEditIngredient(ing)} title="Edit expiry date"
+                            className="h-7 w-7 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center mx-auto">
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Recipe Edit Dialog */}
       <Dialog open={recipeDialog} onOpenChange={setRecipeDialog}>
         <DialogContent className="max-w-lg rounded-2xl p-6 space-y-4 max-h-[80vh] overflow-hidden flex flex-col">
@@ -675,6 +768,10 @@ export default function InventoryPage() {
             <div className="space-y-1">
               <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Reorder Level</Label>
               <Input type="number" value={iForm.reorder_level} onChange={(e) => setIForm((p) => ({ ...p, reorder_level: e.target.value }))} className="h-10 rounded-xl" min={0} step={0.1} placeholder="Optional" />
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Expiry Date (optional)</Label>
+              <Input type="date" value={iForm.expiry_date} onChange={(e) => setIForm((p) => ({ ...p, expiry_date: e.target.value }))} className="h-10 rounded-xl" />
             </div>
           </div>
 

@@ -1517,6 +1517,7 @@ model Ingredient {
   reorder_level   Decimal?        @db.Decimal(12, 3)  // Alert threshold
   cost_per_unit   Decimal         @default(0) @db.Decimal(10, 4)
   category        String?
+  expiry_date     DateTime?       // Optional per-batch expiry tracking
   is_active       Boolean         @default(true)
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt

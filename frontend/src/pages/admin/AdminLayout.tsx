@@ -517,6 +517,7 @@ function AdminSidebar() {
                 { label: "Delivery Zones", path: "/admin/settings/delivery-zones", icon: MapPin },
                 { label: "Notifications", path: "/admin/settings/notifications", icon: Bell },
                 { label: "Integrations", path: "/admin/settings/integrations", icon: Plug },
+                { label: "Embed Widget", path: "/admin/settings/embed-widget", icon: ExternalLink },
               ]}
             />
 
