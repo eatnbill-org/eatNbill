@@ -5,8 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2, Percent, Moon, Sun, SunMoon } from "lucide-react";
+import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2, Percent, Moon, Sun, SunMoon, BellRing } from "lucide-react";
 import { useDarkMode } from "@/hooks/use-dark-mode";
+import { getNotificationPermission, requestNotificationPermission, getNotificationsEnabled, setNotificationsEnabled } from "@/lib/push-notifications";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { SecuritySettings } from "./components/SecuritySettings";
@@ -35,6 +36,21 @@ export default function AdminSideSettings() {
 
     // Dark mode
     const { isDark, preference, setDarkMode } = useDarkMode();
+
+    // Browser notifications
+    const [notifPermission, setNotifPermission] = React.useState(getNotificationPermission);
+    const [notifEnabled, setNotifEnabled] = React.useState(getNotificationsEnabled);
+    const handleEnableNotifications = async () => {
+        const result = await requestNotificationPermission();
+        setNotifPermission(result);
+        if (result === 'granted') { setNotifEnabled(true); toast.success('Browser notifications enabled'); }
+        else if (result === 'denied') { toast.error('Notifications blocked — allow them in browser settings'); }
+    };
+    const toggleNotifEnabled = () => {
+        const next = !notifEnabled;
+        setNotificationsEnabled(next);
+        setNotifEnabled(next);
+    };
 
     // Sound settings
     const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings());
@@ -142,6 +158,40 @@ export default function AdminSideSettings() {
                                 </button>
                             ))}
                         </div>
+                    </CardContent>
+                </Card>
+
+                {/* 0b. BROWSER NOTIFICATIONS */}
+                <Card className="shadow-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+                    <CardHeader className="py-3 bg-slate-50 dark:bg-slate-900 border-b dark:border-slate-700">
+                        <CardTitle className="text-base flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                            {notifPermission === 'granted' && notifEnabled ? <BellRing className="w-4 h-4 text-amber-500" /> : <Bell className="w-4 h-4" />} Browser Notifications
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                            {notifPermission === 'unsupported' ? 'Not supported in this browser.'
+                                : notifPermission === 'denied' ? 'Notifications are blocked. Allow them in your browser settings.'
+                                : 'Show an alert when a new QR order arrives, even when this tab is in the background.'}
+                        </p>
+                        {notifPermission === 'default' ? (
+                            <Button size="sm" onClick={handleEnableNotifications} className="gap-2 w-full">
+                                <Bell className="h-4 w-4" /> Allow Notifications
+                            </Button>
+                        ) : notifPermission === 'granted' ? (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                    {notifEnabled ? 'Notifications active' : 'Notifications paused'}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={toggleNotifEnabled}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifEnabled ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-600'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${notifEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                        ) : null}
                     </CardContent>
                 </Card>
 

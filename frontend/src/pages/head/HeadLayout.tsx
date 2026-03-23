@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useStaffAuth } from "@/hooks/use-head-auth";
 import i18n, { backendLanguageToUi, persistLanguage } from "@/i18n";
 import { fetchMyPreferences } from "@/lib/enterprise-api";
+import { showNewOrderNotification } from "@/lib/push-notifications";
 
 import { LayoutGrid, Package } from "lucide-react";
 
@@ -75,6 +76,12 @@ export default function HeadLayout() {
             const fullOrder = response?.data;
             if (fullOrder?.id) {
                 useNotificationStore.getState().addNotification(fullOrder);
+                void showNewOrderNotification({
+                    orderNumber: fullOrder.order_number || orderId.slice(-4).toUpperCase(),
+                    customerName: fullOrder.customer_name,
+                    tableNumber: fullOrder.table?.table_number ?? fullOrder.table_number ?? null,
+                    totalAmount: Number(fullOrder.total_amount),
+                });
                 return;
             }
         } catch {
@@ -90,6 +97,11 @@ export default function HeadLayout() {
             total_amount: Number(fallback?.total_amount || 0),
             items: [],
         } as any);
+        void showNewOrderNotification({
+            orderNumber: fallback?.order_number || orderId.slice(-4).toUpperCase(),
+            customerName: fallback?.customer_name,
+            tableNumber: fallback?.table_number,
+        });
 
         // Keep head pages in sync immediately when QR notification arrives.
         queryClient.invalidateQueries({ queryKey: ['staff-orders'] });

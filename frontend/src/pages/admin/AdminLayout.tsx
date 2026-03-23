@@ -44,6 +44,7 @@ import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { playOrderSound, playReservationSound } from "@/lib/sound-notification";
+import { showNewOrderNotification } from "@/lib/push-notifications";
 import { apiClient } from "@/lib/api-client";
 import type { OrderListResponse, OrderResponse } from "@/types/order";
 import type { ReservationAlert } from "@/types/reservation";
@@ -580,6 +581,12 @@ export default function AdminLayout() {
       const fullOrder = response?.data?.data;
       if (!response?.error && fullOrder?.id) {
         useNotificationStore.getState().addNotification(fullOrder);
+        void showNewOrderNotification({
+          orderNumber: fullOrder.order_number || orderId.slice(-4).toUpperCase(),
+          customerName: fullOrder.customer_name,
+          tableNumber: (fullOrder as any).table?.table_number ?? fullOrder.table_number ?? null,
+          totalAmount: Number(fullOrder.total_amount),
+        });
         void fetchOrders();
         void fetchStats();
         return;
@@ -597,6 +604,11 @@ export default function AdminLayout() {
       total_amount: Number(fallback?.total_amount || 0),
       items: [],
     } as any);
+    void showNewOrderNotification({
+      orderNumber: fallback?.order_number || orderId.slice(-4).toUpperCase(),
+      customerName: fallback?.customer_name,
+      tableNumber: fallback?.table_number,
+    });
 
     void fetchOrders();
     void fetchStats();
