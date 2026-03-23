@@ -7,9 +7,11 @@ import * as React from "react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { useTableStore } from "@/stores/tables";
+import { useRealtimeStore } from "@/stores/realtime/realtime.store";
+import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
 import type { RestaurantTable } from "@/types/table";
 import { cn } from "@/lib/utils";
-import { Armchair, Circle, Square, Trash2, RotateCcw } from "lucide-react";
+import { Armchair, Circle, Square, Trash2, RotateCcw, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const GRID_COLS = 10;
@@ -28,10 +30,23 @@ interface PlacedTable extends RestaurantTable {
 
 export function FloorPlanEditor() {
   const { tables, fetchTables } = useTableStore();
+  const { restaurant } = useRestaurantStore();
+  const subscribeToRestaurantOrders = useRealtimeStore((s) => s.subscribeToRestaurantOrders);
   const [draggingId, setDraggingId] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState<string | null>(null);
+  const [realtimeActive, setRealtimeActive] = React.useState(false);
 
   React.useEffect(() => { void fetchTables(); }, [fetchTables]);
+
+  // Realtime: refresh table statuses when any order changes (order → table status linkage)
+  React.useEffect(() => {
+    if (!restaurant?.id) return;
+    setRealtimeActive(true);
+    const unsub = subscribeToRestaurantOrders(restaurant.id, () => {
+      void fetchTables();
+    });
+    return () => { unsub(); setRealtimeActive(false); };
+  }, [restaurant?.id, subscribeToRestaurantOrders, fetchTables]);
 
   const activeTables = tables.filter(t => t.is_active);
   const placed: PlacedTable[] = activeTables.filter(
@@ -143,7 +158,15 @@ export function FloorPlanEditor() {
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-slate-400 ml-auto">Click table to toggle shape (rect ↔ circle)</p>
+            <div className="flex items-center gap-1.5 ml-auto">
+              {realtimeActive && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                  <Wifi className="h-3 w-3" />
+                  Live
+                </span>
+              )}
+              <p className="text-[10px] text-slate-400">Click table to toggle shape (rect ↔ circle)</p>
+            </div>
           </div>
         </div>
 

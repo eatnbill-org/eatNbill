@@ -836,3 +836,74 @@ export async function getPublicReceipt(
     return next(error);
   }
 }
+
+/**
+ * PATCH /orders/:id/items/:itemId/course
+ * Assign a course to an order item
+ */
+export async function setItemCourse(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> {
+  try {
+    const { restaurantId } = req;
+    const orderId = req.params.id as string;
+    const itemId = req.params.itemId as string;
+    const { course } = req.body;
+
+    const validCourses = ['STARTER', 'MAIN', 'DESSERT', 'DRINKS', null];
+    if (!validCourses.includes(course)) {
+      return next(new AppError('VALIDATION', 'course must be STARTER, MAIN, DESSERT, DRINKS, or null', 400));
+    }
+
+    const order = await prisma.order.findFirst({ where: { id: orderId, restaurant_id: restaurantId! } });
+    if (!order) return next(new AppError('NOT_FOUND', 'Order not found', 404));
+
+    const item = await prisma.orderItem.findFirst({ where: { id: itemId, order_id: orderId } });
+    if (!item) return next(new AppError('NOT_FOUND', 'Order item not found', 404));
+
+    const updated = await prisma.orderItem.update({
+      where: { id: itemId },
+      data: { course: course ?? null },
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/**
+ * POST /orders/:id/fire-course/:course
+ * Fire a course — stamps course_fired_at on all items in that course
+ */
+export async function fireCourse(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> {
+  try {
+    const { restaurantId } = req;
+    const orderId = req.params.id as string;
+    const course = (req.params.course as string).toUpperCase();
+
+    const validCourses = ['STARTER', 'MAIN', 'DESSERT', 'DRINKS'];
+    if (!validCourses.includes(course)) {
+      return next(new AppError('VALIDATION', 'Invalid course', 400));
+    }
+
+    const order = await prisma.order.findFirst({ where: { id: orderId, restaurant_id: restaurantId! } });
+    if (!order) return next(new AppError('NOT_FOUND', 'Order not found', 404));
+
+    const firedAt = new Date();
+    await prisma.orderItem.updateMany({
+      where: { order_id: orderId, course: course, course_fired_at: null },
+      data: { course_fired_at: firedAt },
+    });
+
+    return res.json({ success: true, fired_at: firedAt });
+  } catch (error) {
+    return next(error);
+  }
+}

@@ -1790,5 +1790,101 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // ============================================================================
+  // Gift Cards
+  // ============================================================================
+
+  const canManageGiftCards = (req: any) =>
+    req.user?.restaurantRole === 'OWNER' || req.user?.role === 'OWNER' ||
+    req.user?.restaurantRole === 'MANAGER' || req.user?.role === 'MANAGER';
+
+  router.get('/gift-cards', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const giftCards = await prisma.giftCard.findMany({
+        where: { restaurant_id: restaurantId },
+        orderBy: { issued_at: 'desc' },
+      });
+      res.json({ data: giftCards });
+    } catch (err) { next(err); }
+  });
+
+  router.post('/gift-cards', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageGiftCards(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can issue gift cards', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const tenantId: string = req.user?.tenantId;
+      const { code, initial_value, issued_to, expires_at } = req.body;
+      if (!code || !initial_value) throw new AppError('VALIDATION', 'code and initial_value are required', 400);
+      const val = parseFloat(initial_value);
+      if (isNaN(val) || val <= 0) throw new AppError('VALIDATION', 'initial_value must be a positive number', 400);
+      const existing = await prisma.giftCard.findUnique({ where: { restaurant_id_code: { restaurant_id: restaurantId, code } } });
+      if (existing) throw new AppError('CONFLICT', 'A gift card with this code already exists', 409);
+      const giftCard = await prisma.giftCard.create({
+        data: {
+          tenant_id: tenantId,
+          restaurant_id: restaurantId,
+          code: code.trim().toUpperCase(),
+          initial_value: val,
+          remaining_value: val,
+          issued_to: issued_to ?? null,
+          expires_at: expires_at ? new Date(expires_at) : null,
+        },
+      });
+      res.status(201).json({ data: giftCard });
+    } catch (err) { next(err); }
+  });
+
+  router.post('/gift-cards/validate', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const { code } = req.body;
+      if (!code) throw new AppError('VALIDATION', 'code is required', 400);
+      const gc = await prisma.giftCard.findUnique({
+        where: { restaurant_id_code: { restaurant_id: restaurantId, code: code.trim().toUpperCase() } },
+      });
+      if (!gc) throw new AppError('NOT_FOUND', 'Gift card not found', 404);
+      if (!gc.is_active) throw new AppError('FORBIDDEN', 'Gift card is deactivated', 400);
+      if (gc.expires_at && gc.expires_at < new Date()) throw new AppError('FORBIDDEN', 'Gift card has expired', 400);
+      if (Number(gc.remaining_value) <= 0) throw new AppError('FORBIDDEN', 'Gift card has no remaining balance', 400);
+      res.json({ data: { id: gc.id, code: gc.code, remaining_value: gc.remaining_value, issued_to: gc.issued_to } });
+    } catch (err) { next(err); }
+  });
+
+  router.post('/gift-cards/redeem', async (req: any, res: any, next: any) => {
+    try {
+      const restaurantId: string = req.user?.restaurantId;
+      const { code, amount } = req.body;
+      if (!code || !amount) throw new AppError('VALIDATION', 'code and amount are required', 400);
+      const deduct = parseFloat(amount);
+      if (isNaN(deduct) || deduct <= 0) throw new AppError('VALIDATION', 'amount must be positive', 400);
+      const gc = await prisma.giftCard.findUnique({
+        where: { restaurant_id_code: { restaurant_id: restaurantId, code: code.trim().toUpperCase() } },
+      });
+      if (!gc) throw new AppError('NOT_FOUND', 'Gift card not found', 404);
+      if (!gc.is_active) throw new AppError('FORBIDDEN', 'Gift card is deactivated', 400);
+      if (gc.expires_at && gc.expires_at < new Date()) throw new AppError('FORBIDDEN', 'Gift card has expired', 400);
+      const current = Number(gc.remaining_value);
+      if (current <= 0) throw new AppError('FORBIDDEN', 'Gift card has no remaining balance', 400);
+      const applied = Math.min(deduct, current);
+      const updated = await prisma.giftCard.update({
+        where: { id: gc.id },
+        data: { remaining_value: current - applied },
+      });
+      res.json({ data: { applied_amount: applied, remaining_value: updated.remaining_value } });
+    } catch (err) { next(err); }
+  });
+
+  router.patch('/gift-cards/:id/deactivate', async (req: any, res: any, next: any) => {
+    try {
+      if (!canManageGiftCards(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage gift cards', 403);
+      const restaurantId: string = req.user?.restaurantId;
+      const gc = await prisma.giftCard.findFirst({ where: { id: req.params.id, restaurant_id: restaurantId } });
+      if (!gc) throw new AppError('NOT_FOUND', 'Gift card not found', 404);
+      await prisma.giftCard.update({ where: { id: gc.id }, data: { is_active: false } });
+      res.json({ success: true });
+    } catch (err) { next(err); }
+  });
+
   return router;
 }

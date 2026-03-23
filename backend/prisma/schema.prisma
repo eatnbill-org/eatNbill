@@ -141,6 +141,7 @@ model Restaurant {
   modifier_groups        ProductModifierGroup[]
   ingredients            Ingredient[]
   suppliers              Supplier[]
+  gift_cards             GiftCard[]
 
   @@unique([slug])
   @@index([tenant_id])
@@ -315,6 +316,8 @@ model OrderItem {
   comp_reason    String? // Reason when status = COMPED
   voided_by_user_id String? @db.Uuid // Who voided/comped this item
   voided_at      DateTime? // When it was voided/comped
+  course         String? // Course grouping: STARTER | MAIN | DESSERT | DRINKS (null = no course assigned)
+  course_fired_at DateTime? // When this course was fired to kitchen
   modifiers_total Decimal @default(0) @db.Decimal(10, 2) // Sum of all modifier price_deltas
   created_at     DateTime @default(now())
   order          Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
@@ -1619,4 +1622,29 @@ model PurchaseOrderLine {
 
   @@index([po_id])
   @@map("purchase_order_lines")
+}
+
+// ============================================================================
+// Gift Cards
+// ============================================================================
+
+model GiftCard {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenant_id       String    @db.Uuid
+  restaurant_id   String    @db.Uuid
+  code            String
+  initial_value   Decimal   @db.Decimal(10, 2)
+  remaining_value Decimal   @db.Decimal(10, 2)
+  issued_to       String?   // Customer name or identifier
+  issued_at       DateTime  @default(now())
+  expires_at      DateTime?
+  is_active       Boolean   @default(true)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id])
+
+  @@unique([restaurant_id, code])
+  @@index([restaurant_id])
+  @@index([tenant_id])
+  @@map("gift_cards")
 }

@@ -20,6 +20,8 @@ import {
     Clock,
     UtensilsCrossed,
     Check,
+    Star,
+    AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +36,19 @@ function timeAgo(dateStr: string): string {
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// Order age in minutes
+function orderAgeMinutes(dateStr: string): number {
+    return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+}
+
+// Age-based urgency indicator: green <5m, amber 5-10m, red >10m
+function getAgeIndicator(dateStr: string): { cls: string; label: string } | null {
+    const mins = orderAgeMinutes(dateStr);
+    if (mins < 5) return { cls: "bg-emerald-100 text-emerald-700", label: `${mins}m` };
+    if (mins < 10) return { cls: "bg-amber-100 text-amber-700", label: `${mins}m` };
+    return { cls: "bg-rose-100 text-rose-700", label: `${mins}m ⚠` };
 }
 
 // Status configuration with unique card accent colors
@@ -71,6 +86,7 @@ export default function HeadOrdersPage() {
     const connectionMode = useRealtimeStore((state) => state.connectionMode);
     const realtimeConnected = useRealtimeStore((state) => state.isConnected);
     const [statusFilter, setStatusFilter] = React.useState<string>("ACTIVE");
+    const [pinnedIds, setPinnedIds] = React.useState<Set<string>>(new Set());
     const [selectedOrder, setSelectedOrder] = React.useState<any | null>(null);
     const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
     const [cancelDialogOpen, setCancelDialogOpen] = React.useState(false);
@@ -152,14 +168,21 @@ export default function HeadOrdersPage() {
             );
         }
 
-        // Sort by updated_at descending (new/updated orders first)
-        const sorted = result.sort((a: any, b: any) =>
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
+        // Sort: pinned first, then active orders oldest-first (most urgent), rest newest-first
+        const sorted = result.sort((a: any, b: any) => {
+            const aPinned = pinnedIds.has(a.id) ? 0 : 1;
+            const bPinned = pinnedIds.has(b.id) ? 0 : 1;
+            if (aPinned !== bPinned) return aPinned - bPinned;
+            // Active orders: oldest (most urgent) first
+            if (a.status === 'ACTIVE' && b.status === 'ACTIVE') {
+                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            }
+            return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        });
 
         // ✅ Cap to 50 items for performance
         return sorted.slice(0, 50);
-    }, [orders, statusFilter, headerSearch, getOrderTableNumber]);
+    }, [orders, statusFilter, headerSearch, getOrderTableNumber, pinnedIds]);
 
     // Active orders count
     const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
@@ -260,6 +283,16 @@ export default function HeadOrdersPage() {
         cancelOrderMutation.mutate({ orderId: orderToCancel.id, reason: cancelReason.trim() });
     }, [cancelOrderMutation, cancelReason, orderToCancel]);
 
+    const togglePin = React.useCallback((id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setPinnedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }, []);
+
 
     return (
         <div className="space-y-4 max-w-7xl mx-auto">
@@ -314,10 +347,13 @@ export default function HeadOrdersPage() {
                         const isPaid = order.payment_status === 'PAID';
                         const tableNum = getOrderTableNumber(order);
 
+                        const isPinned = pinnedIds.has(order.id);
+                        const ageIndicator = order.status === 'ACTIVE' ? getAgeIndicator(order.created_at) : null;
+
                         return (
                             <div
                                 key={order.id}
-                                className={`group ${config.cardBg} rounded-2xl border border-slate-100 ${config.hoverBorder} shadow-sm hover:shadow-xl transition-all duration-300 ease-out flex overflow-hidden cursor-pointer active:scale-[0.97] select-none border-l-[5px] ${config.borderColor}`}
+                                className={`group ${config.cardBg} rounded-2xl border ${isPinned ? 'border-amber-200' : 'border-slate-100'} ${config.hoverBorder} shadow-sm hover:shadow-xl transition-all duration-300 ease-out flex overflow-hidden cursor-pointer active:scale-[0.97] select-none border-l-[5px] ${config.borderColor}`}
                                 onClick={() => openDetails(order)}
                                 style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
@@ -325,12 +361,22 @@ export default function HeadOrdersPage() {
                                 <div className="flex-1 flex flex-col min-w-0">
                                     {/* Row 1: Name + Amount */}
                                     <div className="flex items-start justify-between px-4 pt-3.5 pb-1 gap-3">
-                                        <h3 className="font-extrabold text-slate-900 text-[15px] truncate leading-tight">
-                                            {order.customer_name || 'Guest'}
-                                        </h3>
-                                        <p className="text-lg font-extrabold text-emerald-600 tabular-nums whitespace-nowrap tracking-tight leading-tight">
-                                            {formatINR(order.total_amount)}
-                                        </p>
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            {isPinned && <Star className="h-3 w-3 text-amber-400 shrink-0 fill-amber-400" />}
+                                            <h3 className="font-extrabold text-slate-900 text-[15px] truncate leading-tight">
+                                                {order.customer_name || 'Guest'}
+                                            </h3>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            {ageIndicator && (
+                                                <span className={`text-[10px] font-black rounded-md px-1.5 py-0.5 ${ageIndicator.cls}`}>
+                                                    {ageIndicator.label}
+                                                </span>
+                                            )}
+                                            <p className="text-lg font-extrabold text-emerald-600 tabular-nums whitespace-nowrap tracking-tight leading-tight">
+                                                {formatINR(order.total_amount)}
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {/* Row 2: Table, Time, Order # */}
@@ -354,16 +400,21 @@ export default function HeadOrdersPage() {
                                         )}
                                     </div>
 
-                                    {/* Row 3: Item Chips */}
+                                    {/* Row 3: Item Chips with dietary dots */}
                                     <div className="flex flex-wrap gap-1.5 px-4 pb-3">
-                                        {order.items?.slice(0, 5).map((item: any, idx: number) => (
-                                            <span
-                                                key={idx}
-                                                className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-[11px] font-semibold rounded-lg px-2 py-1 transition-colors duration-200 group-hover:bg-slate-200/70"
-                                            >
-                                                {item.quantity}× {item.name_snapshot || item.product?.name || 'Item'}
-                                            </span>
-                                        ))}
+                                        {order.items?.slice(0, 5).map((item: any, idx: number) => {
+                                            const isVeg = item.product?.is_veg ?? item.is_veg;
+                                            return (
+                                                <span
+                                                    key={idx}
+                                                    className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-[11px] font-semibold rounded-lg px-2 py-1 transition-colors duration-200 group-hover:bg-slate-200/70"
+                                                >
+                                                    {isVeg === true && <span className="h-1.5 w-1.5 rounded-sm bg-emerald-500 shrink-0" title="Veg" />}
+                                                    {isVeg === false && <span className="h-1.5 w-1.5 rounded-sm bg-rose-500 shrink-0" title="Non-Veg" />}
+                                                    {item.quantity}× {item.name_snapshot || item.product?.name || 'Item'}
+                                                </span>
+                                            );
+                                        })}
                                         {order.items?.length > 5 && (
                                             <span className="inline-flex items-center text-[11px] font-bold text-primary bg-primary/10 rounded-lg px-2 py-1">
                                                 +{order.items.length - 5} more
@@ -379,6 +430,15 @@ export default function HeadOrdersPage() {
                                         </span>
 
                                         <div className="flex items-center gap-1.5">
+                                            {/* Pin Button */}
+                                            <button
+                                                className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border active:scale-90 transition-all duration-150 ${isPinned ? 'text-amber-500 bg-amber-50 border-amber-200 hover:bg-amber-100' : 'text-slate-400 bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'}`}
+                                                onClick={(e) => togglePin(order.id, e)}
+                                                title={isPinned ? 'Unpin order' : 'Pin to top'}
+                                            >
+                                                <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-amber-400' : ''}`} />
+                                            </button>
+
                                             {/* Add Button */}
                                             <button
                                                 className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all duration-150 shadow-sm"
@@ -479,25 +539,73 @@ export default function HeadOrdersPage() {
                                     </div>
                                 </DialogHeader>
 
-                                {/* Body — item chips */}
+                                {/* Body — item chips grouped by course */}
                                 <div className="flex-1 overflow-y-auto scrollbar-hide px-3 pt-3 pb-1 bg-slate-50/50">
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {selectedOrder.items?.slice().sort((a: any, b: any) =>
-                                            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                                        ).map((item: any, idx: number) => (
-                                            <div
-                                                key={item.id || idx}
-                                                className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold ${mCfg.bgColor} ${mCfg.color}`}
-                                            >
-                                                <span className="font-extrabold">{item.quantity}×</span>
-                                                <span className="truncate max-w-[100px]">
-                                                    {item.name_snapshot || item.product?.name || 'Item'}
-                                                </span>
-                                                <span className="font-extrabold opacity-75 tabular-nums">
-                                                    {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
-                                                </span>
+                                    {(() => {
+                                        const items: any[] = selectedOrder.items ?? [];
+                                        const courseOrder = ['STARTER', 'MAIN', 'DESSERT', 'DRINKS'];
+                                        const withCourse = items.filter((i: any) => i.course);
+                                        const noCourse = items.filter((i: any) => !i.course);
+                                        const grouped = courseOrder.reduce((acc: Record<string, any[]>, c) => {
+                                            const grp = items.filter((i: any) => i.course === c);
+                                            if (grp.length > 0) acc[c] = grp;
+                                            return acc;
+                                        }, {});
+                                        const hasCourses = withCourse.length > 0;
+
+                                        return (
+                                            <div className="space-y-3">
+                                                {hasCourses && Object.entries(grouped).map(([course, grpItems]) => {
+                                                    const allFired = grpItems.every((i: any) => i.course_fired_at);
+                                                    return (
+                                                        <div key={course} className="space-y-1.5">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{course}</span>
+                                                                {!allFired && (
+                                                                    <button
+                                                                        className="text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 active:scale-95 transition-all"
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                const { apiClient } = await import('@/lib/api-client');
+                                                                                await apiClient.post(`/orders/${selectedOrder.id}/fire-course/${course}`);
+                                                                                queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+                                                                                toast.success(`${course} fired to kitchen`);
+                                                                            } catch { toast.error('Failed to fire course'); }
+                                                                        }}
+                                                                    >
+                                                                        🔥 Fire {course}
+                                                                    </button>
+                                                                )}
+                                                                {allFired && <span className="text-[10px] font-bold text-emerald-600">✓ Fired</span>}
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {(grpItems as any[]).map((item: any, idx: number) => (
+                                                                    <div key={item.id || idx} className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold ${mCfg.bgColor} ${mCfg.color} ${item.course_fired_at ? 'opacity-60' : ''}`}>
+                                                                        <span className="font-extrabold">{item.quantity}×</span>
+                                                                        <span className="truncate max-w-[100px]">{item.name_snapshot || item.product?.name || 'Item'}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {noCourse.length > 0 && (
+                                                    <div className={hasCourses ? "pt-1 border-t border-slate-100" : ""}>
+                                                        {hasCourses && <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 block mb-1.5">Other</span>}
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {noCourse.map((item: any, idx: number) => (
+                                                                <div key={item.id || idx} className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold ${mCfg.bgColor} ${mCfg.color}`}>
+                                                                    <span className="font-extrabold">{item.quantity}×</span>
+                                                                    <span className="truncate max-w-[100px]">{item.name_snapshot || item.product?.name || 'Item'}</span>
+                                                                    <span className="font-extrabold opacity-75 tabular-nums">{formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        ))}
+                                        );
+                                    })()}
                                     </div>
                                     {/* Total */}
                                     <div className="flex items-center justify-between mt-3 mb-2 px-1">

@@ -59,6 +59,7 @@ const CustomerFacingDisplay = lazy(() => import("./pages/admin/display/CustomerF
 const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage"));
 const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
 const VouchersPage = lazy(() => import("./pages/admin/billing/VouchersPage"));
+const GiftCardsPage = lazy(() => import("./pages/admin/billing/GiftCardsPage"));
 const LoyaltyPage = lazy(() => import("./pages/admin/billing/LoyaltyPage"));
 const PricingRulesPage = lazy(() => import("./pages/admin/billing/PricingRulesPage"));
 const PrinterZonesPage = lazy(() => import("./pages/admin/adminSettings/PrinterZonesPage"));
@@ -160,6 +161,7 @@ const App = () => (
                 <Route path="day-end" element={<AdminDayEndPage />} />
                 <Route path="exports" element={<AdminExportCenterPage />} />
                 <Route path="vouchers" element={<VouchersPage />} />
+                <Route path="gift-cards" element={<GiftCardsPage />} />
                 <Route path="loyalty" element={<LoyaltyPage />} />
                 <Route path="pricing-rules" element={<PricingRulesPage />} />
 

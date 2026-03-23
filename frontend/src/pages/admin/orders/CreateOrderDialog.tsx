@@ -60,6 +60,8 @@ interface ComboProduct {
   components: { product_id: string; quantity: number; product: { id: string; name: string; price: string } }[];
 }
 
+type CourseType = 'STARTER' | 'MAIN' | 'DESSERT' | 'DRINKS';
+
 interface OrderItem {
   key: string; // unique: product_id + sorted modifier option ids
   product_id: string;
@@ -68,6 +70,7 @@ interface OrderItem {
   unit_price: number; // base price + modifiers delta
   modifier_option_ids: string[];
   modifier_label?: string; // human readable summary
+  course?: CourseType; // optional course grouping
   // combo-specific
   is_combo?: true;
   combo_components?: ComboComponent[];
@@ -268,6 +271,10 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
     setOrderItems(orderItems.filter(item => item.key !== itemKey));
   };
 
+  const setCourse = (itemKey: string, course: CourseType | undefined) => {
+    setOrderItems(orderItems.map(item => item.key === itemKey ? { ...item, course } : item));
+  };
+
   const totalAmount = orderItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -292,7 +299,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
             unit_price: comp.unit_price,
           }));
         }
-        return [{ product_id: item.product_id, quantity: item.quantity, unit_price: item.unit_price, modifier_option_ids: item.modifier_option_ids.length > 0 ? item.modifier_option_ids : undefined }];
+        return [{ product_id: item.product_id, quantity: item.quantity, unit_price: item.unit_price, modifier_option_ids: item.modifier_option_ids.length > 0 ? item.modifier_option_ids : undefined, course: item.course ?? undefined }];
       }),
     };
 
@@ -674,11 +681,23 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                               {item.modifier_label && (
                                 <p className="text-[9px] text-violet-500 font-semibold truncate">{item.modifier_label}</p>
                               )}
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
                                   {item.quantity}x
                                 </span>
                                 <span className="text-[9px] font-bold text-slate-400">@ {formatINR(item.unit_price)}</span>
+                                <select
+                                  value={item.course ?? ''}
+                                  onChange={(e) => setCourse(item.key, (e.target.value as CourseType) || undefined)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-[9px] font-bold bg-slate-100 text-slate-500 rounded px-1 py-0.5 border-none outline-none cursor-pointer hover:bg-slate-200 transition-colors"
+                                >
+                                  <option value="">No course</option>
+                                  <option value="STARTER">Starter</option>
+                                  <option value="MAIN">Main</option>
+                                  <option value="DESSERT">Dessert</option>
+                                  <option value="DRINKS">Drinks</option>
+                                </select>
                               </div>
                             </div>
                             <div className="flex items-center gap-3 pl-2">

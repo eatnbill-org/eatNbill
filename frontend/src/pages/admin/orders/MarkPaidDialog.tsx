@@ -65,6 +65,25 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const [loyaltyPointsInput, setLoyaltyPointsInput] = useState('');
     const [loyaltyApplied, setLoyaltyApplied] = useState(false);
     const [happyHourRule, setHappyHourRule] = useState<{ name: string; discount_amount: number } | null>(null);
+    const [giftCardInput, setGiftCardInput] = useState('');
+    const [giftCardLoading, setGiftCardLoading] = useState(false);
+    const [appliedGiftCard, setAppliedGiftCard] = useState<{ id: string; code: string; remaining_value: number; applied_amount: number } | null>(null);
+
+    const handleValidateGiftCard = async () => {
+        if (!giftCardInput.trim()) return;
+        setGiftCardLoading(true);
+        try {
+            const res = await apiClient.post('/restaurant/gift-cards/validate', { code: giftCardInput.trim().toUpperCase() });
+            const gc = (res.data as any)?.data;
+            const applyAmt = Math.min(parseFloat(gc.remaining_value), finalPayable > 0 ? finalPayable : parseFloat(gc.remaining_value));
+            setAppliedGiftCard({ id: gc.id, code: gc.code, remaining_value: parseFloat(gc.remaining_value), applied_amount: applyAmt });
+            toast.success(`Gift card valid — up to ${formatINR(parseFloat(gc.remaining_value))} available`);
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || 'Invalid gift card');
+        } finally {
+            setGiftCardLoading(false);
+        }
+    };
 
     const handleApplyVoucher = async () => {
         if (!voucherInput.trim() || !order) return;
@@ -97,6 +116,8 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             setLoyaltyPointsInput('');
             setLoyaltyApplied(false);
             setHappyHourRule(null);
+            setGiftCardInput('');
+            setAppliedGiftCard(null);
             // Fetch loyalty balance if order has a customer
             if (order.customer_id) {
                 apiClient.get<{ data: any }>(`/restaurant/loyalty/customers/${order.customer_id}`)
@@ -123,7 +144,8 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const loyaltyPoints = loyaltyApplied ? (parseInt(loyaltyPointsInput) || 0) : 0;
     const loyaltyDiscount = loyaltyBalance ? loyaltyPoints * parseFloat(loyaltyBalance.program?.redemption_rate || '0') : 0;
     const happyHourDiscount = happyHourRule ? happyHourRule.discount_amount : 0;
-    const finalPayable = Math.max(0, baseTotal - currentDiscount - loyaltyDiscount - happyHourDiscount + currentTip);
+    const giftCardDiscount = appliedGiftCard ? appliedGiftCard.applied_amount : 0;
+    const finalPayable = Math.max(0, baseTotal - currentDiscount - loyaltyDiscount - happyHourDiscount - giftCardDiscount + currentTip);
 
     const handleApplyLoyalty = () => {
         const pts = parseInt(loyaltyPointsInput) || 0;
@@ -165,11 +187,19 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                 payment_status: isCreditView ? 'PENDING' : 'PAID',
                 payment_method: currentMethod as PaymentMethod,
                 payment_amount: finalPayable,
-                discount_amount: currentDiscount + loyaltyDiscount + happyHourDiscount,
+                discount_amount: currentDiscount + loyaltyDiscount + happyHourDiscount + giftCardDiscount,
                 tip_amount: currentTip || undefined,
                 voucher_id: appliedVoucher?.voucher_id,
                 loyalty_points_to_redeem: loyaltyApplied && loyaltyPoints > 0 ? loyaltyPoints : undefined,
             } as any);
+
+            // Redeem gift card if applied
+            if (appliedGiftCard && !isCreditView) {
+                await apiClient.post('/restaurant/gift-cards/redeem', {
+                    code: appliedGiftCard.code,
+                    amount: appliedGiftCard.applied_amount,
+                }).catch(() => { /* non-fatal */ });
+            }
 
             if (autoPrint && !isCreditView) {
                 const updatedOrder = {
@@ -397,6 +427,31 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                             <div className="text-[10px] text-emerald-600 font-black flex items-center gap-1">
                                                 <CheckCircle2 className="h-3 w-3" />
                                                 Voucher "{appliedVoucher.code}" applied — {formatINR(appliedVoucher.discount_amount)} off
+                                            </div>
+                                        )}
+
+                                        {/* Gift Card */}
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={giftCardInput}
+                                                onChange={(e) => setGiftCardInput(e.target.value.toUpperCase())}
+                                                placeholder="GIFT CARD CODE"
+                                                className="h-9 text-xs font-bold tracking-widest border-slate-200 bg-white rounded-xl flex-1 font-mono"
+                                                disabled={!!appliedGiftCard}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleValidateGiftCard(); } }}
+                                            />
+                                            {appliedGiftCard ? (
+                                                <Button type="button" variant="ghost" size="sm" className="h-9 px-3 rounded-xl text-rose-500 hover:bg-rose-50 text-[10px] font-black" onClick={() => { setAppliedGiftCard(null); setGiftCardInput(''); }}>Remove</Button>
+                                            ) : (
+                                                <Button type="button" variant="outline" size="sm" className="h-9 px-3 rounded-xl text-[10px] font-black border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => void handleValidateGiftCard()} disabled={giftCardLoading || !giftCardInput.trim()}>
+                                                    {giftCardLoading ? '...' : 'Apply'}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        {appliedGiftCard && (
+                                            <div className="text-[10px] text-amber-600 font-black flex items-center gap-1">
+                                                <CheckCircle2 className="h-3 w-3" />
+                                                Gift card "{appliedGiftCard.code}" — {formatINR(appliedGiftCard.applied_amount)} off (balance: {formatINR(appliedGiftCard.remaining_value)})
                                             </div>
                                         )}
 

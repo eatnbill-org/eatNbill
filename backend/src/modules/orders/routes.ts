@@ -249,6 +249,24 @@ export function orderRoutes() {
     controller.voidOrderItem
   );
 
+  // Assign course to an order item
+  router.patch(
+    "/:id/items/:itemId/course",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    controller.setItemCourse
+  );
+
+  // Fire a course (send to kitchen)
+  router.post(
+    "/:id/fire-course/:course",
+    rateLimiters.default,
+    authMiddleware,
+    tenantMiddleware,
+    controller.fireCourse
+  );
+
   // Delete order
   router.delete(
     "/:id",

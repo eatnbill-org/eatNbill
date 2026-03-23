@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Package, Tag, Pencil, Trash2, Image as ImageIcon, TrendingUp, AlertCircle, SlidersHorizontal } from 'lucide-react';
+import { Plus, Search, Package, Tag, Pencil, Trash2, Image as ImageIcon, TrendingUp, AlertCircle, SlidersHorizontal, CheckSquare2, Square, ToggleLeft, ToggleRight, Percent } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
 import CreateCategoryDialog from './components/CreateCategoryDialog';
 import EditCategoryDialog from './components/EditCategoryDialog';
 import CreateProductDialog from './components/CreateProductDialog';
@@ -64,6 +65,9 @@ export default function AdminProductsPage() {
   } = useProductsStore();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkPricePercent, setBulkPricePercent] = useState('');
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
   const [editCategoryOpen, setEditCategoryOpen] = useState(false);
   const [createProductOpen, setCreateProductOpen] = useState(false);
@@ -175,6 +179,58 @@ export default function AdminProductsPage() {
 
     return matchesSearch && matchesCategory;
   });
+
+  const allFilteredSelected = filteredProducts.length > 0 && filteredProducts.every((p) => selectedIds.has(p.id));
+  const someSelected = selectedIds.size > 0;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredProducts.map((p) => p.id)));
+    }
+  };
+
+  const bulkToggleActive = async (active: boolean) => {
+    setBulkActionLoading(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) => updateProduct(id, { isAvailable: active }))
+      );
+      toast.success(`${selectedIds.size} products ${active ? "activated" : "deactivated"}`);
+      setSelectedIds(new Set());
+    } catch { toast.error("Bulk update failed"); }
+    finally { setBulkActionLoading(false); }
+  };
+
+  const bulkAdjustPrice = async () => {
+    const pct = parseFloat(bulkPricePercent);
+    if (isNaN(pct) || pct === 0) { toast.error("Enter a valid percentage"); return; }
+    setBulkActionLoading(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) => {
+          const product = products.find((p) => p.id === id);
+          if (!product) return Promise.resolve();
+          const newPrice = (parseFloat(product.price) * (1 + pct / 100)).toFixed(2);
+          return apiClient.patch(`/products/${id}`, { price: newPrice });
+        })
+      );
+      toast.success(`Price adjusted by ${pct > 0 ? "+" : ""}${pct}% for ${selectedIds.size} products`);
+      setSelectedIds(new Set());
+      setBulkPricePercent('');
+      fetchProducts();
+    } catch { toast.error("Bulk price update failed"); }
+    finally { setBulkActionLoading(false); }
+  };
 
   return (
     <div className="min-h-full bg-slate-50/50">
@@ -310,13 +366,53 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
+            {/* Bulk action bar */}
+            {someSelected && (
+              <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/20 rounded-xl">
+                <span className="text-xs font-black text-primary uppercase tracking-wider">{selectedIds.size} selected</span>
+                <div className="flex items-center gap-2 ml-auto flex-wrap">
+                  <Button variant="outline" size="sm" className="h-8 text-xs rounded-lg gap-1.5" onClick={() => bulkToggleActive(true)} disabled={bulkActionLoading}>
+                    <ToggleRight className="w-3.5 h-3.5 text-emerald-600" /> Activate
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 text-xs rounded-lg gap-1.5" onClick={() => bulkToggleActive(false)} disabled={bulkActionLoading}>
+                    <ToggleLeft className="w-3.5 h-3.5 text-slate-400" /> Deactivate
+                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative">
+                      <Percent className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                      <Input
+                        type="number"
+                        value={bulkPricePercent}
+                        onChange={(e) => setBulkPricePercent(e.target.value)}
+                        placeholder="±%"
+                        className="h-8 w-20 text-xs pl-7 rounded-lg"
+                      />
+                    </div>
+                    <Button variant="outline" size="sm" className="h-8 text-xs rounded-lg" onClick={bulkAdjustPrice} disabled={bulkActionLoading || !bulkPricePercent}>
+                      Adjust Price
+                    </Button>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8 text-xs rounded-lg text-slate-400" onClick={() => setSelectedIds(new Set())}>
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Products Table Container */}
             <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
               <Table className="min-w-[980px]">
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
-                    <TableHead className="w-[80px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-muted-foreground">Image</TableHead>
+                    <TableHead className="w-10 py-6 pl-4">
+                      <Checkbox
+                        checked={allFilteredSelected}
+                        onCheckedChange={toggleSelectAll}
+                        className="border-slate-300"
+                      />
+                    </TableHead>
+                    <TableHead className="w-[80px] py-6 pl-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Image</TableHead>
                     <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Product</TableHead>
                     <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Category</TableHead>
                     <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Price</TableHead>
@@ -329,7 +425,7 @@ export default function AdminProductsPage() {
                 <TableBody>
                   {productsLoading && products.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={showProfit ? 9 : 8} className="h-64 text-center">
+                      <TableCell colSpan={showProfit ? 10 : 9} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center space-y-4 opacity-40">
                           <Package className="h-12 w-12 text-muted-foreground animate-pulse" />
                           <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">Loading Products...</p>
@@ -338,7 +434,7 @@ export default function AdminProductsPage() {
                     </TableRow>
                   ) : filteredProducts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={showProfit ? 9 : 8} className="h-64 text-center">
+                      <TableCell colSpan={showProfit ? 10 : 9} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center space-y-4 opacity-40">
                           <Search className="h-12 w-12 text-muted-foreground" />
                           <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">No products found</p>
@@ -362,7 +458,14 @@ export default function AdminProductsPage() {
                             transition={{ delay: index * 0.02 }}
                             className="group hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-none"
                           >
-                            <TableCell className="py-5 pl-8">
+                            <TableCell className="py-5 pl-4">
+                              <Checkbox
+                                checked={selectedIds.has(product.id)}
+                                onCheckedChange={() => toggleSelect(product.id)}
+                                className="border-slate-300"
+                              />
+                            </TableCell>
+                            <TableCell className="py-5 pl-4">
                               <div className="relative h-14 w-14 rounded-2xl bg-slate-100 overflow-hidden border border-slate-100 shadow-sm group-hover:scale-105 transition-transform">
                                 {product.images && product.images.length > 0 ? (
                                   <img
