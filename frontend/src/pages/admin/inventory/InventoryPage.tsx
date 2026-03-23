@@ -36,6 +36,7 @@ interface StockMovement {
 interface ProductBasic {
   id: string;
   name: string;
+  price: string;
   category_id: string | null;
 }
 
@@ -46,7 +47,7 @@ interface RecipeLine {
   ingredient: { id: string; name: string; unit: string; cost_per_unit: string };
 }
 
-type Tab = "ingredients" | "recipes";
+type Tab = "ingredients" | "recipes" | "low-stock" | "food-cost";
 
 const UNITS = ["pcs", "kg", "g", "L", "ml", "dozen", "box", "bag"];
 const MOVEMENT_TYPES = ["PURCHASE", "WASTE", "ADJUSTMENT"] as const;
@@ -75,6 +76,10 @@ export default function InventoryPage() {
   const [recipeSaving, setRecipeSaving] = React.useState(false);
   // Draft lines in dialog: { ingredient_id, quantity }
   const [draftLines, setDraftLines] = React.useState<{ ingredient_id: string; quantity: string }[]>([]);
+
+  // Food cost tab state: map productId -> ingredient cost
+  const [foodCostData, setFoodCostData] = React.useState<Record<string, number>>({});
+  const [foodCostLoading, setFoodCostLoading] = React.useState(false);
 
   // Ingredient CRUD dialog
   const [ingredientDialog, setIngredientDialog] = React.useState(false);
@@ -121,7 +126,41 @@ export default function InventoryPage() {
 
   React.useEffect(() => {
     if (activeTab === "recipes") void loadProducts();
+    if (activeTab === "food-cost") void loadFoodCost();
   }, [activeTab]);
+
+  const loadFoodCost = async () => {
+    if (products.length === 0) {
+      setFoodCostLoading(true);
+      try {
+        const res = await apiClient.get<{ products: ProductBasic[] }>("/products");
+        const prods: ProductBasic[] = (res.data as any)?.products ?? [];
+        setProducts(prods);
+        await computeFoodCost(prods);
+      } catch { /* ignore */ } finally { setFoodCostLoading(false); }
+    } else {
+      await computeFoodCost(products);
+    }
+  };
+
+  const computeFoodCost = async (prods: ProductBasic[]) => {
+    setFoodCostLoading(true);
+    const costs: Record<string, number> = {};
+    await Promise.all(
+      prods.map(async (p) => {
+        try {
+          const res = await apiClient.get<{ data: RecipeLine[] }>(`/restaurant/inventory/recipes/${p.id}`);
+          const lines: RecipeLine[] = (res.data as any)?.data ?? [];
+          costs[p.id] = lines.reduce(
+            (sum, l) => sum + Number(l.quantity) * Number(l.ingredient.cost_per_unit),
+            0
+          );
+        } catch { costs[p.id] = -1; }
+      })
+    );
+    setFoodCostData(costs);
+    setFoodCostLoading(false);
+  };
 
   const openRecipeEditor = async (product: ProductBasic) => {
     setRecipeProduct(product);
@@ -270,6 +309,20 @@ export default function InventoryPage() {
             <Icon className="h-3.5 w-3.5" />{label}
           </button>
         ))}
+        <button type="button" onClick={() => setActiveTab("low-stock")}
+          className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all", activeTab === "low-stock" ? "bg-amber-500 text-white shadow" : "text-slate-500 hover:bg-slate-50")}>
+          <AlertTriangle className="h-3.5 w-3.5" />
+          Low Stock
+          {lowStockCount > 0 && (
+            <span className={cn("text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center", activeTab === "low-stock" ? "bg-white text-amber-600" : "bg-amber-100 text-amber-700")}>
+              {lowStockCount}
+            </span>
+          )}
+        </button>
+        <button type="button" onClick={() => setActiveTab("food-cost")}
+          className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all", activeTab === "food-cost" ? "bg-teal-600 text-white shadow" : "text-slate-500 hover:bg-slate-50")}>
+          <TrendingUp className="h-3.5 w-3.5" /> Food Cost
+        </button>
       </div>
 
       {/* Low stock alert banner */}
@@ -406,6 +459,135 @@ export default function InventoryPage() {
               </table>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Low Stock Tab */}
+      {activeTab === "low-stock" && (
+        <div className="space-y-4">
+          {lowStockCount === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+              <TrendingDown className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+              <p className="text-slate-500 font-medium">All ingredients are sufficiently stocked</p>
+              <p className="text-sm text-slate-400 mt-1">Set reorder levels on ingredients to see alerts here</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-amber-200 bg-white overflow-hidden">
+              <div className="px-4 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <span className="text-sm font-bold text-amber-700">{lowStockCount} ingredient{lowStockCount > 1 ? "s" : ""} below reorder level</span>
+              </div>
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Ingredient</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Current Stock</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Reorder At</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Shortage</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ingredients
+                    .filter((i) => i.reorder_level !== null && Number(i.current_stock) <= Number(i.reorder_level))
+                    .sort((a, b) => Number(a.current_stock) - Number(b.current_stock))
+                    .map((ing) => {
+                      const shortage = Number(ing.reorder_level) - Number(ing.current_stock);
+                      return (
+                        <tr key={ing.id} className="border-t border-slate-100 hover:bg-amber-50/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-semibold text-slate-800">{ing.name}</p>
+                            {ing.category && <p className="text-[10px] text-slate-400">{ing.category}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="font-black text-rose-600">{Number(ing.current_stock).toFixed(2)} {ing.unit}</span>
+                          </td>
+                          <td className="px-4 py-3 text-right text-slate-500">{Number(ing.reorder_level).toFixed(2)} {ing.unit}</td>
+                          <td className="px-4 py-3 text-right text-amber-600 font-bold">{shortage.toFixed(2)} {ing.unit}</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button variant="outline" size="sm" className="rounded-xl h-8 text-xs gap-1.5"
+                              onClick={() => { setAdjustTarget(ing); setAdjustType("PURCHASE"); setAdjustQty(""); setAdjustNotes(""); setAdjustDialog(true); }}>
+                              <RotateCcw className="h-3.5 w-3.5" /> Restock
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Food Cost Tab */}
+      {activeTab === "food-cost" && (
+        <div className="space-y-3">
+          {foodCostLoading ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400 text-sm">Computing food costs...</div>
+          ) : products.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+              <BookOpen className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+              <p className="text-slate-500 font-medium">No products found</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+              <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-teal-500" />
+                <span className="text-sm font-bold text-slate-700">Food Cost Analysis</span>
+                <span className="ml-auto text-xs text-slate-400">Highlight: &gt;35% food cost ratio</span>
+              </div>
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Product</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Selling Price</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Ingredient Cost</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Gross Margin</th>
+                    <th className="text-right px-4 py-3 font-bold text-[10px] uppercase tracking-widest">Food Cost %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products
+                    .filter((p) => foodCostData[p.id] !== undefined && foodCostData[p.id] >= 0)
+                    .sort((a, b) => {
+                      const aRatio = Number(a.price) > 0 ? (foodCostData[a.id] / Number(a.price)) * 100 : 0;
+                      const bRatio = Number(b.price) > 0 ? (foodCostData[b.id] / Number(b.price)) * 100 : 0;
+                      return bRatio - aRatio;
+                    })
+                    .map((p) => {
+                      const cost = foodCostData[p.id] ?? 0;
+                      const price = Number(p.price);
+                      const margin = price - cost;
+                      const ratio = price > 0 ? (cost / price) * 100 : 0;
+                      const isHighCost = ratio > 35;
+                      return (
+                        <tr key={p.id} className={cn("border-t border-slate-100 hover:bg-slate-50 transition-colors", isHighCost && "bg-rose-50/30")}>
+                          <td className="px-4 py-3 font-semibold text-slate-800">{p.name}</td>
+                          <td className="px-4 py-3 text-right font-mono text-slate-700">₹{price.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right font-mono text-slate-600">₹{cost.toFixed(2)}</td>
+                          <td className={cn("px-4 py-3 text-right font-mono font-bold", margin >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            ₹{margin.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className={cn("text-xs font-black px-2 py-0.5 rounded-full", isHighCost ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700")}>
+                              {ratio.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  {products.filter((p) => foodCostData[p.id] === undefined || foodCostData[p.id] < 0 || foodCostData[p.id] === 0).length > 0 && (
+                    <tr className="border-t border-dashed border-slate-200">
+                      <td colSpan={5} className="px-4 py-3 text-xs text-slate-400 text-center italic">
+                        {products.filter((p) => foodCostData[p.id] === undefined || foodCostData[p.id] === 0).length} products have no recipe defined
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

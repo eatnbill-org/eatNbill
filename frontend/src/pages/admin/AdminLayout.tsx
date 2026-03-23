@@ -80,6 +80,8 @@ import {
   Bell,
   TrendingUp,
   Plug,
+  ClipboardList,
+  Timer,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -339,6 +341,15 @@ function AdminSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Purchase Orders" isActive={pathname === "/admin/purchase-orders"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <NavLink to="/admin/purchase-orders" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+                  <ClipboardList className="h-[18px] w-[18px] shrink-0" />
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Purchase Orders</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
             {/* Campaigns - Conditional Render */}
             {prefs.sidebar.showCampaigns && (
               <SidebarMenuItem>
@@ -455,7 +466,8 @@ function AdminSidebar() {
                 { label: "Restaurant Profile", path: "/admin/company/profile", icon: Store },
                 { label: "Tables", path: "/admin/company/tables", icon: Armchair },
                 { label: "Staff", path: "/admin/company/staff", icon: UserCog },
-                { label: "Scheduling", path: "/admin/company/scheduling", icon: Calendar }
+                { label: "Scheduling", path: "/admin/company/scheduling", icon: Calendar },
+                { label: "Timesheets", path: "/admin/company/timesheets", icon: Timer }
               ]}
             />
 
