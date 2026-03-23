@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
+import { useTableStore } from "@/stores/tables";
 
 // Split Components
 import { DashboardHeader } from "./components/DashboardHeader";
@@ -23,18 +24,25 @@ import { ActivityFeed } from "./components/ActivityFeed";
 import { RevenueSourceSplit } from "./components/RevenueSourceSplit";
 import { UnpaidBillsCard } from "./components/UnpaidBillsCard";
 import { ActiveStaffCard } from "./components/ActiveStaffCard";
+import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { DashboardStatsSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 
-const getOperationalRange = () => {
-  const now = new Date();
-  const shiftStart = startOfDay(now);
-  const shiftEnd = endOfDay(now);
+type DateRangeMode = "today" | "week" | "month";
 
-  return { shiftStart, shiftEnd, now };
+const getDateRange = (mode: DateRangeMode) => {
+  const now = new Date();
+  switch (mode) {
+    case "week":
+      return { shiftStart: startOfWeek(now, { weekStartsOn: 1 }), shiftEnd: endOfWeek(now, { weekStartsOn: 1 }) };
+    case "month":
+      return { shiftStart: startOfMonth(now), shiftEnd: endOfMonth(now) };
+    default:
+      return { shiftStart: startOfDay(now), shiftEnd: endOfDay(now) };
+  }
 };
 
 // Import helper
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
 export default function AdminDashboardPage() {
   useOnboarding();
@@ -53,12 +61,14 @@ export default function AdminDashboardPage() {
     loading: ordersLoading
   } = useAdminOrdersStore();
   const { products, fetchProducts, loading: productsLoading } = useProductsStore();
+  const { tables } = useTableStore();
 
   const [payment, setPayment] = React.useState<any>(null);
   const [billOrder, setBillOrder] = React.useState<any>(null);
   const [stockOpen, setStockOpen] = React.useState(false);
   const [now, setNow] = React.useState(new Date());
   const [showProfit, setShowProfit] = React.useState(false);
+  const [dateMode, setDateMode] = React.useState<DateRangeMode>("today");
 
   React.useEffect(() => {
     if (!restaurant) {
@@ -72,16 +82,21 @@ export default function AdminDashboardPage() {
     user?.allowed_restaurant_ids?.[0] ||
     null;
 
-  const refreshOrderWidgets = React.useCallback(() => {
-    const { shiftStart, shiftEnd } = getOperationalRange();
+  const refreshOrderWidgets = React.useCallback((mode: DateRangeMode = dateMode) => {
+    const { shiftStart, shiftEnd } = getDateRange(mode);
     fetchOrders({
       from_date: shiftStart.toISOString(),
       to_date: shiftEnd.toISOString(),
-      limit: 100,
+      limit: 200,
     });
     fetchStats();
     fetchRevenue();
-  }, [fetchOrders, fetchStats, fetchRevenue]);
+  }, [fetchOrders, fetchStats, fetchRevenue, dateMode]);
+
+  const handleDateModeChange = (mode: DateRangeMode) => {
+    setDateMode(mode);
+    refreshOrderWidgets(mode);
+  };
 
   // Initial Fetch & Realtime Subscription
   React.useEffect(() => {
@@ -118,14 +133,14 @@ export default function AdminDashboardPage() {
     }
   }, [connectionMode, refreshOrderWidgets]);
 
-  // Derived Data for the current shift
+  // Derived Data for the selected date range
   const shiftOrders = React.useMemo(() => {
-    const { shiftStart, shiftEnd } = getOperationalRange();
+    const { shiftStart, shiftEnd } = getDateRange(dateMode);
     return (orders || []).filter(o => {
       const placedAt = new Date(o.placed_at);
       return placedAt >= shiftStart && placedAt <= shiftEnd;
     });
-  }, [orders]);
+  }, [orders, dateMode]);
 
   const earnings = React.useMemo(() => {
     return shiftOrders
@@ -216,6 +231,22 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+        <div className="flex w-full sm:w-auto flex-wrap items-center gap-2 sm:gap-3">
+          {/* Date range toggle */}
+          <div className="flex bg-white border border-border rounded-lg overflow-hidden shadow-sm">
+            {(["today", "week", "month"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => handleDateModeChange(mode)}
+                className={`px-3 py-2 text-xs font-bold transition-all capitalize ${dateMode === mode ? "bg-primary text-white" : "text-muted-foreground hover:bg-accent"}`}
+              >
+                {mode === "today" ? "Today" : mode === "week" ? "This Week" : "This Month"}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex w-full sm:w-auto flex-wrap items-center gap-2 sm:gap-3 bg-white p-2 rounded-xl border border-border shadow-sm">
           <Button
             variant="outline"
@@ -249,6 +280,12 @@ export default function AdminDashboardPage() {
       </motion.div>
 
       <OrderStatsCards />
+
+      <OnboardingChecklist
+        hasProducts={products.length > 0}
+        hasTables={tables.length > 0}
+        hasOrders={orders.length > 0}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">

@@ -88,6 +88,8 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerSuggestions, setCustomerSuggestions] = useState<{ id: string; name: string; phone: string; visit_count?: number; loyalty_points?: number; credit_balance?: string }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [tableNumber, setTableNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [arriveAt, setArriveAt] = useState('');
@@ -118,6 +120,26 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
         scrollRef.current.scrollLeft += e.deltaY;
       }
     }
+  };
+
+  // Customer phone lookup
+  useEffect(() => {
+    if (customerPhone.length < 4) { setCustomerSuggestions([]); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get<any>(`/restaurant/customers?phone=${encodeURIComponent(customerPhone)}&limit=5`);
+        setCustomerSuggestions((res.data as any)?.data?.customers ?? []);
+        setShowSuggestions(true);
+      } catch { setCustomerSuggestions([]); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [customerPhone]);
+
+  const fillCustomer = (c: typeof customerSuggestions[0]) => {
+    setCustomerName(c.name);
+    setCustomerPhone(c.phone);
+    setCustomerSuggestions([]);
+    setShowSuggestions(false);
   };
 
   // Fetch data when dialog opens
@@ -553,13 +575,35 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                       />
                     </div>
                     <div className="relative group">
-                      <Tablet className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                      <Tablet className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors z-10" />
                       <Input
                         value={customerPhone}
-                        onChange={e => setCustomerPhone(e.target.value)}
+                        onChange={e => { setCustomerPhone(e.target.value); setShowSuggestions(true); }}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                         placeholder="Mobile"
                         className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] focus:shadow-[0_8px_20px_-6px_rgba(16,185,129,0.15)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary transition-all rounded-xl font-bold px-9 text-xs placeholder:text-slate-300 placeholder:font-medium"
                       />
+                      {showSuggestions && customerSuggestions.length > 0 && (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
+                          {customerSuggestions.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
+                              onMouseDown={() => fillCustomer(c)}
+                            >
+                              <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-bold text-slate-800 truncate">{c.name}</div>
+                                <div className="text-[10px] text-slate-400">{c.phone}{c.visit_count ? ` · ${c.visit_count} visits` : ""}</div>
+                              </div>
+                              {(c.loyalty_points ?? 0) > 0 && (
+                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">{c.loyalty_points} pts</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
