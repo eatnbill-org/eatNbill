@@ -16,9 +16,10 @@ import { useCategoriesStore } from '@/stores/categories';
 import { useTableStore } from '@/stores/tables';
 import type { CreateOrderPayload } from '@/types/order';
 import type { Product } from '@/types/product';
-import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check, Package } from 'lucide-react';
+import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check, Package, Tag, CheckCircle, AlertCircle } from 'lucide-react';
 import { formatINR } from '@/lib/format';
 import { useRef } from 'react';
+import { validateVoucherCode } from '@/lib/enterprise-api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/skeleton';
@@ -107,6 +108,13 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
   const [showCombos, setShowCombos] = useState(false);
   const [combos, setCombos] = useState<ComboProduct[]>([]);
   const [combosLoading, setCombosLoading] = useState(false);
+
+  // Voucher / promo code
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherStatus, setVoucherStatus] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle');
+  const [appliedVoucher, setAppliedVoucher] = useState<{ voucher_id: string; code: string; discount_amount: number; description: string | null } | null>(null);
+  const voucherDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -276,6 +284,27 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
   };
 
   const totalAmount = orderItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+  const voucherDiscount = appliedVoucher?.discount_amount ?? 0;
+  const finalTotal = Math.max(0, totalAmount - voucherDiscount);
+
+  // Debounced voucher validation
+  useEffect(() => {
+    if (voucherDebounceRef.current) clearTimeout(voucherDebounceRef.current);
+    if (!voucherCode.trim()) { setVoucherStatus('idle'); setAppliedVoucher(null); return; }
+    setVoucherStatus('loading');
+    voucherDebounceRef.current = setTimeout(async () => {
+      try {
+        const result = await validateVoucherCode(voucherCode.trim(), totalAmount);
+        setAppliedVoucher(result as any);
+        setVoucherStatus('valid');
+      } catch {
+        setAppliedVoucher(null);
+        setVoucherStatus('invalid');
+      }
+    }, 600);
+    return () => { if (voucherDebounceRef.current) clearTimeout(voucherDebounceRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voucherCode, totalAmount]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,6 +320,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       notes: notes || undefined,
       arrive_at: arriveAt || undefined,
       order_type: tableNumber ? 'DINE_IN' : 'TAKEAWAY',
+      ...(appliedVoucher && { voucher_id: appliedVoucher.voucher_id }),
       items: orderItems.flatMap(item => {
         if (item.is_combo && item.combo_components) {
           return item.combo_components.map(comp => ({
@@ -314,6 +344,9 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       setSelectedCategoryId(null);
       setShowCombos(false);
       setProductModifierCache({});
+      setVoucherCode('');
+      setAppliedVoucher(null);
+      setVoucherStatus('idle');
       onOpenChange(false);
       if (printSlip) {
         printKitchenSlip(order);
@@ -720,6 +753,44 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
               {/* High-Impact Order Footer */}
               <div className="p-6 bg-white border-t border-slate-100 shrink-0 space-y-4">
+                {/* Voucher / Promo Code */}
+                {orderItems.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="relative flex items-center gap-2">
+                      <Tag className="absolute left-3 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                      <Input
+                        value={voucherCode}
+                        onChange={e => setVoucherCode(e.target.value.toUpperCase())}
+                        placeholder="Promo / Voucher Code"
+                        className={cn(
+                          "pl-8 pr-10 h-9 text-sm font-mono uppercase tracking-wider transition-colors",
+                          voucherStatus === 'valid' && "border-emerald-400 bg-emerald-50 text-emerald-800",
+                          voucherStatus === 'invalid' && "border-rose-400 bg-rose-50 text-rose-800"
+                        )}
+                        maxLength={30}
+                      />
+                      <div className="absolute right-3">
+                        {voucherStatus === 'loading' && <div className="h-3.5 w-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />}
+                        {voucherStatus === 'valid' && <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />}
+                        {voucherStatus === 'invalid' && <AlertCircle className="h-3.5 w-3.5 text-rose-500" />}
+                      </div>
+                    </div>
+                    {voucherStatus === 'valid' && appliedVoucher && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-emerald-700 font-bold">
+                          ✓ {appliedVoucher.description ?? appliedVoucher.code} — saves {formatINR(appliedVoucher.discount_amount)}
+                        </span>
+                        <button type="button" onClick={() => { setVoucherCode(''); setAppliedVoucher(null); setVoucherStatus('idle'); }} className="text-slate-400 hover:text-rose-500">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {voucherStatus === 'invalid' && voucherCode && (
+                      <p className="text-xs text-rose-600 font-medium">Invalid or expired voucher code</p>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="print-slip"
@@ -754,7 +825,10 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     <div className="flex items-center justify-between w-full px-4 h-full relative z-10">
                       <div className="flex flex-col items-start gap-0.5">
                         <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50">Total Payable</span>
-                        <span className="text-2xl font-bold tracking-tight">{formatINR(totalAmount)}</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-2xl font-bold tracking-tight">{formatINR(finalTotal)}</span>
+                          {voucherDiscount > 0 && <span className="text-xs text-white/50 line-through">{formatINR(totalAmount)}</span>}
+                        </div>
                       </div>
                       <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 group-hover:bg-white/20 transition-all">
                         <span className="text-[11px] font-bold uppercase tracking-widest">Confirm Order</span>

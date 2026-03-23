@@ -151,11 +151,13 @@ export interface CreateOrderPayload {
   order_type: OrderType;
   notes?: string;
   arrive_at?: string;
+  voucher_id?: string;
   items: Array<{
     product_id: string;
     quantity: number;
     notes?: string;
     modifier_option_ids?: string[];
+    course?: string;
   }>;
   // Note: source is NOT included - backend defaults to 'MANUAL' for internal orders
 }
