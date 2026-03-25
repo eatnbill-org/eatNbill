@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize, Search, Plus, Settings2 } from "lucide-react";
+import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QROrderNotification from "@/components/QROrderNotification";
@@ -28,7 +28,6 @@ const NAV_ITEMS = [
     { to: "/head/menu", label: "Menu", icon: UtensilsCrossed },
     { to: "/head/tables", label: "Tables", icon: LayoutGrid },
     { to: "/head/stock", label: "Stock", icon: Package },
-    { to: "/head/settings", label: "Settings", icon: Settings2 },
 ];
 
 export default function HeadLayout() {
@@ -97,13 +96,13 @@ export default function HeadLayout() {
     };
 
     // Keep state in sync with actual fullscreen status (handles ESC key etc)
-    useState(() => {
+    useEffect(() => {
         const handleFullscreenChange = () => {
             setIsFullscreen(!!document.fullscreenElement);
         };
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    });
+    }, []);
 
     useEffect(() => {
         if (!restaurant?.id) return;
@@ -235,6 +234,20 @@ export default function HeadLayout() {
                                 </NavLink>
                             )
                         })}
+
+                        {/* Desktop Fullscreen Button */}
+                        <button
+                            onClick={toggleFullScreen}
+                            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
+                            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                        >
+                            {isFullscreen ? (
+                                <Minimize className="h-4 w-4" />
+                            ) : (
+                                <Maximize className="h-4 w-4" />
+                            )}
+                            <span className="hidden lg:inline">Fullscreen</span>
+                        </button>
                     </div>
 
                     {/* Right: Logout */}

@@ -39,6 +39,8 @@ export function PublicCart({ onOrderSuccess }: { onOrderSuccess?: () => void }) 
     }
 
     const handleOrder = async () => {
+        if (isOrdering) return;
+
         if (!customerInfo && (!formName || !formPhone)) {
             alert('Please enter your details');
             return;
@@ -165,13 +167,13 @@ export function PublicCart({ onOrderSuccess }: { onOrderSuccess?: () => void }) 
                                 color: 'var(--theme-secondary)',
                                 borderRadius: 'var(--theme-radius)'
                             }}
-                            disabled={items.length === 0}
+                            disabled={items.length === 0 || isOrdering}
                             onClick={() => {
                                 if (customerInfo) handleOrder();
                                 else setShowCheckout(true);
                             }}
                         >
-                            {customerInfo ? 'Place Order' : 'Checkout'}
+                            {isOrdering ? 'Placing...' : (customerInfo ? 'Place Order' : 'Checkout')}
                         </Button>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">

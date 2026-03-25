@@ -626,10 +626,8 @@ function NotificationWrapper() {
 
 function ReservationAlertsWrapper({ basePath }: { basePath: string }) {
   const navigate = useNavigate();
-  const { current, dismissAlert } = useReservationAlertsStore((state) => ({
-    current: state.current,
-    dismissAlert: state.dismissAlert,
-  }));
+  const current = useReservationAlertsStore((state) => state.current);
+  const dismissAlert = useReservationAlertsStore((state) => state.dismissAlert);
 
   return (
     <ReservationAlertPopup
