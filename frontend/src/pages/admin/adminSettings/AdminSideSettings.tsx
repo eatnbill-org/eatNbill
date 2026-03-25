@@ -9,6 +9,7 @@ import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye,
 import { toast } from "sonner";
 import { SecuritySettings } from "./components/SecuritySettings";
 import { getSoundSettings, updateSoundSetting, setAllSoundsEnabled, areAllSoundsEnabled, testSound, type SoundSettings } from "@/lib/sound-notification";
+import RegionalSettingsPanel from "@/components/settings/RegionalSettingsPanel";
 
 export default function AdminSideSettings() {
     const { state, dispatch } = useDemoStore();
@@ -66,7 +67,8 @@ export default function AdminSideSettings() {
 
     return (
         <div className="container max-w-5xl py-4 sm:py-6 space-y-6 pb-20 no-scrollbar px-3 sm:px-4 lg:px-6">
-            
+            <RegionalSettingsPanel compact />
+             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
@@ -140,6 +142,7 @@ export default function AdminSideSettings() {
                                     { key: 'takeaway', label: 'Takeaway / Walk-in', icon: '🛍️' },
                                     { key: 'zomato', label: 'Zomato Orders', icon: '🍔' },
                                     { key: 'swiggy', label: 'Swiggy Orders', icon: '🍕' },
+                                    { key: 'reservation', label: 'Reservation Alerts', icon: '⏰' },
                                 ].map(({ key, label, icon }) => (
                                     <div key={key} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center gap-3">

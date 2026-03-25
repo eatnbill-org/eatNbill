@@ -1,9 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Package, Users, Store, UserCog, LogOut, UtensilsCrossed, Armchair } from "lucide-react";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Package,
+  Users,
+  Store,
+  UserCog,
+  LogOut,
+  UtensilsCrossed,
+  Armchair,
+  WalletCards,
+  FileDown,
+  Languages,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import ReservationAlertPopup from "@/components/ReservationAlertPopup";
 import {
   SidebarProvider,
   Sidebar,
@@ -22,7 +36,13 @@ import { cn } from "@/lib/utils";
 import { useRealtimeStore } from "@/stores/realtime";
 import { useAdminOrdersStore } from "@/stores/orders";
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
+import { useReservationAlertsStore } from "@/stores/reservation-alerts.store";
+import { playReservationSound } from "@/lib/sound-notification";
+import { apiClient } from "@/lib/api-client";
 import { logoutStaffSession } from "@/lib/staff-session";
+import type { ReservationAlert } from "@/types/reservation";
+import i18n, { backendLanguageToUi, persistLanguage } from "@/i18n";
+import { fetchMyPreferences } from "@/lib/enterprise-api";
 
 const NAV_ITEMS = [
   { to: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -32,6 +52,9 @@ const NAV_ITEMS = [
   { to: "/manager/company/profile", label: "Restaurant", icon: Store },
   { to: "/manager/company/tables", label: "Tables", icon: Armchair },
   { to: "/manager/company/staff", label: "Staff", icon: UserCog },
+  { to: "/manager/day-end", label: "Day End", icon: WalletCards },
+  { to: "/manager/exports", label: "Exports", icon: FileDown },
+  { to: "/manager/settings", label: "Settings", icon: Languages },
 ];
 
 interface StaffData {
@@ -50,6 +73,7 @@ export default function ManagerLayout() {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [staff, setStaff] = useState<StaffData | null>(null);
   const { restaurant, fetchRestaurant } = useRestaurantStore();
+  const reservationPollCursorRef = useRef<Date | null>(null);
 
   useEffect(() => {
     // Ensure no lingering realtime connections in manager views
@@ -72,6 +96,17 @@ export default function ManagerLayout() {
         return;
       }
       setStaff(parsed);
+
+      void (async () => {
+        try {
+          const prefs = await fetchMyPreferences();
+          const language = backendLanguageToUi(prefs?.effective_language);
+          await i18n.changeLanguage(language);
+          persistLanguage(language);
+        } catch {
+          // Ignore preference failures in manager layout.
+        }
+      })();
     } catch {
       navigate('/auth/login');
       return;
@@ -82,6 +117,53 @@ export default function ManagerLayout() {
       fetchRestaurant();
     }
   }, [navigate, restaurant, fetchRestaurant]);
+
+  useEffect(() => {
+    reservationPollCursorRef.current = null;
+    useReservationAlertsStore.getState().resetAlerts();
+  }, [restaurant?.id]);
+
+  useEffect(() => {
+    if (!restaurant?.id) return;
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const pollReservationAlerts = async () => {
+      const now = new Date();
+      const from = reservationPollCursorRef.current
+        ? new Date(reservationPollCursorRef.current.getTime() - 5000)
+        : new Date(now.getTime() - 60_000);
+      const to = new Date(now.getTime() + 5000);
+      reservationPollCursorRef.current = now;
+
+      const params = new URLSearchParams({
+        from: from.toISOString(),
+        to: to.toISOString(),
+      });
+
+      const response = await apiClient.get<{ data: ReservationAlert[] }>(
+        `/restaurant/table-reservations/alerts?${params.toString()}`
+      );
+      if (response.error) return;
+
+      const alerts = response.data?.data || [];
+      if (!alerts.length) return;
+
+      const addedCount = useReservationAlertsStore.getState().enqueueAlerts(alerts);
+      if (addedCount > 0) {
+        playReservationSound();
+      }
+    };
+
+    void pollReservationAlerts();
+    intervalId = setInterval(() => {
+      void pollReservationAlerts();
+    }, 30000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [restaurant?.id]);
 
   const handleLogout = async () => {
     await logoutStaffSession();
@@ -120,6 +202,8 @@ export default function ManagerLayout() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReservationAlertsWrapper basePath="/manager" />
     </div>
   );
 }
@@ -203,5 +287,24 @@ function ManagerSidebar({
         </Button>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function ReservationAlertsWrapper({ basePath }: { basePath: string }) {
+  const navigate = useNavigate();
+  const { current, dismissAlert } = useReservationAlertsStore((state) => ({
+    current: state.current,
+    dismissAlert: state.dismissAlert,
+  }));
+
+  return (
+    <ReservationAlertPopup
+      alert={current}
+      onDismiss={dismissAlert}
+      onViewReservations={() => {
+        navigate(`${basePath}/company/tables?tab=reservations`);
+        dismissAlert();
+      }}
+    />
   );
 }

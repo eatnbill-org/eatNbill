@@ -47,6 +47,21 @@ function saveCustomerInfo(name: string, phone: string) {
   localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(data));
 }
 
+function formatTableReservationHint(table: any) {
+  if (!table) return "";
+  if (table.is_reserved_now && table.current_reservation) {
+    return `Reserved now (${table.current_reservation.customer_name})`;
+  }
+  if (table.next_reservation?.reserved_from) {
+    const at = new Date(table.next_reservation.reserved_from).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `Reserved at ${at}`;
+  }
+  return "";
+}
+
 /**
  * Print a kitchen order slip via hidden iframe
  */
@@ -194,6 +209,8 @@ export default function CheckoutDialog({
 
   const normalizedPhone = phone.replace(/\s+/g, "").trim();
   const repeatCustomer = state.customers.find((c) => c.phone.replace(/\s+/g, "") === normalizedPhone);
+  const selectedTableMeta = tables.find((t: any) => t.id === selectedTableLocal);
+  const selectedTableReservationHint = formatTableReservationHint(selectedTableMeta);
 
   const total = items.reduce((s, i) => s + i.qty * i.price, 0);
 
@@ -246,6 +263,9 @@ export default function CheckoutDialog({
                 • Table: {tables.find(t => t.id === selectedTableLocal)?.table_number || selectedTableLocal}
               </span>
             )}
+            {isWaiterMode && selectedTableLocal !== 'TAKEAWAY' && selectedTableReservationHint && (
+              <span className="text-amber-600 font-medium"> • {selectedTableReservationHint}</span>
+            )}
             {selectedTableLocal === 'TAKEAWAY' && (
               <span className="text-blue-500 font-medium">• Takeaway</span>
             )}
@@ -292,12 +312,20 @@ export default function CheckoutDialog({
                         <SelectItem key={table.id} value={table.id} className="font-medium">
                           <div className="flex items-center gap-2">
                             <span>🪑</span>
-                            <span>Table {table.table_number} {table.hall?.name ? `(${table.hall.name})` : ''}</span>
+                            <span>
+                              Table {table.table_number} {table.hall?.name ? `(${table.hall.name})` : ''}
+                              {formatTableReservationHint(table) ? ` • ${formatTableReservationHint(table)}` : ""}
+                            </span>
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedTableLocal !== "TAKEAWAY" && selectedTableReservationHint && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                      {selectedTableReservationHint}. Order is allowed, but confirm with guest.
+                    </div>
+                  )}
                 </div>
               )}
 

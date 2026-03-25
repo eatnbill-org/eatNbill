@@ -22,14 +22,23 @@ import {
   getRestaurantSettings,
   getRestaurantThemeSettings,
   getTableWithHall,
+  getTableReservationById,
   hasActiveDineInOrdersForTable,
   listHalls,
   listRestaurantUsers,
+  listReservationAlerts,
+  listTableAvailability,
+  listTableReservations,
   listTables,
+  findReservationConflict,
   countActiveAdmins,
+  createTableReservation,
+  deleteTableReservation,
   updateHall,
   updateRestaurantProfile,
   updateRestaurantUser,
+  updateTableReservation,
+  getReservationContextForTables,
   updateTable,
   updateTableStatus,
   upsertRestaurantSettings,
@@ -41,6 +50,7 @@ import {
   getTableQRCode,
   deleteTableQRCode,
 } from './repository';
+import { ensureDefaultOutlet } from './enterprise.repository';
 import { createSignedUrl, getPublicUrl, removeFromStorage, uploadToStorage, STORAGE_BUCKETS } from '../../utils/storage';
 import { prisma } from '../../utils/prisma';
 
@@ -99,6 +109,9 @@ export async function setupRestaurant(
   // Create restaurant and assign user as OWNER
   const restaurant = await createRestaurant(tenantId, userId, data);
 
+  // Ensure there is a default outlet for billing/reconciliation compatibility
+  await ensureDefaultOutlet(tenantId, restaurant.id);
+
   // Create audit log
   await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT', restaurant.id);
 
@@ -156,7 +169,10 @@ export async function updateSlug(
   }
 
   // Update the slug
-  const restaurant = await updateRestaurantProfile(restaurantId, { slug: newSlug });
+  const restaurant = await prisma.restaurant.update({
+    where: { id: restaurantId },
+    data: { slug: newSlug },
+  });
   await createAuditLog(tenantId, userId, 'UPDATE', 'RESTAURANT_SLUG', restaurantId, { new_slug: newSlug });
 
   return restaurant;
@@ -200,10 +216,10 @@ export async function updateThemeSettings(
   userId: string,
   restaurantId: string,
   data: {
-    theme_id: keyof typeof THEME_PRESETS;
+    theme_id: string;
   }
 ) {
-  const preset = getThemePreset(data.theme_id);
+  const preset = getThemePreset(data.theme_id as keyof typeof THEME_PRESETS);
   const theme = await upsertRestaurantThemeSettings(restaurantId, {
     theme_id: data.theme_id,
     ...preset,
@@ -292,9 +308,13 @@ export async function addHall(
   tenantId: string,
   userId: string,
   restaurantId: string,
-  data: { name: string; is_ac?: boolean }
+  data: { name: string; is_ac?: boolean; outlet_id?: string }
 ) {
-  const hall = await createHall(restaurantId, data);
+  const defaultOutlet = data.outlet_id ? null : await ensureDefaultOutlet(tenantId, restaurantId);
+  const hall = await createHall(restaurantId, {
+    ...data,
+    outlet_id: data.outlet_id ?? defaultOutlet?.id,
+  });
   await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT_HALL', hall.id);
   return hall;
 }
@@ -303,7 +323,7 @@ export async function updateHallInfo(
   tenantId: string,
   userId: string,
   hallId: string,
-  data: { name?: string; is_ac?: boolean }
+  data: { name?: string; is_ac?: boolean; outlet_id?: string }
 ) {
   const hall = await updateHall(hallId, data);
   await createAuditLog(tenantId, userId, 'UPDATE', 'RESTAURANT_HALL', hallId);
@@ -322,10 +342,30 @@ export async function removeHall(
 
 export async function listAllTables(restaurantId: string) {
   const tables = await listTables(restaurantId);
+  const tableIds = tables.map((table) => table.id);
+  const reservationContext = await getReservationContextForTables(restaurantId, tableIds);
+  const reservationByTable = reservationContext.reduce<Record<string, typeof reservationContext>>((acc, reservation) => {
+    if (!acc[reservation.table_id]) {
+      acc[reservation.table_id] = [];
+    }
+    acc[reservation.table_id]!.push(reservation);
+    return acc;
+  }, {});
+  const now = new Date();
 
   // Refresh signed URLs for all tables that have a QR code
   const tablesWithRefreshedQrs = await Promise.all(
     tables.map(async (table) => {
+      const tableReservations = reservationByTable[table.id] ?? [];
+      const currentReservation = tableReservations.find(
+        (reservation) =>
+          reservation.reserved_from <= now &&
+          reservation.reserved_to > now
+      ) ?? null;
+      const nextReservation = tableReservations.find(
+        (reservation) => reservation.reserved_from > now
+      ) ?? null;
+
       if (table.qr_code) {
         try {
           const [pngUrl, pdfUrl] = await Promise.all([
@@ -334,6 +374,9 @@ export async function listAllTables(restaurantId: string) {
           ]);
           return {
             ...table,
+            is_reserved_now: Boolean(currentReservation),
+            current_reservation: currentReservation,
+            next_reservation: nextReservation,
             qr_code: {
               ...table.qr_code,
               qr_png_url: pngUrl,
@@ -343,10 +386,20 @@ export async function listAllTables(restaurantId: string) {
         } catch (error) {
           console.error(`[QR_REFRESH] Failed to refresh URLs for table ${table.id}:`, error);
           // Return table with existing (possibly expired) URLs if refresh fails
-          return table;
+          return {
+            ...table,
+            is_reserved_now: Boolean(currentReservation),
+            current_reservation: currentReservation,
+            next_reservation: nextReservation,
+          };
         }
       }
-      return table;
+      return {
+        ...table,
+        is_reserved_now: Boolean(currentReservation),
+        current_reservation: currentReservation,
+        next_reservation: nextReservation,
+      };
     })
   );
 
@@ -357,9 +410,13 @@ export async function addTable(
   tenantId: string,
   userId: string,
   restaurantId: string,
-  data: { hall_id: string; table_number: string; seats: number; is_active?: boolean }
+  data: { hall_id: string; outlet_id?: string; table_number: string; seats: number; is_active?: boolean }
 ) {
-  const table = await createTable(restaurantId, data);
+  const defaultOutlet = data.outlet_id ? null : await ensureDefaultOutlet(tenantId, restaurantId);
+  const table = await createTable(restaurantId, {
+    ...data,
+    outlet_id: data.outlet_id ?? defaultOutlet?.id,
+  });
   await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT_TABLE', table.id);
 
   // Automatically generate QR code for the new table
@@ -381,12 +438,12 @@ export async function bulkAddTables(
   tenantId: string,
   userId: string,
   restaurantId: string,
-  tablesData: Array<{ hall_id: string; table_number: string; seats: number; is_active?: boolean }>
+  tablesData: Array<{ hall_id: string; outlet_id?: string; table_number: string; seats: number; is_active?: boolean }>
 ) {
   const createdTables = [];
   const errors: Array<{ table_number: string; error: string }> = [];
   const seenInPayload = new Set<string>();
-  const candidates: Array<{ hall_id: string; table_number: string; seats: number; is_active?: boolean }> = [];
+  const candidates: Array<{ hall_id: string; outlet_id?: string; table_number: string; seats: number; is_active?: boolean }> = [];
 
   for (const table of tablesData) {
     const tableNumber = table.table_number.trim();
@@ -422,7 +479,11 @@ export async function bulkAddTables(
 
   for (const data of tablesToCreate) {
     try {
-      const table = await createTable(restaurantId, data);
+      const defaultOutlet = data.outlet_id ? null : await ensureDefaultOutlet(tenantId, restaurantId);
+      const table = await createTable(restaurantId, {
+        ...data,
+        outlet_id: data.outlet_id ?? defaultOutlet?.id,
+      });
       await createAuditLog(tenantId, userId, 'CREATE', 'RESTAURANT_TABLE', table.id);
 
       // Automatically generate QR code for the new table
@@ -478,7 +539,7 @@ export async function updateTableInfo(
   tenantId: string,
   userId: string,
   tableId: string,
-  data: { hall_id?: string; table_number?: string; seats?: number; is_active?: boolean }
+  data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean }
 ) {
   const table = await updateTable(tableId, data);
   await createAuditLog(tenantId, userId, 'UPDATE', 'RESTAURANT_TABLE', tableId);
@@ -519,6 +580,280 @@ export async function removeTable(
   await deleteTable(tableId);
   await createAuditLog(tenantId, userId, 'DELETE', 'RESTAURANT_TABLE', tableId);
   return { success: true };
+}
+
+function ensureValidReservationWindow(reservedFrom: Date, reservedTo: Date) {
+  if (Number.isNaN(reservedFrom.getTime()) || Number.isNaN(reservedTo.getTime())) {
+    throw new AppError('VALIDATION_ERROR', 'Invalid reservation datetime', 400);
+  }
+
+  if (reservedTo <= reservedFrom) {
+    throw new AppError('VALIDATION_ERROR', 'Reservation end time must be after start time', 400);
+  }
+}
+
+async function ensureNoReservationConflict(params: {
+  restaurantId: string;
+  tableId: string;
+  reservedFrom: Date;
+  reservedTo: Date;
+  excludeReservationId?: string;
+}) {
+  const conflict = await findReservationConflict({
+    restaurantId: params.restaurantId,
+    tableId: params.tableId,
+    reservedFrom: params.reservedFrom,
+    reservedTo: params.reservedTo,
+    excludeReservationId: params.excludeReservationId,
+  });
+
+  if (conflict) {
+    throw new AppError(
+      'CONFLICT',
+      `Table already reserved from ${conflict.reserved_from.toISOString()} to ${conflict.reserved_to.toISOString()}`,
+      409
+    );
+  }
+}
+
+export async function listAllTableReservations(
+  restaurantId: string,
+  query: {
+    from?: string;
+    to?: string;
+    status?: 'BOOKED' | 'SEATED' | 'CANCELLED' | 'COMPLETED';
+    table_id?: string;
+  }
+) {
+  return listTableReservations({
+    restaurantId,
+    from: query.from ? new Date(query.from) : undefined,
+    to: query.to ? new Date(query.to) : undefined,
+    status: query.status,
+    tableId: query.table_id,
+  });
+}
+
+export async function addTableReservation(
+  tenantId: string,
+  userId: string,
+  restaurantId: string,
+  data: {
+    table_id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email?: string | null;
+    party_size: number;
+    reserved_from: string;
+    reserved_to: string;
+    notes?: string | null;
+    status?: 'BOOKED' | 'SEATED' | 'CANCELLED' | 'COMPLETED';
+  }
+) {
+  const table = await getTableWithHall(restaurantId, data.table_id);
+  if (!table || !table.is_active) {
+    throw new AppError('NOT_FOUND', 'Table not found or inactive', 404);
+  }
+
+  if (data.party_size > table.seats) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Party size (${data.party_size}) exceeds table capacity (${table.seats})`,
+      400
+    );
+  }
+
+  const reservedFrom = new Date(data.reserved_from);
+  const reservedTo = new Date(data.reserved_to);
+  ensureValidReservationWindow(reservedFrom, reservedTo);
+
+  await ensureNoReservationConflict({
+    restaurantId,
+    tableId: data.table_id,
+    reservedFrom,
+    reservedTo,
+  });
+
+  try {
+    const reservation = await createTableReservation({
+      tenant_id: tenantId,
+      restaurant_id: restaurantId,
+      outlet_id: table.outlet_id,
+      table_id: data.table_id,
+      customer_name: data.customer_name,
+      customer_phone: data.customer_phone,
+      customer_email: data.customer_email ?? null,
+      party_size: data.party_size,
+      reserved_from: reservedFrom,
+      reserved_to: reservedTo,
+      notes: data.notes ?? null,
+      status: data.status ?? 'BOOKED',
+      created_by_user_id: userId,
+    });
+
+    await createAuditLog(tenantId, userId, 'CREATE', 'TABLE_RESERVATION', reservation.id, {
+      table_id: reservation.table_id,
+      customer_name: reservation.customer_name,
+      customer_phone: reservation.customer_phone,
+      customer_email: reservation.customer_email,
+      reserved_from: reservation.reserved_from.toISOString(),
+      reserved_to: reservation.reserved_to.toISOString(),
+      status: reservation.status,
+    });
+
+    return reservation;
+  } catch (error: any) {
+    const isConflict =
+      error?.code === 'P2002' ||
+      error?.code === 'P2004' ||
+      error?.meta?.code === '23P01';
+    if (isConflict) {
+      throw new AppError('CONFLICT', 'Table already has a conflicting reservation', 409);
+    }
+    throw error;
+  }
+}
+
+export async function updateTableReservationInfo(
+  tenantId: string,
+  userId: string,
+  restaurantId: string,
+  reservationId: string,
+  data: {
+    table_id?: string;
+    customer_name?: string;
+    customer_phone?: string | null;
+    customer_email?: string | null;
+    party_size?: number;
+    reserved_from?: string;
+    reserved_to?: string;
+    notes?: string | null;
+    status?: 'BOOKED' | 'SEATED' | 'CANCELLED' | 'COMPLETED';
+  }
+) {
+  const existing = await getTableReservationById(restaurantId, reservationId);
+  if (!existing) {
+    throw new AppError('NOT_FOUND', 'Reservation not found', 404);
+  }
+
+  const nextTableId = data.table_id ?? existing.table_id;
+  const nextReservedFrom = data.reserved_from ? new Date(data.reserved_from) : existing.reserved_from;
+  const nextReservedTo = data.reserved_to ? new Date(data.reserved_to) : existing.reserved_to;
+  const nextPartySize = data.party_size ?? existing.party_size;
+
+  ensureValidReservationWindow(nextReservedFrom, nextReservedTo);
+
+  const table = await getTableWithHall(restaurantId, nextTableId);
+  if (!table || !table.is_active) {
+    throw new AppError('NOT_FOUND', 'Table not found or inactive', 404);
+  }
+
+  if (nextPartySize > table.seats) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Party size (${nextPartySize}) exceeds table capacity (${table.seats})`,
+      400
+    );
+  }
+
+  if ((data.status ?? existing.status) === 'BOOKED' || (data.status ?? existing.status) === 'SEATED') {
+    await ensureNoReservationConflict({
+      restaurantId,
+      tableId: nextTableId,
+      reservedFrom: nextReservedFrom,
+      reservedTo: nextReservedTo,
+      excludeReservationId: reservationId,
+    });
+  }
+
+  try {
+    const reservation = await updateTableReservation(reservationId, {
+      ...(data.table_id ? { table_id: data.table_id } : {}),
+      ...(table.outlet_id ? { outlet_id: table.outlet_id } : {}),
+      ...(data.customer_name ? { customer_name: data.customer_name } : {}),
+      ...(data.customer_phone !== undefined ? { customer_phone: data.customer_phone } : {}),
+      ...(data.customer_email !== undefined ? { customer_email: data.customer_email } : {}),
+      ...(data.party_size !== undefined ? { party_size: data.party_size } : {}),
+      ...(data.reserved_from ? { reserved_from: nextReservedFrom } : {}),
+      ...(data.reserved_to ? { reserved_to: nextReservedTo } : {}),
+      ...(data.notes !== undefined ? { notes: data.notes } : {}),
+      ...(data.status ? { status: data.status } : {}),
+    });
+
+    await createAuditLog(tenantId, userId, 'UPDATE', 'TABLE_RESERVATION', reservation.id, {
+      table_id: reservation.table_id,
+      customer_name: reservation.customer_name,
+      customer_phone: reservation.customer_phone,
+      customer_email: reservation.customer_email,
+      reserved_from: reservation.reserved_from.toISOString(),
+      reserved_to: reservation.reserved_to.toISOString(),
+      status: reservation.status,
+    });
+
+    return reservation;
+  } catch (error: any) {
+    const isConflict =
+      error?.code === 'P2002' ||
+      error?.code === 'P2004' ||
+      error?.meta?.code === '23P01';
+    if (isConflict) {
+      throw new AppError('CONFLICT', 'Table already has a conflicting reservation', 409);
+    }
+    throw error;
+  }
+}
+
+export async function removeTableReservation(
+  tenantId: string,
+  userId: string,
+  restaurantId: string,
+  reservationId: string
+) {
+  const existing = await getTableReservationById(restaurantId, reservationId);
+  if (!existing) {
+    throw new AppError('NOT_FOUND', 'Reservation not found', 404);
+  }
+
+  await deleteTableReservation(reservationId);
+  await createAuditLog(tenantId, userId, 'DELETE', 'TABLE_RESERVATION', reservationId, {
+    table_id: existing.table_id,
+    customer_name: existing.customer_name,
+    reserved_from: existing.reserved_from.toISOString(),
+    reserved_to: existing.reserved_to.toISOString(),
+  });
+  return { success: true };
+}
+
+export async function getTableAvailability(
+  restaurantId: string,
+  input: {
+    start_at: string;
+    end_at: string;
+  }
+) {
+  const startAt = new Date(input.start_at);
+  const endAt = new Date(input.end_at);
+  ensureValidReservationWindow(startAt, endAt);
+  return listTableAvailability(restaurantId, startAt, endAt);
+}
+
+export async function getReservationAlerts(
+  restaurantId: string,
+  input: {
+    from: string;
+    to: string;
+  }
+) {
+  const from = new Date(input.from);
+  const to = new Date(input.to);
+  ensureValidReservationWindow(from, to);
+
+  const alerts = await listReservationAlerts(restaurantId, from, to);
+  return alerts.map((alert) => ({
+    event_type: alert.event_type,
+    event_at: alert.event_at.toISOString(),
+    reservation: alert.reservation,
+  }));
 }
 
 function createPdfBuffer(

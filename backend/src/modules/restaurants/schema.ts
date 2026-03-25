@@ -64,6 +64,7 @@ export const createHallSchema = z
   .object({
     name: z.string().min(2).max(100),
     is_ac: z.boolean().optional(),
+    outlet_id: z.string().uuid().optional(),
   })
   .strict();
 
@@ -71,12 +72,14 @@ export const updateHallSchema = z
   .object({
     name: z.string().min(2).max(100).optional(),
     is_ac: z.boolean().optional(),
+    outlet_id: z.string().uuid().optional(),
   })
   .strict();
 
 export const createTableSchema = z
   .object({
     hall_id: z.string().uuid(),
+    outlet_id: z.string().uuid().optional(),
     table_number: z.string().min(1).max(50),
     seats: z.number().int().min(1).max(50),
     is_active: z.boolean().optional(),
@@ -92,6 +95,7 @@ export const bulkCreateTablesSchema = z
 export const updateTableSchema = z
   .object({
     hall_id: z.string().uuid().optional(),
+    outlet_id: z.string().uuid().optional(),
     table_number: z.string().min(1).max(50).optional(),
     seats: z.number().int().min(1).max(50).optional(),
     is_active: z.boolean().optional(),
@@ -103,6 +107,130 @@ export const updateTableStatusSchema = z
     table_status: z.enum(["AVAILABLE", "RESERVED"]),
   })
   .strict();
+
+export const reservationStatusSchema = z.enum([
+  "BOOKED",
+  "SEATED",
+  "CANCELLED",
+  "COMPLETED",
+]);
+
+export const createTableReservationSchema = z
+  .object({
+    table_id: z.string().uuid(),
+    customer_name: z.string().min(1).max(120),
+    customer_phone: z.string().min(7).max(30),
+    customer_email: z.string().email().max(120).optional().nullable(),
+    party_size: z.number().int().min(1).max(50),
+    reserved_from: z.string().datetime(),
+    reserved_to: z.string().datetime(),
+    notes: z.string().max(500).optional().nullable(),
+    status: reservationStatusSchema.optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const from = new Date(data.reserved_from);
+    const to = new Date(data.reserved_to);
+
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid reservation datetime",
+        path: ["reserved_from"],
+      });
+      return;
+    }
+
+    if (to <= from) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "reserved_to must be after reserved_from",
+        path: ["reserved_to"],
+      });
+    }
+  });
+
+export const updateTableReservationSchema = z
+  .object({
+    table_id: z.string().uuid().optional(),
+    customer_name: z.string().min(1).max(120).optional(),
+    customer_phone: z.string().min(7).max(30).optional().nullable(),
+    customer_email: z.string().email().max(120).optional().nullable(),
+    party_size: z.number().int().min(1).max(50).optional(),
+    reserved_from: z.string().datetime().optional(),
+    reserved_to: z.string().datetime().optional(),
+    notes: z.string().max(500).optional().nullable(),
+    status: reservationStatusSchema.optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (!data.reserved_from || !data.reserved_to) return;
+
+    const from = new Date(data.reserved_from);
+    const to = new Date(data.reserved_to);
+
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid reservation datetime",
+        path: ["reserved_from"],
+      });
+      return;
+    }
+
+    if (to <= from) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "reserved_to must be after reserved_from",
+        path: ["reserved_to"],
+      });
+    }
+  });
+
+export const listTableReservationsQuerySchema = z
+  .object({
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    status: reservationStatusSchema.optional(),
+    table_id: z.string().uuid().optional(),
+  })
+  .strict();
+
+export const tableAvailabilityQuerySchema = z
+  .object({
+    start_at: z.string().datetime(),
+    end_at: z.string().datetime(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const from = new Date(data.start_at);
+    const to = new Date(data.end_at);
+    if (to <= from) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "end_at must be after start_at",
+        path: ["end_at"],
+      });
+    }
+  });
+
+export const reservationAlertsQuerySchema = z
+  .object({
+    from: z.string().datetime(),
+    to: z.string().datetime(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const from = new Date(data.from);
+    const to = new Date(data.to);
+    if (to <= from) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "to must be after from",
+        path: ["to"],
+      });
+    }
+  });
 
 export const deleteTableQRCodesSchema = z
   .object({

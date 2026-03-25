@@ -11,6 +11,7 @@ const ACTIVE_DINE_IN_STATUSES: OrderStatus[] = ["ACTIVE"];
 export interface CreateOrderData {
   tenant_id: string;
   restaurant_id: string;
+  outlet_id?: string | null;
   table_id?: string | null;
   hall_id?: string | null;
   waiter_id?: string | null;
@@ -35,6 +36,7 @@ export interface OrderWithItems {
   id: string;
   tenant_id: string;
   restaurant_id: string;
+  outlet_id: string | null;
   table_id: string | null;
   hall_id: string | null;
   customer_id: string | null;
@@ -162,7 +164,15 @@ export async function createOrder(
         restaurant_id: data.restaurant_id,
         deleted_at: null,
       },
-      select: { id: true, name: true, price: true, discount_percent: true, costprice: true },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        discount_percent: true,
+        costprice: true,
+        hsn_sac: true,
+        gst_rate_percent: true,
+      },
     });
 
     // Validate all products still exist
@@ -189,6 +199,7 @@ export async function createOrder(
       data: {
         tenant_id: data.tenant_id,
         restaurant_id: data.restaurant_id,
+        outlet_id: data.outlet_id ?? null,
         table_id: data.table_id ?? null,
         hall_id: data.hall_id ?? null,
         waiter_id: data.waiter_id ?? null,
@@ -210,11 +221,19 @@ export async function createOrder(
             const product = productMap.get(item.product_id)!;
             const discount = Number(product.discount_percent || 0);
             const discountedPrice = Number(product.price) * (1 - discount / 100);
+            const taxableAmount = discountedPrice * item.quantity;
             return {
               product_id: item.product_id,
               name_snapshot: product.name,
               price_snapshot: discountedPrice,
               cost_snapshot: product.costprice ? Number(product.costprice) : null,
+              hsn_sac_snapshot: product.hsn_sac ?? null,
+              gst_rate_snapshot: product.gst_rate_percent ? Number(product.gst_rate_percent) : null,
+              taxable_amount_snapshot: taxableAmount,
+              cgst_amount_snapshot: 0,
+              sgst_amount_snapshot: 0,
+              igst_amount_snapshot: 0,
+              total_tax_snapshot: 0,
               quantity: item.quantity,
               notes: item.notes,
             };
@@ -415,6 +434,19 @@ export async function findTableByNumber(restaurantId: string, tableNumber: strin
   });
 }
 
+export async function findDefaultOutletByRestaurant(restaurantId: string) {
+  return prisma.restaurantOutlet.findFirst({
+    where: {
+      restaurant_id: restaurantId,
+      is_default: true,
+    },
+    select: {
+      id: true,
+    },
+    orderBy: { created_at: 'asc' },
+  });
+}
+
 /**
  * Find order by ID with tenant isolation
  */
@@ -469,7 +501,15 @@ export async function addItemsToOrder(
         is_active: true,
         deleted_at: null,
       },
-      select: { id: true, name: true, price: true, discount_percent: true, costprice: true },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        discount_percent: true,
+        costprice: true,
+        hsn_sac: true,
+        gst_rate_percent: true,
+      },
     });
 
     const productMap = new Map(products.map((p) => [p.id, p]));
@@ -479,10 +519,10 @@ export async function addItemsToOrder(
       if (!productMap.has(item.product_id)) {
         const productName = await tx.product.findUnique({
           where: { id: item.product_id },
-          select: { name: true, is_available: true }
+          select: { name: true, is_active: true }
         });
 
-        if (productName && !productName.is_available) {
+        if (productName && !productName.is_active) {
           throw new Error(`Product "${productName.name}" is currently out of stock`);
         }
         throw new Error(`Product ${item.product_id} not found or unavailable`);
@@ -515,11 +555,19 @@ export async function addItemsToOrder(
             const product = productMap.get(item.product_id)!;
             const discount = Number(product.discount_percent || 0);
             const discountedPrice = Number(product.price) * (1 - discount / 100);
+            const taxableAmount = discountedPrice * item.quantity;
             return {
               product_id: item.product_id,
               name_snapshot: product.name,
               price_snapshot: discountedPrice,
               cost_snapshot: product.costprice ? Number(product.costprice) : null,
+              hsn_sac_snapshot: product.hsn_sac ?? null,
+              gst_rate_snapshot: product.gst_rate_percent ? Number(product.gst_rate_percent) : null,
+              taxable_amount_snapshot: taxableAmount,
+              cgst_amount_snapshot: 0,
+              sgst_amount_snapshot: 0,
+              igst_amount_snapshot: 0,
+              total_tax_snapshot: 0,
               quantity: item.quantity,
               notes: item.notes,
               status: "REORDER" // 🟢 New items from reorder get REORDER status

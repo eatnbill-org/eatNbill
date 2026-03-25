@@ -23,6 +23,29 @@ export interface RestaurantTable {
         is_ac: boolean;
     };
     qr_code?: TableQRCode;
+    is_reserved_now?: boolean;
+    current_reservation?: {
+        id: string;
+        customer_name: string;
+        customer_phone: string | null;
+        customer_email?: string | null;
+        party_size: number;
+        reserved_from: string;
+        reserved_to: string;
+        status: 'BOOKED' | 'SEATED' | 'CANCELLED' | 'COMPLETED';
+        notes?: string | null;
+    } | null;
+    next_reservation?: {
+        id: string;
+        customer_name: string;
+        customer_phone: string | null;
+        customer_email?: string | null;
+        party_size: number;
+        reserved_from: string;
+        reserved_to: string;
+        status: 'BOOKED' | 'SEATED' | 'CANCELLED' | 'COMPLETED';
+        notes?: string | null;
+    } | null;
 }
 
 export interface RestaurantHall {
@@ -64,4 +87,19 @@ export interface BulkCreateTablesResult {
     created: RestaurantTable[];
     errors: BulkCreateTableError[];
     success: boolean;
+}
+
+export interface TableAvailabilityEntry extends RestaurantTable {
+    is_available: boolean;
+    conflicting_reservations: Array<{
+        id: string;
+        table_id: string;
+        customer_name: string;
+        customer_phone: string | null;
+        customer_email?: string | null;
+        party_size: number;
+        reserved_from: string;
+        reserved_to: string;
+        status: 'BOOKED' | 'SEATED' | 'CANCELLED' | 'COMPLETED';
+    }>;
 }
