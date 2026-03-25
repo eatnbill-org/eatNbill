@@ -92,7 +92,9 @@ export const usePublicOrdersStore = create<PublicOrdersState>()(
             setCartOpen: (isCartOpen) => set({ isCartOpen }),
 
             placeOrder: async (restaurantSlug, tableId) => {
-                const { items, customerInfo } = get();
+                const { items, customerInfo, isOrdering } = get();
+
+                if (isOrdering) return false;
 
                 if (!customerInfo || !customerInfo.name || !customerInfo.phone) {
                     set({ orderError: 'Customer information is required' });
