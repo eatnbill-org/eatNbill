@@ -43,9 +43,6 @@ export default function TablePage() {
       {/* Page Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Table Management</h1>
-<<<<<<< HEAD
-        <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium">Configure dine-in tables, areas, and QR codes.</p>
-=======
         <p className="text-sm sm:text-base text-muted-foreground mt-1 font-medium">
           Configure dine-in tables, reservations, and QR codes.
         </p>
@@ -66,7 +63,6 @@ export default function TablePage() {
         >
           Reservations
         </Button>
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
       </div>
 
       {/* Main Content */}

@@ -44,8 +44,6 @@ import { toast } from "sonner";
 
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 import { WaiterLayoutSkeleton } from "@/components/ui/skeleton";
-<<<<<<< HEAD
-=======
 
 function formatTime(value?: string | null) {
     if (!value) return "";
@@ -76,7 +74,6 @@ function formatDateDayTime(value?: string) {
         minute: "2-digit",
     });
 }
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
 export default function HeadTablesPage() {
     const queryClient = useQueryClient();
@@ -243,10 +240,6 @@ export default function HeadTablesPage() {
 
     return (
         <div className="space-y-6 pb-24 max-w-7xl mx-auto">
-<<<<<<< HEAD
-            {/* High-Density Stats Row */}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-=======
             <div className="flex justify-end">
                 <Button
                     className="rounded-xl h-10 w-full sm:w-auto"
@@ -258,7 +251,6 @@ export default function HeadTablesPage() {
             </div>
             {/* High-Density Stats Row */}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                 <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center gap-3">
                     <Users className="h-4 w-4 text-emerald-600" />
                     <span className="text-xl font-black text-emerald-700">{tables.filter(t => !t.isOccupied).length}</span>
@@ -268,14 +260,11 @@ export default function HeadTablesPage() {
                     <MapPin className="h-4 w-4 text-rose-600" />
                     <span className="text-xl font-black text-rose-700">{tables.filter(t => t.isOccupied).length}</span>
                     <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Occupied</span>
-<<<<<<< HEAD
-=======
                 </div>
                 <div className="bg-amber-50 px-4 py-2 rounded-2xl border border-amber-100 flex items-center gap-3">
                     <CalendarClock className="h-4 w-4 text-amber-600" />
                     <span className="text-xl font-black text-amber-700">{reservedNowCount}</span>
                     <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Reserved</span>
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                 </div>
             </div>
 
@@ -287,29 +276,19 @@ export default function HeadTablesPage() {
                         onClick={() => table.isOccupied ? handleViewOrder(table) : handleNewOrder(table.id)}
                         className={`bg-white rounded-[2rem] p-3 border-2 transition-all flex flex-col justify-between aspect-square active:scale-95 cursor-pointer ${table.isOccupied
                             ? "border-rose-100 shadow-sm bg-rose-50/20"
-<<<<<<< HEAD
-                            : "border-slate-50 hover:border-emerald-100"
-=======
                             : table.is_reserved_now
                                 ? "border-amber-200 bg-amber-50/40"
                                 : "border-slate-50 hover:border-emerald-100"
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                             }`}
                     >
                         <div className="flex-1 flex flex-col items-center justify-center text-center">
                             <div className={`h-12 w-12 rounded-2xl flex items-center justify-center mb-2 shadow-sm ${table.isOccupied
                                 ? "bg-rose-50 text-rose-600 border border-rose-100"
-<<<<<<< HEAD
-                                : "bg-emerald-50 text-emerald-600 border border-emerald-100 bg-emerald-50/50"
-                                }`}>
-                                <span className="text-xl font-black leading-none">{table.table_number || table.name.replace('Table ', '')}</span>
-=======
                                 : table.is_reserved_now
                                     ? "bg-amber-50 text-amber-700 border border-amber-200"
                                     : "bg-emerald-50 text-emerald-600 border border-emerald-100 bg-emerald-50/50"
                                 }`}>
                                 <span className="text-xl font-black leading-none">{table.table_number || table.name}</span>
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                             </div>
                             <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-widest line-clamp-1">{table.hall?.name || "Main"}</h3>
                             {table.isOccupied && table.currentOrder ? (
@@ -317,8 +296,6 @@ export default function HeadTablesPage() {
                                     <Clock className="h-2.5 w-2.5" />
                                     {new Date(table.currentOrder.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
-<<<<<<< HEAD
-=======
                             ) : table.is_reserved_now && table.current_reservation ? (
                                 <div className="mt-1 flex flex-col items-center gap-0.5 text-amber-600 font-bold text-[8px] uppercase">
                                     <div className="flex items-center gap-1">
@@ -339,7 +316,6 @@ export default function HeadTablesPage() {
                                         {formatTime(table.next_reservation.reserved_from)}
                                     </span>
                                 </div>
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                             ) : (
                                 <div className="mt-1 flex items-center gap-1 text-emerald-500 font-bold text-[8px] uppercase">
                                     <Check className="h-2.5 w-2.5" />
@@ -350,11 +326,7 @@ export default function HeadTablesPage() {
 
                         {/* Minimal Action Badge */}
                         <div className="flex items-center justify-center">
-<<<<<<< HEAD
-                            <div className={`h-6 w-6 rounded-full flex items-center justify-center ${table.isOccupied ? 'bg-rose-500' : 'bg-slate-900'} text-white shadow-sm`}>
-=======
                             <div className={`h-6 w-6 rounded-full flex items-center justify-center ${table.isOccupied ? 'bg-rose-500' : table.is_reserved_now ? 'bg-amber-500' : 'bg-slate-900'} text-white shadow-sm`}>
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                                 {table.isOccupied ? <Eye className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                             </div>
                         </div>

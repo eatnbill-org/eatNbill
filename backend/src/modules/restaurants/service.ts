@@ -50,10 +50,7 @@ import {
   getTableQRCode,
   deleteTableQRCode,
 } from './repository';
-<<<<<<< HEAD
-=======
 import { ensureDefaultOutlet } from './enterprise.repository';
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 import { createSignedUrl, getPublicUrl, removeFromStorage, uploadToStorage, STORAGE_BUCKETS } from '../../utils/storage';
 import { prisma } from '../../utils/prisma';
 

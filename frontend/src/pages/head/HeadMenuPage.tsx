@@ -3,11 +3,7 @@ import * as React from "react";
 import { useNavigate, useParams, useSearchParams, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-<<<<<<< HEAD
-import { MapPin, Plus, RefreshCw, Search, ShoppingCart, Check, X, Minus } from "lucide-react";
-=======
 import { MapPin, Plus, RefreshCw, Search, ShoppingCart, Check, X, Minus, Clock3 } from "lucide-react";
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -434,15 +430,12 @@ export default function HeadMenuPage() {
                         ? `Table: ${tablesList.find((t: any) => t.id === selectedTable)?.table_number || selectedTable}`
                         : 'Takeaway'}
                     </p>
-<<<<<<< HEAD
-=======
                     {selectedTable && selectedTable !== 'TAKEAWAY' && selectedTableReservationHint && (
                       <p className="text-[11px] text-amber-200 font-semibold flex items-center gap-1">
                         <Clock3 className="h-3 w-3" />
                         {selectedTableReservationHint}
                       </p>
                     )}
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                   </div>
                 </div>
                 <span className="text-base sm:text-lg font-bold shrink-0">{formatINR(totalPrice)}</span>

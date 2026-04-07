@@ -67,12 +67,7 @@ export default function AdminSideSettings() {
 
     return (
         <div className="container max-w-5xl py-4 sm:py-6 space-y-6 pb-20 no-scrollbar px-3 sm:px-4 lg:px-6">
-<<<<<<< HEAD
-            
-=======
             <RegionalSettingsPanel compact />
-             
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
                 <div>
                     <div className="flex items-center gap-3 mb-1">

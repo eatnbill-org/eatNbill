@@ -6,11 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-<<<<<<< HEAD
-import { Plus, RefreshCw, ShoppingCart } from "lucide-react";
-=======
 import { Plus, RefreshCw, ShoppingCart, Search, Tag } from "lucide-react";
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 import type { Order } from "@/types/order";
 import { useCategoriesStore } from "@/stores/categories";
 import { useProductsStore } from "@/stores/products";
@@ -199,79 +195,6 @@ export default function ManagerOrdersPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-<<<<<<< HEAD
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="h-9 w-full sm:w-44 rounded-lg"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">To</label>
-            <Input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="h-9 w-full sm:w-44 rounded-lg"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Status</label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-full sm:w-40 text-xs rounded-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {STATUS_FLOW.map((s) => (
-                  <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                ))}
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 sm:flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            className="h-9 rounded-lg border-slate-200 hover:bg-slate-50"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const now = new Date();
-              const from = new Date(now);
-              from.setDate(now.getDate() - 7);
-              setFromDate(from.toISOString().slice(0, 10));
-              setToDate(now.toISOString().slice(0, 10));
-            }}
-            className="h-9 rounded-lg border-slate-200 hover:bg-slate-50"
-          >
-            Last 7 Days
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCreateDialogOpen(true)}
-            className="h-9 rounded-lg border-purple-200 text-purple-600 hover:bg-purple-50"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Order
-          </Button>
-          <Button
-            size="sm"
-            onClick={applyFilters}
-            className="h-9 rounded-lg bg-slate-900 hover:bg-black text-white"
-          >
-            Apply
-          </Button>
-=======
               placeholder="Quick search by name, phone, order#, item or category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -387,7 +310,6 @@ export default function ManagerOrdersPage() {
               Fetch Orders
             </Button>
           </div>
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
         </div>
       </div>
 

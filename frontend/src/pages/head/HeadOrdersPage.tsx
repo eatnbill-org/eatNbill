@@ -5,11 +5,7 @@ import { useNavigate, useOutletContext } from "react-router-dom"; // For menu pa
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
 import { useHeadAuth } from "@/hooks/use-head-auth";
 import { fetchStaffOrders, updateOrderItem, removeOrderItem, updateOrderStatus } from "@/lib/staff-api";
-<<<<<<< HEAD
 import { formatINR, formatDateTime } from "@/lib/format";
-=======
-import { formatINR } from "@/lib/format";
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,20 +20,14 @@ import {
     Clock,
     UtensilsCrossed,
     Check,
-<<<<<<< HEAD
-=======
     Tag,
     Search,
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
-<<<<<<< HEAD
-=======
 import { useCategoriesStore } from "@/stores/categories";
 import { useProductsStore } from "@/stores/products";
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
 // Relative time helper
 function timeAgo(dateStr: string): string {
@@ -90,24 +80,17 @@ export default function HeadOrdersPage() {
     const [cancelDialogOpen, setCancelDialogOpen] = React.useState(false);
     const [orderToCancel, setOrderToCancel] = React.useState<any | null>(null);
     const [cancelReason, setCancelReason] = React.useState("");
-<<<<<<< HEAD
-=======
     const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
     const [localSearch, setLocalSearch] = React.useState("");
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
     // Order Details Dialog State
     const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
 
     // Search state from layout context
     const { headerSearch } = useOutletContext<{ headerSearch: string }>();
-<<<<<<< HEAD
-=======
-
     // Categories & Products stores for category filter
     const { categories, fetchCategories } = useCategoriesStore();
     const { products, fetchProducts } = useProductsStore();
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
     const { restaurant } = useHeadAuth();
 
@@ -188,14 +171,8 @@ export default function HeadOrdersPage() {
             result = result.filter((o: any) => o.status === statusFilter);
         }
 
-<<<<<<< HEAD
-        // Search Filter
-        if (headerSearch.trim()) {
-            const q = headerSearch.toLowerCase();
-=======
         // Category Filter
         if (selectedCategoryId) {
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
             result = result.filter((o: any) =>
                 o.items?.some((item: any) =>
                     categoryMap[item.product_id] === selectedCategoryId
@@ -235,11 +212,7 @@ export default function HeadOrdersPage() {
 
         // ✅ Cap to 50 items for performance
         return sorted.slice(0, 50);
-<<<<<<< HEAD
-    }, [orders, statusFilter, headerSearch, getOrderTableNumber]);
-=======
     }, [orders, statusFilter, selectedCategoryId, headerSearch, localSearch, getOrderTableNumber, categoryMap, categoryIdToNameMap]);
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
     // Active orders count
     const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
@@ -340,16 +313,6 @@ export default function HeadOrdersPage() {
         cancelOrderMutation.mutate({ orderId: orderToCancel.id, reason: cancelReason.trim() });
     }, [cancelOrderMutation, cancelReason, orderToCancel]);
 
-<<<<<<< HEAD
-
-    return (
-        <div className="space-y-4 max-w-7xl mx-auto">
-
-
-            {/* Filter Buttons Row */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-=======
-
     // Active categories only (that have products)
     const activeCategories = React.useMemo(() =>
         categories.filter((c) => c.is_active),
@@ -383,7 +346,7 @@ export default function HeadOrdersPage() {
 
             {/* Status Filter Buttons Row */}
             <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
+
                 <button
                     onClick={() => setStatusFilter("all")}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm ${statusFilter === "all"

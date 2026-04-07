@@ -149,8 +149,6 @@ export default function ManagerDashboardPage() {
         </div>
 
         <div className="flex w-full sm:w-auto items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-<<<<<<< HEAD
-=======
           <Button
             onClick={handleNewReservation}
             variant="outline"
@@ -158,7 +156,6 @@ export default function ManagerDashboardPage() {
           >
             <CalendarClock className="mr-2 h-4 w-4" /> Reservation
           </Button>
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
           <Button
             onClick={handleNewOrder}
             className="h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-slate-200 transition-all w-full sm:w-auto"

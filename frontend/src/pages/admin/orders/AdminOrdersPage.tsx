@@ -209,15 +209,10 @@ export default function AdminOrdersPage() {
     }
   }, [connectionMode]);
 
-<<<<<<< HEAD
-  const filteredOrders = useMemo(() => {
-    let result = [...orders].filter((o) => o.status === 'ACTIVE');
-=======
   // Build maps for fast category lookup
   const { categoryMap, categoryIdToNameMap } = useMemo(() => {
     const cMap: Record<string, string | null> = {};
     const nMap: Record<string, string> = {};
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
     products.forEach((p) => {
       cMap[p.id] = p.category_id;

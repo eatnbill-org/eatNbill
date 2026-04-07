@@ -14,10 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePublicOrdersStore } from '@/stores/public/publicOrders.store';
 import { formatINR } from '@/lib/format';
-<<<<<<< HEAD
-=======
 import { createPortal } from 'react-dom';
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 import { Search, Plus, Minus, ChevronLeft, ChevronRight, ShoppingCart, MapPin, Menu as MenuIcon, Phone, X, Check } from 'lucide-react';
 import { getThemePreset, CustomerThemeName, ThemePreset } from '@/lib/customer-theme-presets';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,10 +29,7 @@ export default function PublicMenuPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
-<<<<<<< HEAD
-  const [selectedProduct, setSelectedProduct] = useState<PublicProduct | null>(null);
-=======
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
+
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const specialsRef = useRef<HTMLDivElement>(null);
 
@@ -183,35 +177,6 @@ export default function PublicMenuPage() {
     <div className="min-h-screen transition-colors duration-500 bg-gray-100" style={{ ...themeStyles, fontFamily: 'var(--theme-font), sans-serif' }}>
 
       {/* Success Modal - Center Screen */}
-<<<<<<< HEAD
-      <AnimatePresence>
-        {showSuccessNotification && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          >
-            {/* Dark Overlay */}
-            <div className="absolute inset-0 bg-black/70" />
-
-            {/* Success Card */}
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="relative bg-emerald-500 rounded-3xl p-8 shadow-2xl max-w-sm w-full text-center"
-            >
-              <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="h-12 w-12 text-emerald-500" strokeWidth={3} />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Your order is submitted successfully!</h2>
-              <p className="text-emerald-50 text-sm">Your order was too confirm or is submitted successfully!</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-=======
       {createPortal(
         <AnimatePresence>
           {showSuccessNotification && (
@@ -242,7 +207,6 @@ export default function PublicMenuPage() {
         </AnimatePresence>,
         document.body
       )}
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
       {/* 1. DYNAMIC HEADER */}
       <header className="sticky top-0 z-40 backdrop-blur-md transition-all duration-300 border-b border-black/5"
@@ -318,10 +282,6 @@ export default function PublicMenuPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={product.id}
-<<<<<<< HEAD
-                onClick={() => !isOut && setSelectedProduct(product)}
-                className="group relative overflow-hidden flex flex-col bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
-=======
                 onClick={() => {
                   if (isOut) return;
                   if (qty === 0) {
@@ -333,7 +293,6 @@ export default function PublicMenuPage() {
                 className={`group relative overflow-hidden flex flex-col rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border-2 ${
                   qty > 0 ? 'bg-orange-50/30 border-orange-500 ring-1 ring-orange-500/20' : 'bg-white border-transparent'
                 }`}
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
               >
                 {/* IMAGE (Square Aspect Ratio) */}
                 <div className="relative aspect-square bg-gray-100 overflow-hidden w-full">
@@ -356,8 +315,6 @@ export default function PublicMenuPage() {
                       {product.discount_percent}% OFF
                     </div>
                   )}
-<<<<<<< HEAD
-=======
                   {/* Selection Checkmark */}
                   {qty > 0 && (
                     <div className="absolute inset-0 bg-black/5 ring-inset ring-2 ring-orange-500 pointer-events-none transition-all" />
@@ -367,7 +324,6 @@ export default function PublicMenuPage() {
                       <Check className="h-4 w-4 text-white stroke-[3px]" />
                     </div>
                   )}
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                 </div>
 
                 {/* CONTENT */}
@@ -420,158 +376,6 @@ export default function PublicMenuPage() {
         </div>
       </main>
 
-<<<<<<< HEAD
-      {/* 4. PRODUCT DETAIL MODAL */}
-      <AnimatePresence>
-        {selectedProduct && (
-          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center" onClick={() => setSelectedProduct(null)}>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-
-            {/* Bottom Sheet Modal */}
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
-              style={{ maxHeight: '92dvh' }}
-            >
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedProduct(null)}
-                className="absolute top-4 right-4 z-10 h-10 w-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-700" />
-              </button>
-
-              <div className="overflow-y-auto" style={{ maxHeight: '92dvh' }}>
-                {/* Product Image */}
-                <div className="relative aspect-[4/3] sm:aspect-square bg-gray-100">
-                  {selectedProduct.images?.[0]?.public_url ? (
-                    <img
-                      src={selectedProduct.images[0].public_url}
-                      alt={selectedProduct.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-gray-400">
-                      <span className="text-sm font-semibold">No Image Available</span>
-                    </div>
-                  )}
-
-                  {/* Discount Tag */}
-                  {selectedProduct.discount_percent && Number(selectedProduct.discount_percent) > 0 && (
-                    <div className="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-2 rounded-xl shadow-lg">
-                      {selectedProduct.discount_percent}% OFF
-                    </div>
-                  )}
-                </div>
-
-                {/* Product Details */}
-                <div className="p-4 sm:p-6 space-y-4">
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{selectedProduct.name}</h2>
-                    <p className="text-xl sm:text-2xl font-black text-orange-500 mt-2">
-                      {formatINR(Number(selectedProduct.price))}
-                    </p>
-                  </div>
-
-                  {selectedProduct.description && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Description</h3>
-                      <p className="text-gray-700 leading-relaxed">{selectedProduct.description}</p>
-                    </div>
-                  )}
-
-                  {/* Add to Cart Button */}
-                  <div className="pt-4">
-                    {(() => {
-                      const qty = getQty(selectedProduct.id);
-                      const isOut = !selectedProduct.is_active;
-
-                      return qty === 0 ? (
-                        <Button
-                          disabled={isOut}
-                          onClick={() => {
-                            addItem(selectedProduct);
-                            setSelectedProduct(null);
-                          }}
-                          className="w-full h-14 text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                          {isOut ? 'Sold Out' : 'Add to Cart'}
-                        </Button>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                          <div className="flex items-center justify-between p-2 border-2 border-orange-500 rounded-2xl bg-white flex-1">
-                            <button
-                              onClick={() => updateQuantity(selectedProduct.id, qty - 1)}
-                              className="w-10 h-10 flex items-center justify-center font-bold text-lg hover:bg-orange-50 rounded-xl text-orange-500 transition-colors"
-                            >
-                              <Minus className="h-5 w-5" />
-                            </button>
-                            <span className="font-black text-xl text-orange-500">{qty}</span>
-                            <button
-                              onClick={() => updateQuantity(selectedProduct.id, qty + 1)}
-                              className="w-10 h-10 flex items-center justify-center font-bold text-lg hover:bg-orange-50 rounded-xl text-orange-500 transition-colors"
-                            >
-                              <Plus className="h-5 w-5" />
-                            </button>
-                          </div>
-                          <Button
-                            onClick={() => setSelectedProduct(null)}
-                            className="h-12 sm:h-14 px-6 sm:px-8 text-base sm:text-lg font-bold rounded-2xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
-                          >
-                            Done
-                          </Button>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 5. FLOATING CART BAR - Redesigned */}
-      <AnimatePresence>
-        {totalItems > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl"
-          >
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-              {/* Left: Quantity & Total */}
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs text-gray-500 font-medium">Quantity: {totalItems}</span>
-                <span className="text-lg font-black text-gray-900">Total: {formatINR(totalPrice)}</span>
-              </div>
-
-              {/* Right: Verify Cart Button */}
-              <Button
-                onClick={() => setCartOpen(true)}
-                className="h-12 px-6 sm:px-8 text-base font-bold rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg transition-all hover:scale-[1.02] shrink-0"
-              >
-                Verify Your Cart
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-=======
-
-
       {/* 5. FLOATING CART BAR - Redesigned to match Head App */}
       {createPortal(
         <AnimatePresence>
@@ -610,8 +414,6 @@ export default function PublicMenuPage() {
         </AnimatePresence>,
         document.body
       )}
-
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
       <PublicCart onOrderSuccess={() => {
         setShowSuccessNotification(true);
         setTimeout(() => setShowSuccessNotification(false), 5000);

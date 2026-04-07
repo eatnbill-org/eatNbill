@@ -51,14 +51,11 @@ import {
   updateRestaurantUserSchema,
   updateTableSchema,
   updateTableStatusSchema,
-<<<<<<< HEAD
-=======
   createTableReservationSchema,
   updateTableReservationSchema,
   listTableReservationsQuerySchema,
   tableAvailabilityQuerySchema,
   reservationAlertsQuerySchema,
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
   deleteTableQRCodesSchema,
 } from './schema';
 

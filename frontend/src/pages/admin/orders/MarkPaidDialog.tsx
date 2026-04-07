@@ -60,13 +60,10 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             setMethod('UPI');
             setAutoPrint(false);
             setIsCreditView(false);
-<<<<<<< HEAD
-=======
             setBuyerName(order.customer_name || '');
             setBuyerGstin('');
             setBuyerStateCode('');
             setInvoiceMeta(null);
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
         }
     }, [open, order]);
 

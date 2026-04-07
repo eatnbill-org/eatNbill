@@ -311,8 +311,6 @@ export default function HeadLayout() {
                             )
                         })}
 
-<<<<<<< HEAD
-=======
                         {/* Desktop Fullscreen Button */}
                         <button
                             onClick={toggleFullScreen}
@@ -328,7 +326,6 @@ export default function HeadLayout() {
                         </button>
                     </div>
 
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                     {/* Right: Logout */}
                     <Button
                         variant="ghost"

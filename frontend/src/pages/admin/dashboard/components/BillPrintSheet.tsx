@@ -94,12 +94,8 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
         <div id="print-mount-root" className="flex justify-center bg-zinc-50 py-10 print:py-0 print:bg-white lowercase-none">
           <div
             id="printable-bill"
-<<<<<<< HEAD
-            className="w-full max-w-[320px] bg-white shadow-xl print:shadow-none p-6 sm:p-8 font-sans text-slate-900 space-y-6 flex flex-col min-h-fit"
-=======
             className={`w-full ${previewWidthClass} bg-white shadow-xl print:shadow-none p-6 sm:p-8 font-sans text-slate-900 space-y-6 flex flex-col min-h-fit`}
             style={{ width: printableWidth }}
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
           >
             {/* Header */}
             <div className="text-center space-y-2 border-b-2 border-slate-900 pb-6">

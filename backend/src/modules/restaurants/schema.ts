@@ -108,8 +108,6 @@ export const updateTableStatusSchema = z
   })
   .strict();
 
-<<<<<<< HEAD
-=======
 export const reservationStatusSchema = z.enum([
   "BOOKED",
   "SEATED",
@@ -234,7 +232,6 @@ export const reservationAlertsQuerySchema = z
     }
   });
 
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 export const deleteTableQRCodesSchema = z
   .object({
     mode: z.enum(['ALL', 'HALL', 'RANGE', 'SELECTED']),

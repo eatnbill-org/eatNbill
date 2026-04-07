@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
   "name": "eatnbill",
-=======
-  "name": "frontend-eatnbill",
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
   "private": true,
   "version": "0.1.0",
   "type": "module",

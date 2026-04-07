@@ -3,11 +3,7 @@ import { useAdminOrdersStore } from "@/stores/orders";
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
 import { useProductsStore } from "@/stores/products";
 import { useOnboarding } from "@/hooks/use-onboarding";
-<<<<<<< HEAD
-import { Plus, Settings2, LayoutDashboard } from "lucide-react";
-=======
 import { Plus, Settings2, LayoutDashboard, CalendarClock } from "lucide-react";
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";

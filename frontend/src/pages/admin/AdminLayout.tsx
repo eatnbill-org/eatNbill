@@ -43,16 +43,10 @@ import { useDemoStore } from "@/store/demo-store"; // ✅ Import Store
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-import { playOrderSound } from "@/lib/sound-notification";
-import { apiClient } from "@/lib/api-client";
-import type { OrderListResponse, OrderResponse } from "@/types/order";
-=======
 import { playOrderSound, playReservationSound } from "@/lib/sound-notification";
 import { apiClient } from "@/lib/api-client";
 import type { OrderListResponse, OrderResponse } from "@/types/order";
 import type { ReservationAlert } from "@/types/reservation";
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 import { toast } from "sonner";
 import {
   LayoutDashboard,
@@ -70,13 +64,9 @@ import {
   ShieldCheck,
   Smartphone,
   Armchair, // Table Icon
-<<<<<<< HEAD
-  Plus
-=======
   Plus,
   WalletCards,
   FileDown,
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -417,10 +407,7 @@ export default function AdminLayout() {
   const notifiedQrOrderIds = useRef<Set<string>>(new Set());
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const pollingInitializedRef = useRef(false);
-<<<<<<< HEAD
-=======
   const reservationPollCursorRef = useRef<Date | null>(null);
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
   const { fetchOrders, fetchStats } = useAdminOrdersStore();
 
   const handleQrNotification = React.useCallback(async (
@@ -489,11 +476,8 @@ export default function AdminLayout() {
     notifiedQrOrderIds.current.clear();
     knownOrderIdsRef.current.clear();
     pollingInitializedRef.current = false;
-<<<<<<< HEAD
-=======
     reservationPollCursorRef.current = null;
     useReservationAlertsStore.getState().resetAlerts();
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
   }, [restaurantId]);
 
   useEffect(() => {
@@ -536,8 +520,6 @@ export default function AdminLayout() {
     };
   }, [restaurantId, connectionMode, handleQrNotification]);
 
-<<<<<<< HEAD
-=======
   useEffect(() => {
     if (!restaurantId) return;
 
@@ -579,8 +561,6 @@ export default function AdminLayout() {
       if (intervalId) clearInterval(intervalId);
     };
   }, [restaurantId]);
-
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DemoModeBar />
@@ -642,8 +622,6 @@ function NotificationWrapper() {
     />
   );
 }
-<<<<<<< HEAD
-=======
 
 function ReservationAlertsWrapper({ basePath }: { basePath: string }) {
   const navigate = useNavigate();
@@ -661,4 +639,3 @@ function ReservationAlertsWrapper({ basePath }: { basePath: string }) {
     />
   );
 }
->>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
