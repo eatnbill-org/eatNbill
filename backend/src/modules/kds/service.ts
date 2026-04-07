@@ -5,7 +5,7 @@ import { AppError } from "../../middlewares/error.middleware";
 // Types for KDS display
 export interface KdsOrderDisplay {
   id: string;
-  order_number: number;
+  order_number: string;
   customer_name: string;
   table_number: string | null;
   notes: string | null;

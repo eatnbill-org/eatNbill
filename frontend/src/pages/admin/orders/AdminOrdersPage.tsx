@@ -42,7 +42,8 @@ import {
   Trash2,
   Search,
   Calendar as CalendarIcon,
-  ChevronDown
+  ChevronDown,
+  Tag,
 } from 'lucide-react';
 import { formatINR } from '@/lib/format';
 import type { Order } from '@/types/order';
@@ -67,6 +68,8 @@ import {
   parseISO
 } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useCategoriesStore } from '@/stores/categories';
+import { useProductsStore } from '@/stores/products';
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: 'bg-blue-500',      // Order is ongoing
@@ -98,6 +101,11 @@ export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [period, setPeriod] = useState<FilterPeriod>('DAILY');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  // Categories & Products for category filter
+  const { categories, fetchCategories } = useCategoriesStore();
+  const { products, fetchProducts } = useProductsStore();
 
   // Dialog states
   const [markPaidOrder, setMarkPaidOrder] = useState<Order | null>(null);
@@ -114,6 +122,12 @@ export default function AdminOrdersPage() {
       window.history.replaceState({}, '', location.pathname);
     }
   }, [location]);
+
+  // Fetch categories & products for filter
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, []);
 
   // Day Interval Logic: 12:00 AM to 11:59 PM
   const getDayInterval = (date: Date) => {
@@ -195,20 +209,68 @@ export default function AdminOrdersPage() {
     }
   }, [connectionMode]);
 
+<<<<<<< HEAD
+  const filteredOrders = useMemo(() => {
+    let result = [...orders].filter((o) => o.status === 'ACTIVE');
+=======
+  // Build maps for fast category lookup
+  const { categoryMap, categoryIdToNameMap } = useMemo(() => {
+    const cMap: Record<string, string | null> = {};
+    const nMap: Record<string, string> = {};
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
+
+    products.forEach((p) => {
+      cMap[p.id] = p.category_id;
+    });
+
+    categories.forEach((c) => {
+      nMap[c.id] = c.name;
+    });
+
+    return { categoryMap: cMap, categoryIdToNameMap: nMap };
+  }, [products, categories]);
+
   const filteredOrders = useMemo(() => {
     let result = [...orders].filter((o) => o.status === 'ACTIVE');
 
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(o =>
-        o.customer_name.toLowerCase().includes(q) ||
-        o.customer_phone.toLowerCase().includes(q) ||
-        o.order_number.toString().includes(q)
+    // Category filter
+    if (selectedCategoryId) {
+      result = result.filter((o) =>
+        o.items?.some((item) =>
+          categoryMap[item.product_id] === selectedCategoryId
+        )
       );
     }
 
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(o => {
+        // 1. Basic Order Info matches (null-safe)
+        const matchesOrderInfo =
+          (o.customer_name?.toLowerCase() || '').includes(q) ||
+          (o.customer_phone?.toLowerCase() || '').includes(q) ||
+          (o.order_number?.toString() || '').includes(q);
+
+        if (matchesOrderInfo) return true;
+
+        // 2. Check Item Names or Category Names
+        return o.items?.some((item) => {
+          const itemName = (item.name_snapshot?.toLowerCase() || '').includes(q);
+          const catId = categoryMap[item.product_id];
+          const catName = (categoryIdToNameMap[catId || '']?.toLowerCase() || '').includes(q);
+          return itemName || catName;
+        });
+      });
+    }
+
     return result;
-  }, [orders, searchQuery]);
+  }, [orders, searchQuery, selectedCategoryId, categoryMap, categoryIdToNameMap]);
+
+  // Active categories for filter tabs
+  const activeCategories = useMemo(
+    () => categories.filter((c) => c.is_active),
+    [categories]
+  );
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -319,7 +381,7 @@ export default function AdminOrdersPage() {
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search orders..."
+            placeholder="Search by name, phone, order#, item..."
             className="pl-10 h-10 bg-muted/20 border-none ring-1 ring-border focus-visible:ring-primary shadow-none rounded-xl"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -344,6 +406,38 @@ export default function AdminOrdersPage() {
           </Button>
         </div>
       </div>
+
+      {/* Category Filter Tabs */}
+      {activeCategories.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <button
+            onClick={() => setSelectedCategoryId(null)}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm border",
+              selectedCategoryId === null
+                ? "bg-primary text-white border-primary shadow-primary/20"
+                : "bg-white text-slate-500 border-border hover:border-primary/40 hover:text-primary"
+            )}
+          >
+            <Tag className="h-3 w-3" />
+            All Categories
+          </button>
+          {activeCategories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategoryId(cat.id)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm border",
+                selectedCategoryId === cat.id
+                  ? "bg-primary text-white border-primary shadow-primary/20"
+                  : "bg-white text-slate-500 border-border hover:border-primary/40 hover:text-primary"
+              )}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">

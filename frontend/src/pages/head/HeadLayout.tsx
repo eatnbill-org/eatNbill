@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useStaffAuth } from "@/hooks/use-head-auth";
+import i18n, { backendLanguageToUi, persistLanguage } from "@/i18n";
+import { fetchMyPreferences } from "@/lib/enterprise-api";
 
 import { LayoutGrid, Package } from "lucide-react";
 
@@ -94,13 +96,103 @@ export default function HeadLayout() {
     };
 
     // Keep state in sync with actual fullscreen status (handles ESC key etc)
-    useState(() => {
+    useEffect(() => {
         const handleFullscreenChange = () => {
             setIsFullscreen(!!document.fullscreenElement);
         };
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    });
+    }, []);
+
+    useEffect(() => {
+        if (!restaurant?.id) return;
+
+        const unsubscribe = useRealtimeStore.getState().subscribeToRestaurantOrders(
+            restaurant.id,
+            async (update: any) => {
+                if (update?.eventType !== 'INSERT' || !update?.order) return;
+
+                // Global waiter popup + sound for customer QR orders on all /head/* pages.
+                if (update.order.source === 'QR') {
+                    await handleQrNotification(update.order.id, update.order);
+                }
+            }
+        );
+
+        const unsubscribePending = useRealtimeStore.getState().subscribeToPendingOrders(
+            restaurant.id,
+            async (payload: QROrderPayload) => {
+                await handleQrNotification(payload.order_id, payload);
+            }
+        );
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+            if (unsubscribePending) unsubscribePending();
+        };
+    }, [restaurant?.id, handleQrNotification]);
+
+    useEffect(() => {
+        // Reset caches when restaurant context changes.
+        notifiedQrOrderIds.current.clear();
+        knownOrderIdsRef.current.clear();
+        pollingInitializedRef.current = false;
+    }, [restaurant?.id]);
+
+    useEffect(() => {
+        if (!restaurant?.id) return;
+        void (async () => {
+            try {
+                const prefs = await fetchMyPreferences();
+                const language = backendLanguageToUi(prefs?.effective_language);
+                await i18n.changeLanguage(language);
+                persistLanguage(language);
+            } catch {
+                // Ignore preference failures in head layout.
+            }
+        })();
+    }, [restaurant?.id]);
+
+    // Fallback: if websocket realtime is down, detect new QR orders from polling data.
+    useEffect(() => {
+        if (!restaurant?.id || connectionMode !== 'polling') return;
+
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+
+        const pollOrders = async () => {
+            try {
+                const response = await fetchStaffOrders();
+                const orders = Array.isArray(response?.data) ? response.data : [];
+                const nextIds = new Set<string>();
+
+                for (const order of orders) {
+                    if (!order?.id) continue;
+                    nextIds.add(order.id);
+
+                    const isKnown = knownOrderIdsRef.current.has(order.id);
+                    const isQr = order.source === 'QR';
+
+                    if (pollingInitializedRef.current && !isKnown && isQr) {
+                        await handleQrNotification(order.id, order);
+                    }
+                }
+
+                knownOrderIdsRef.current = nextIds;
+                pollingInitializedRef.current = true;
+            } catch {
+                // Silent: polling fallback should never block UI.
+            }
+        };
+
+        void pollOrders();
+        intervalId = setInterval(() => {
+            void pollOrders();
+        }, 5000);
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [restaurant?.id, connectionMode, handleQrNotification]);
 
     useEffect(() => {
         if (!restaurant?.id) return;
@@ -218,8 +310,25 @@ export default function HeadLayout() {
                                 </NavLink>
                             )
                         })}
+
+<<<<<<< HEAD
+=======
+                        {/* Desktop Fullscreen Button */}
+                        <button
+                            onClick={toggleFullScreen}
+                            className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50"
+                            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                        >
+                            {isFullscreen ? (
+                                <Minimize className="h-4 w-4" />
+                            ) : (
+                                <Maximize className="h-4 w-4" />
+                            )}
+                            <span className="hidden lg:inline">Fullscreen</span>
+                        </button>
                     </div>
 
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                     {/* Right: Logout */}
                     <Button
                         variant="ghost"

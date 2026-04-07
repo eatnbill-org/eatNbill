@@ -3,7 +3,11 @@ import * as React from "react";
 import { useNavigate, useParams, useSearchParams, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+<<<<<<< HEAD
 import { MapPin, Plus, RefreshCw, Search, ShoppingCart, Check, X, Minus } from "lucide-react";
+=======
+import { MapPin, Plus, RefreshCw, Search, ShoppingCart, Check, X, Minus, Clock3 } from "lucide-react";
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +47,21 @@ const mapApiProductToDemo = (p: any, categoryName: string): Product => ({
 
 function toOrderItem(p: Product, qty: number): OrderItem {
   return { id: p.id, name: p.name, price: p.price, qty };
+}
+
+function getReservationHint(table: any) {
+  if (!table) return "";
+  if (table.is_reserved_now && table.current_reservation) {
+    return `Reserved now (${table.current_reservation.customer_name})`;
+  }
+  if (table.next_reservation?.reserved_from) {
+    const at = new Date(table.next_reservation.reserved_from).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `Reserved at ${at}`;
+  }
+  return "";
 }
 
 export default function HeadMenuPage() {
@@ -110,6 +129,14 @@ export default function HeadMenuPage() {
   });
 
   const tablesList = Array.isArray(tablesData?.data) ? tablesData.data : [];
+  const selectedTableMeta = React.useMemo(
+    () => tablesList.find((table: any) => table.id === selectedTable),
+    [tablesList, selectedTable]
+  );
+  const selectedTableReservationHint = React.useMemo(
+    () => getReservationHint(selectedTableMeta),
+    [selectedTableMeta]
+  );
 
   // ✅ Compute occupied tables from ACTIVE orders
   const occupiedTableIds = React.useMemo(() => {
@@ -407,6 +434,15 @@ export default function HeadMenuPage() {
                         ? `Table: ${tablesList.find((t: any) => t.id === selectedTable)?.table_number || selectedTable}`
                         : 'Takeaway'}
                     </p>
+<<<<<<< HEAD
+=======
+                    {selectedTable && selectedTable !== 'TAKEAWAY' && selectedTableReservationHint && (
+                      <p className="text-[11px] text-amber-200 font-semibold flex items-center gap-1">
+                        <Clock3 className="h-3 w-3" />
+                        {selectedTableReservationHint}
+                      </p>
+                    )}
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                   </div>
                 </div>
                 <span className="text-base sm:text-lg font-bold shrink-0">{formatINR(totalPrice)}</span>

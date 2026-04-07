@@ -1,4 +1,31 @@
 import { formatINR } from '@/lib/format';
+import i18n from '@/i18n';
+
+type ReceiptTemplate = 'MM80_STANDARD' | 'MM58_COMPACT' | 'A4_TAX_INVOICE';
+
+const RECEIPT_TEMPLATE_STORAGE_KEY = 'billing_receipt_template';
+
+function getReceiptTemplate(): ReceiptTemplate {
+    try {
+        const raw = localStorage.getItem(RECEIPT_TEMPLATE_STORAGE_KEY) as ReceiptTemplate | null;
+        if (raw === 'MM58_COMPACT' || raw === 'A4_TAX_INVOICE' || raw === 'MM80_STANDARD') {
+            return raw;
+        }
+    } catch {
+        // ignore
+    }
+    return 'MM80_STANDARD';
+}
+
+function billLabel(key: string) {
+    const language = i18n.resolvedLanguage || 'en';
+    const enLabel = i18n.getFixedT('en', 'billing')(`print.${key}`) as string;
+    if (language === 'en') {
+        return enLabel;
+    }
+    const localLabel = i18n.getFixedT(language, 'billing')(`print.${key}`) as string;
+    return `${localLabel} / ${enLabel}`;
+}
 
 /**
  * Print a kitcen order slip
@@ -51,6 +78,14 @@ export function printBill(order: Order, storeName = "Restaurant", address = "") 
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const template = getReceiptTemplate();
+    const isA4 = template === 'A4_TAX_INVOICE';
+    const pageSize = template === 'MM58_COMPACT' ? '58mm auto' : template === 'MM80_STANDARD' ? '80mm auto' : 'A4';
+    const bodyWidth = template === 'MM58_COMPACT' ? '54mm' : template === 'MM80_STANDARD' ? '76mm' : '100%';
+    const bodyPadding = template === 'MM58_COMPACT' ? '8px' : template === 'MM80_STANDARD' ? '10px' : '20px';
+    const bodyFontSize = template === 'MM58_COMPACT' ? '11px' : template === 'MM80_STANDARD' ? '12px' : '13px';
+    const thankYouLabel = billLabel('thankYou');
+    const visitAgainLabel = billLabel('visitAgain');
 
     const itemsHtml = (order.items || []).map((item: any) => {
         const price = parseFloat(item.price_snapshot || item.unit_price || '0');
@@ -68,8 +103,8 @@ export function printBill(order: Order, storeName = "Restaurant", address = "") 
 
     const billHtml = `<!DOCTYPE html><html><head><title>Bill</title>
     <style>
-        @page { margin: 5mm; size: 80mm auto; }
-        body { font-family: 'Courier New', monospace; margin: 0; padding: 10px; font-size: 12px; width: 76mm; color: #000; }
+        @page { margin: 5mm; size: ${pageSize}; }
+        body { font-family: 'Courier New', monospace; margin: 0; padding: ${bodyPadding}; font-size: ${bodyFontSize}; width: ${bodyWidth}; color: #000; ${isA4 ? 'max-width: 760px;' : ''} }
         .header { text-align: center; margin-bottom: 10px; }
         .header h1 { font-size: 16px; margin: 0; font-weight: bold; text-transform: uppercase; }
         .header p { margin: 2px 0; font-size: 11px; }
@@ -93,16 +128,16 @@ export function printBill(order: Order, storeName = "Restaurant", address = "") 
         <div class="divider"></div>
         
         <div class="info">
-            <p><span>Order: #${order.order_number || order.id?.slice(-4).toUpperCase()}</span> <span>${dateStr} ${timeStr}</span></p>
-            <p><span>Table: ${order.table_number || (order as any).table?.table_number || 'Takeaway'}</span> <span>Type: ${order.order_type}</span></p>
-            <p><span>Customer: ${order.customer_name || 'Guest'}</span></p>
+            <p><span>${billLabel('order')}: #${order.order_number || order.id?.slice(-4).toUpperCase()}</span> <span>${dateStr} ${timeStr}</span></p>
+            <p><span>${billLabel('table')}: ${order.table_number || (order as any).table?.table_number || 'Takeaway'}</span> <span>${billLabel('type')}: ${order.order_type}</span></p>
+            <p><span>${billLabel('customer')}: ${order.customer_name || 'Guest'}</span></p>
         </div>
 
         <div class="divider"></div>
 
         <div class="items">
             <table>
-                <thead><tr><th>Item</th><th style="text-align:right;">Amount</th></tr></thead>
+                <thead><tr><th>${billLabel('item')}</th><th style="text-align:right;">${billLabel('amount')}</th></tr></thead>
                 <tbody>${itemsHtml}</tbody>
             </table>
         </div>
@@ -110,16 +145,16 @@ export function printBill(order: Order, storeName = "Restaurant", address = "") 
         <div class="divider"></div>
 
         <div class="totals">
-            <p><span>Subtotal</span> <span>${formatINR(subtotal)}</span></p>
-            ${discount > 0 ? `<p><span>Discount</span> <span>- ${formatINR(discount)}</span></p>` : ''}
-            <p class="grand-total"><span>TOTAL PAYABLE</span> <span>${formatINR(total)}</span></p>
-            <p style="margin-top:8px;"><span>Payment Method</span> <span>${order.payment_method || 'PENDING'}</span></p>
-            <p><span>Status</span> <span>${order.payment_status}</span></p>
+            <p><span>${billLabel('subtotal')}</span> <span>${formatINR(subtotal)}</span></p>
+            ${discount > 0 ? `<p><span>${billLabel('discount')}</span> <span>- ${formatINR(discount)}</span></p>` : ''}
+            <p class="grand-total"><span>${billLabel('totalPayable').toUpperCase()}</span> <span>${formatINR(total)}</span></p>
+            <p style="margin-top:8px;"><span>${billLabel('paymentMethod')}</span> <span>${order.payment_method || 'PENDING'}</span></p>
+            <p><span>${billLabel('status')}</span> <span>${order.payment_status}</span></p>
         </div>
 
         <div class="footer">
-            <p>Thank you for dining with us!</p>
-            <p>Visit Again</p>
+            <p>${thankYouLabel}</p>
+            <p>${visitAgainLabel}</p>
         </div>
     </body></html>`;
 

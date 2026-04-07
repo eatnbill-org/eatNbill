@@ -5,6 +5,29 @@ import { Printer } from "lucide-react";
 import { formatINR } from "@/lib/format";
 import type { Order } from "@/types/order";
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
+import i18n from "@/i18n";
+
+type ReceiptTemplate = "MM80_STANDARD" | "MM58_COMPACT" | "A4_TAX_INVOICE";
+
+function getReceiptTemplate(): ReceiptTemplate {
+  try {
+    const value = localStorage.getItem("billing_receipt_template");
+    if (value === "MM58_COMPACT" || value === "A4_TAX_INVOICE" || value === "MM80_STANDARD") {
+      return value;
+    }
+  } catch {
+    // ignore local storage errors
+  }
+  return "MM80_STANDARD";
+}
+
+function billLabel(key: string) {
+  const language = i18n.resolvedLanguage || "en";
+  const enLabel = i18n.getFixedT("en", "billing")(`print.${key}`) as string;
+  if (language === "en") return enLabel;
+  const localLabel = i18n.getFixedT(language, "billing")(`print.${key}`) as string;
+  return `${localLabel} / ${enLabel}`;
+}
 
 interface BillPrintSheetProps {
   order: Order | null;
@@ -13,6 +36,11 @@ interface BillPrintSheetProps {
 
 export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
   const { restaurant } = useRestaurantStore();
+  const receiptTemplate = getReceiptTemplate();
+  const pageSize = receiptTemplate === "MM58_COMPACT" ? "58mm auto" : receiptTemplate === "MM80_STANDARD" ? "80mm auto" : "A4";
+  const pageWidth = receiptTemplate === "MM58_COMPACT" ? "58mm" : receiptTemplate === "MM80_STANDARD" ? "80mm" : "210mm";
+  const printableWidth = receiptTemplate === "MM58_COMPACT" ? "54mm" : receiptTemplate === "MM80_STANDARD" ? "80mm" : "210mm";
+  const previewWidthClass = receiptTemplate === "MM58_COMPACT" ? "max-w-[240px]" : receiptTemplate === "MM80_STANDARD" ? "max-w-[320px]" : "max-w-[720px]";
 
   const handlePrint = () => {
     window.print();
@@ -26,7 +54,7 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
         <style>{`
           @media print {
             @page {
-              size: 80mm auto;
+              size: ${pageSize};
               margin: 0;
             }
             body {
@@ -40,9 +68,9 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
               position: absolute !important;
               left: 0 !important;
               top: 0 !important;
-              width: 80mm !important;
+              width: ${pageWidth} !important;
               margin: 0 !important;
-              padding: 8mm !important;
+              padding: ${receiptTemplate === "A4_TAX_INVOICE" ? "10mm" : "8mm"} !important;
               box-sizing: border-box !important;
               display: block !important;
               background: white !important;
@@ -66,7 +94,12 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
         <div id="print-mount-root" className="flex justify-center bg-zinc-50 py-10 print:py-0 print:bg-white lowercase-none">
           <div
             id="printable-bill"
+<<<<<<< HEAD
             className="w-full max-w-[320px] bg-white shadow-xl print:shadow-none p-6 sm:p-8 font-sans text-slate-900 space-y-6 flex flex-col min-h-fit"
+=======
+            className={`w-full ${previewWidthClass} bg-white shadow-xl print:shadow-none p-6 sm:p-8 font-sans text-slate-900 space-y-6 flex flex-col min-h-fit`}
+            style={{ width: printableWidth }}
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
           >
             {/* Header */}
             <div className="text-center space-y-2 border-b-2 border-slate-900 pb-6">
@@ -85,7 +118,7 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
 
             {/* Info */}
             <div className="grid grid-cols-2 gap-y-1 text-xs font-bold border-b border-slate-200 pb-4">
-              <span className="text-slate-400 uppercase tracking-widest text-[9px]">ID</span>
+              <span className="text-slate-400 uppercase tracking-widest text-[9px]">{billLabel("order")}</span>
               <span className="text-right font-mono">#{order.order_number || order.id.slice(0, 8)}</span>
 
               <span className="text-slate-400 uppercase tracking-widest text-[9px]">Date</span>
@@ -94,16 +127,16 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
               <span className="text-slate-400 uppercase tracking-widest text-[9px]">Time</span>
               <span className="text-right">{new Date(order.placed_at || order.created_at).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
 
-              <span className="text-slate-400 uppercase tracking-widest text-[9px]">Cust</span>
+              <span className="text-slate-400 uppercase tracking-widest text-[9px]">{billLabel("customer")}</span>
               <span className="text-right uppercase truncate">{order.customer_name || "Guest"}</span>
             </div>
 
             {/* Items */}
             <div className="space-y-4">
               <div className="flex text-[10px] font-black uppercase tracking-widest text-slate-400 border-b pb-2">
-                <span className="flex-1">Item</span>
+                <span className="flex-1">{billLabel("item")}</span>
                 <span className="w-10 text-center">Qty</span>
-                <span className="w-20 text-right">Amt</span>
+                <span className="w-20 text-right">{billLabel("amount")}</span>
               </div>
               <div className="space-y-3">
                 {order.items.map((item, i) => (
@@ -122,19 +155,19 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
             {/* Totals */}
             <div className="border-t-2 border-slate-900 pt-6 space-y-3 mt-auto">
               <div className="flex justify-between items-center text-sm font-bold">
-                <span className="text-slate-500 uppercase tracking-wider">Subtotal</span>
+                <span className="text-slate-500 uppercase tracking-wider">{billLabel("subtotal")}</span>
                 <span>{formatINR(parseFloat(order.total_amount))}</span>
               </div>
 
               <div className="flex justify-between items-center border-t border-slate-200 pt-3">
-                <span className="text-lg font-black uppercase tracking-tighter text-black">Total</span>
+                <span className="text-lg font-black uppercase tracking-tighter text-black">{billLabel("totalPayable")}</span>
                 <span className="text-2xl font-black tracking-tighter text-black">{formatINR(parseFloat(order.total_amount))}</span>
               </div>
             </div>
 
             {/* Footer */}
             <div className="text-center pt-8 border-t border-dashed border-slate-300 space-y-4">
-              <p className="text-sm font-bold italic tracking-tight">Thank you for visiting us!</p>
+              <p className="text-sm font-bold italic tracking-tight">{billLabel("thankYou")}</p>
               <div className="flex flex-col items-center gap-1.5">
                 <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-[0.4em]">Powered by</p>
                 <div className="flex items-center gap-1">

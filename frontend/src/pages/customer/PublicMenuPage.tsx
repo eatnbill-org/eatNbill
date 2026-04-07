@@ -14,6 +14,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePublicOrdersStore } from '@/stores/public/publicOrders.store';
 import { formatINR } from '@/lib/format';
+<<<<<<< HEAD
+=======
+import { createPortal } from 'react-dom';
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 import { Search, Plus, Minus, ChevronLeft, ChevronRight, ShoppingCart, MapPin, Menu as MenuIcon, Phone, X, Check } from 'lucide-react';
 import { getThemePreset, CustomerThemeName, ThemePreset } from '@/lib/customer-theme-presets';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,7 +32,10 @@ export default function PublicMenuPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
+<<<<<<< HEAD
   const [selectedProduct, setSelectedProduct] = useState<PublicProduct | null>(null);
+=======
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const specialsRef = useRef<HTMLDivElement>(null);
 
@@ -176,6 +183,7 @@ export default function PublicMenuPage() {
     <div className="min-h-screen transition-colors duration-500 bg-gray-100" style={{ ...themeStyles, fontFamily: 'var(--theme-font), sans-serif' }}>
 
       {/* Success Modal - Center Screen */}
+<<<<<<< HEAD
       <AnimatePresence>
         {showSuccessNotification && (
           <motion.div
@@ -203,6 +211,38 @@ export default function PublicMenuPage() {
           </motion.div>
         )}
       </AnimatePresence>
+=======
+      {createPortal(
+        <AnimatePresence>
+          {showSuccessNotification && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            >
+              {/* Dark Overlay */}
+              <div className="absolute inset-0 bg-black/70" />
+
+              {/* Success Card */}
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="relative bg-emerald-500 rounded-3xl p-8 shadow-2xl max-w-sm w-full text-center"
+              >
+                <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Check className="h-12 w-12 text-emerald-500" strokeWidth={3} />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Your order is submitted successfully!</h2>
+                <p className="text-emerald-50 text-sm">Your order was too confirm or is submitted successfully!</p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 
       {/* 1. DYNAMIC HEADER */}
       <header className="sticky top-0 z-40 backdrop-blur-md transition-all duration-300 border-b border-black/5"
@@ -278,8 +318,22 @@ export default function PublicMenuPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={product.id}
+<<<<<<< HEAD
                 onClick={() => !isOut && setSelectedProduct(product)}
                 className="group relative overflow-hidden flex flex-col bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+=======
+                onClick={() => {
+                  if (isOut) return;
+                  if (qty === 0) {
+                    addItem(product);
+                  } else {
+                    updateQuantity(product.id, qty + 1);
+                  }
+                }}
+                className={`group relative overflow-hidden flex flex-col rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border-2 ${
+                  qty > 0 ? 'bg-orange-50/30 border-orange-500 ring-1 ring-orange-500/20' : 'bg-white border-transparent'
+                }`}
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
               >
                 {/* IMAGE (Square Aspect Ratio) */}
                 <div className="relative aspect-square bg-gray-100 overflow-hidden w-full">
@@ -302,6 +356,18 @@ export default function PublicMenuPage() {
                       {product.discount_percent}% OFF
                     </div>
                   )}
+<<<<<<< HEAD
+=======
+                  {/* Selection Checkmark */}
+                  {qty > 0 && (
+                    <div className="absolute inset-0 bg-black/5 ring-inset ring-2 ring-orange-500 pointer-events-none transition-all" />
+                  )}
+                  {qty > 0 && (
+                    <div className="absolute top-2 left-2 flex items-center justify-center h-6 w-6 bg-orange-500 rounded-full shadow-lg shadow-orange-500/30 animate-in zoom-in-50 duration-200">
+                      <Check className="h-4 w-4 text-white stroke-[3px]" />
+                    </div>
+                  )}
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
                 </div>
 
                 {/* CONTENT */}
@@ -354,6 +420,7 @@ export default function PublicMenuPage() {
         </div>
       </main>
 
+<<<<<<< HEAD
       {/* 4. PRODUCT DETAIL MODAL */}
       <AnimatePresence>
         {selectedProduct && (
@@ -502,6 +569,49 @@ export default function PublicMenuPage() {
         )}
       </AnimatePresence>
 
+=======
+
+
+      {/* 5. FLOATING CART BAR - Redesigned to match Head App */}
+      {createPortal(
+        <AnimatePresence>
+          {totalItems > 0 && (
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-[150] bg-white border-t border-gray-200 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-3 sm:p-4"
+            >
+              <div className="max-w-5xl mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setCartOpen(true)}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl py-3.5 sm:py-4 px-4 sm:px-6 flex items-center justify-between transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20"
+                  style={{ backgroundColor: 'var(--theme-primary, #059669)' }}
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="relative">
+                      <ShoppingCart className="h-6 w-6" />
+                      <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-white text-emerald-600 flex items-center justify-center text-xs font-bold" style={{ color: 'var(--theme-primary, #059669)' }}>
+                        {totalItems}
+                      </span>
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-sm sm:text-base font-bold tracking-tight">Verify Your Cart</p>
+                      <p className="text-xs sm:text-sm font-medium opacity-80">{totalItems} selected {totalItems > 1 ? 'items' : 'item'}</p>
+                    </div>
+                  </div>
+                  <span className="text-lg sm:text-xl font-black shrink-0">{formatINR(totalPrice)}</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
       <PublicCart onOrderSuccess={() => {
         setShowSuccessNotification(true);
         setTimeout(() => setShowSuccessNotification(false), 5000);

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useAdminOrdersStore } from "@/stores/orders";
 import { useProductsStore } from "@/stores/products";
-import { Plus, LayoutDashboard } from "lucide-react";
+import { Plus, LayoutDashboard, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -110,6 +110,10 @@ export default function ManagerDashboardPage() {
     navigate(`/manager/orders?new=true`);
   };
 
+  const handleNewReservation = () => {
+    navigate('/manager/company/tables?tab=reservations&open=new');
+  };
+
   if (ordersLoading && (!orders || orders.length === 0)) {
     return (
       <div className="space-y-6 py-4">
@@ -145,6 +149,16 @@ export default function ManagerDashboardPage() {
         </div>
 
         <div className="flex w-full sm:w-auto items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+<<<<<<< HEAD
+=======
+          <Button
+            onClick={handleNewReservation}
+            variant="outline"
+            className="h-10 sm:h-11 px-4 sm:px-6 rounded-xl border-slate-200 font-black uppercase tracking-widest text-[10px] w-full sm:w-auto"
+          >
+            <CalendarClock className="mr-2 h-4 w-4" /> Reservation
+          </Button>
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
           <Button
             onClick={handleNewOrder}
             className="h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-slate-200 transition-all w-full sm:w-auto"

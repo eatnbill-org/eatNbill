@@ -82,6 +82,8 @@ model User {
   updated_at       DateTime         @updatedAt
   deleted_at       DateTime?
   audit_logs       AuditLog[]
+  preferences      UserPreference?
+  export_jobs      ExportJob[]
   restaurant_users RestaurantUser[]
   tenant           Tenant           @relation(fields: [tenant_id], references: [id])
 
@@ -113,12 +115,18 @@ model Restaurant {
   customers       Customer[]
   tenant          Tenant                   @relation(fields: [tenant_id], references: [id])
   integrations    IntegrationConfig[]
+  outlets         RestaurantOutlet[]
   orders          Order[]
   settings        RestaurantSettings?
   theme_settings  RestaurantThemeSettings?
   users           RestaurantUser[]
   halls           RestaurantHall[]
   tables          RestaurantTable[]
+  reservations    TableReservation[]
+  day_end_closures DayEndClosure[]
+  export_jobs      ExportJob[]
+  invoice_series   InvoiceSeries[]
+  gst_invoices     GstInvoice[]
   kds_settings    KdsSettings?
 
   @@unique([slug])
@@ -137,6 +145,8 @@ model Product {
   is_veg                   Boolean?
   preparation_time_minutes Int?
   costprice                Decimal?             @db.Decimal(10, 2)
+  hsn_sac                  String?
+  gst_rate_percent         Decimal?             @db.Decimal(5, 2)
   created_at               DateTime             @default(now())
   updated_at               DateTime             @updatedAt
   deleted_at               DateTime?
@@ -190,6 +200,7 @@ model Order {
   id                String           @id @default(uuid()) @db.Uuid
   tenant_id         String           @db.Uuid
   restaurant_id     String           @db.Uuid
+  outlet_id         String?          @db.Uuid
   table_id          String?          @db.Uuid
   hall_id           String?          @db.Uuid
   customer_id       String?          @db.Uuid
@@ -226,11 +237,14 @@ model Order {
   restaurant        Restaurant       @relation(fields: [restaurant_id], references: [id])
   table             RestaurantTable? @relation(fields: [table_id], references: [id])
   hall              RestaurantHall?  @relation(fields: [hall_id], references: [id])
+  outlet            RestaurantOutlet? @relation(fields: [outlet_id], references: [id])
   customer          Customer?        @relation(fields: [customer_id], references: [id])
   waiter            RestaurantUser?  @relation(fields: [waiter_id], references: [id])
+  gst_invoice       GstInvoice?
 
   @@unique([source, external_order_id])
   @@index([restaurant_id, status])
+  @@index([outlet_id])
   @@index([restaurant_id, placed_at])
   @@index([customer_phone])
   @@index([waiter_id])
@@ -244,6 +258,13 @@ model OrderItem {
   name_snapshot  String
   price_snapshot Decimal @db.Decimal(10, 2)
   cost_snapshot  Decimal? @db.Decimal(10, 2) // Cost price at order time for profit calculation
+  hsn_sac_snapshot String?
+  gst_rate_snapshot Decimal? @db.Decimal(5, 2)
+  taxable_amount_snapshot Decimal? @db.Decimal(10, 2)
+  cgst_amount_snapshot Decimal? @db.Decimal(10, 2)
+  sgst_amount_snapshot Decimal? @db.Decimal(10, 2)
+  igst_amount_snapshot Decimal? @db.Decimal(10, 2)
+  total_tax_snapshot Decimal? @db.Decimal(10, 2)
   quantity       Int
   notes          String?
   status         String  @default("PENDING") // Status of individual item (PENDING, REORDER, SERVED)
@@ -380,6 +401,87 @@ enum TableStatus {
   OCCUPIED
 }
 
+enum ReservationStatus {
+  BOOKED
+  SEATED
+  CANCELLED
+  COMPLETED
+}
+
+enum LanguageCode {
+  EN
+  HI
+  GU
+  MR
+  FR
+  DE
+}
+
+enum ReceiptTemplate {
+  MM80_STANDARD
+  MM58_COMPACT
+  A4_TAX_INVOICE
+}
+
+enum TaxPricingMode {
+  TAX_INCLUSIVE
+  TAX_EXCLUSIVE
+}
+
+enum DayEndStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum DayEndVarianceEventType {
+  CLOSED
+  LOCKED
+}
+
+enum ExportDataset {
+  ORDERS
+  SALES
+  USERS
+  CUSTOMERS
+  PRODUCTS
+  RESERVATIONS
+  DAY_END
+  GST_INVOICES
+  TAX_SUMMARY
+}
+
+enum ExportFormat {
+  CSV
+  XLSX
+}
+
+enum ExportJobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum InvoiceType {
+  B2B
+  B2C
+}
+
+enum GstInvoiceStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+}
+
+enum EInvoiceStatus {
+  NOT_APPLICABLE
+  READY
+  SUBMITTED
+  SUCCESS
+  FAILED
+}
+
 enum FontScale {
   SM
   MD
@@ -428,6 +530,262 @@ model RestaurantThemeSettings {
   @@map("restaurant_theme_settings")
 }
 
+model RestaurantOutlet {
+  id                    String              @id @default(uuid()) @db.Uuid
+  tenant_id             String              @db.Uuid
+  restaurant_id         String              @db.Uuid
+  name                  String
+  code                  String?
+  address               String?
+  gstin                 String?
+  state_code            String?
+  timezone              String              @default("Asia/Kolkata")
+  default_language      LanguageCode        @default(EN)
+  receipt_template      ReceiptTemplate     @default(MM80_STANDARD)
+  variance_lock_amount  Decimal             @default(0) @db.Decimal(10, 2)
+  variance_lock_percent Decimal             @default(0) @db.Decimal(5, 2)
+  tax_pricing_mode      TaxPricingMode      @default(TAX_INCLUSIVE)
+  is_einvoice_enabled   Boolean             @default(false)
+  is_default            Boolean             @default(false)
+  created_at            DateTime            @default(now())
+  updated_at            DateTime            @updatedAt
+  restaurant            Restaurant          @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  halls                 RestaurantHall[]
+  tables                RestaurantTable[]
+  orders                Order[]
+  reservations          TableReservation[]
+  day_end_closures      DayEndClosure[]
+  export_jobs           ExportJob[]
+  invoice_series        InvoiceSeries[]
+  gst_invoices          GstInvoice[]
+  default_user_preferences UserPreference[]
+
+  @@unique([restaurant_id, name])
+  @@index([restaurant_id])
+  @@index([restaurant_id, is_default])
+  @@map("restaurant_outlets")
+}
+
+model UserPreference {
+  user_id            String       @id @db.Uuid
+  tenant_id          String       @db.Uuid
+  preferred_language LanguageCode?
+  default_outlet_id  String?      @db.Uuid
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
+  user               User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  default_outlet     RestaurantOutlet? @relation(fields: [default_outlet_id], references: [id], onDelete: SetNull)
+
+  @@index([tenant_id])
+  @@index([default_outlet_id])
+  @@map("user_preferences")
+}
+
+model DayEndClosure {
+  id                  String      @id @default(uuid()) @db.Uuid
+  tenant_id           String      @db.Uuid
+  restaurant_id       String      @db.Uuid
+  outlet_id           String      @db.Uuid
+  business_date       DateTime    @db.Date
+  expected_cash       Decimal     @default(0) @db.Decimal(10, 2)
+  expected_card       Decimal     @default(0) @db.Decimal(10, 2)
+  expected_upi        Decimal     @default(0) @db.Decimal(10, 2)
+  expected_aggregator Decimal     @default(0) @db.Decimal(10, 2)
+  actual_cash         Decimal     @default(0) @db.Decimal(10, 2)
+  actual_card         Decimal     @default(0) @db.Decimal(10, 2)
+  actual_upi          Decimal     @default(0) @db.Decimal(10, 2)
+  actual_aggregator   Decimal     @default(0) @db.Decimal(10, 2)
+  variance_cash       Decimal     @default(0) @db.Decimal(10, 2)
+  variance_card       Decimal     @default(0) @db.Decimal(10, 2)
+  variance_upi        Decimal     @default(0) @db.Decimal(10, 2)
+  variance_aggregator Decimal     @default(0) @db.Decimal(10, 2)
+  expected_total      Decimal     @default(0) @db.Decimal(10, 2)
+  actual_total        Decimal     @default(0) @db.Decimal(10, 2)
+  variance_total      Decimal     @default(0) @db.Decimal(10, 2)
+  variance_percent    Decimal     @default(0) @db.Decimal(5, 2)
+  status              DayEndStatus @default(OPEN)
+  closed_by_user_id   String?     @db.Uuid
+  closed_at           DateTime?
+  locked_at           DateTime?
+  lock_reason         String?
+  unlocked_by_user_id String?     @db.Uuid
+  unlocked_at         DateTime?
+  unlock_reason       String?
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
+  restaurant          Restaurant  @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  outlet              RestaurantOutlet @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
+  variance_events     DayEndVarianceEvent[]
+  unlock_events       DayEndUnlockEvent[]
+
+  @@unique([outlet_id, business_date])
+  @@index([restaurant_id, business_date])
+  @@index([outlet_id, status])
+  @@map("day_end_closures")
+}
+
+model DayEndVarianceEvent {
+  id             String                 @id @default(uuid()) @db.Uuid
+  day_end_id     String                 @db.Uuid
+  event_type     DayEndVarianceEventType
+  metadata       Json?
+  created_by_user_id String?            @db.Uuid
+  created_at     DateTime               @default(now())
+  day_end        DayEndClosure          @relation(fields: [day_end_id], references: [id], onDelete: Cascade)
+
+  @@index([day_end_id])
+  @@index([created_at])
+  @@map("day_end_variance_events")
+}
+
+model DayEndUnlockEvent {
+  id             String        @id @default(uuid()) @db.Uuid
+  day_end_id     String        @db.Uuid
+  reason         String
+  metadata       Json?
+  unlocked_by_user_id String?  @db.Uuid
+  created_at     DateTime      @default(now())
+  day_end        DayEndClosure @relation(fields: [day_end_id], references: [id], onDelete: Cascade)
+
+  @@index([day_end_id])
+  @@index([created_at])
+  @@map("day_end_unlock_events")
+}
+
+model ExportJob {
+  id               String         @id @default(uuid()) @db.Uuid
+  tenant_id        String         @db.Uuid
+  restaurant_id    String         @db.Uuid
+  outlet_id        String?        @db.Uuid
+  user_id          String?        @db.Uuid
+  dataset          ExportDataset
+  format           ExportFormat
+  filters          Json?
+  selected_columns String[]       @default([])
+  status           ExportJobStatus @default(QUEUED)
+  attempts         Int            @default(0)
+  error_message    String?
+  started_at       DateTime?
+  finished_at      DateTime?
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+  restaurant       Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  outlet           RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)
+  user             User?          @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  files            ExportFile[]
+
+  @@index([restaurant_id, status, created_at])
+  @@index([user_id, created_at])
+  @@map("export_jobs")
+}
+
+model ExportFile {
+  id           String    @id @default(uuid()) @db.Uuid
+  export_job_id String   @db.Uuid
+  file_name    String
+  mime_type    String
+  storage_path String
+  size_bytes   Int?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  export_job   ExportJob @relation(fields: [export_job_id], references: [id], onDelete: Cascade)
+
+  @@index([export_job_id])
+  @@map("export_files")
+}
+
+model InvoiceSeries {
+  id            String     @id @default(uuid()) @db.Uuid
+  tenant_id     String     @db.Uuid
+  restaurant_id String     @db.Uuid
+  outlet_id     String     @db.Uuid
+  financial_year String
+  prefix        String
+  next_number   Int        @default(1)
+  is_active     Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  outlet        RestaurantOutlet @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
+  invoices      GstInvoice[]
+
+  @@unique([outlet_id, financial_year, prefix])
+  @@index([restaurant_id, financial_year])
+  @@map("invoice_series")
+}
+
+model GstInvoice {
+  id                 String           @id @default(uuid()) @db.Uuid
+  tenant_id          String           @db.Uuid
+  restaurant_id      String           @db.Uuid
+  outlet_id          String           @db.Uuid
+  order_id           String           @unique @db.Uuid
+  series_id          String           @db.Uuid
+  invoice_number     String           @unique
+  invoice_type       InvoiceType      @default(B2C)
+  status             GstInvoiceStatus @default(DRAFT)
+  buyer_name         String?
+  buyer_gstin        String?
+  buyer_state_code   String?
+  seller_gstin       String?
+  seller_state_code  String?
+  is_tax_inclusive   Boolean          @default(true)
+  subtotal_amount    Decimal          @default(0) @db.Decimal(10, 2)
+  discount_amount    Decimal          @default(0) @db.Decimal(10, 2)
+  taxable_amount     Decimal          @default(0) @db.Decimal(10, 2)
+  cgst_amount        Decimal          @default(0) @db.Decimal(10, 2)
+  sgst_amount        Decimal          @default(0) @db.Decimal(10, 2)
+  igst_amount        Decimal          @default(0) @db.Decimal(10, 2)
+  total_tax_amount   Decimal          @default(0) @db.Decimal(10, 2)
+  grand_total_amount Decimal          @default(0) @db.Decimal(10, 2)
+  irn_status         EInvoiceStatus   @default(NOT_APPLICABLE)
+  irn                String?
+  ack_no             String?
+  ack_date           DateTime?
+  signed_qr_payload  String?
+  einvoice_provider  String?
+  einvoice_error     Json?
+  validated_at       DateTime?
+  issued_at          DateTime?
+  cancelled_at       DateTime?
+  created_at         DateTime         @default(now())
+  updated_at         DateTime         @updatedAt
+  restaurant         Restaurant       @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  outlet             RestaurantOutlet @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
+  order              Order            @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  series             InvoiceSeries    @relation(fields: [series_id], references: [id], onDelete: Restrict)
+  lines              GstInvoiceLine[]
+
+  @@index([restaurant_id, created_at])
+  @@index([outlet_id, invoice_number])
+  @@index([irn_status])
+  @@map("gst_invoices")
+}
+
+model GstInvoiceLine {
+  id                    String     @id @default(uuid()) @db.Uuid
+  invoice_id            String     @db.Uuid
+  order_item_id         String?    @db.Uuid
+  product_name          String
+  hsn_sac               String?
+  quantity              Int
+  unit_price            Decimal    @db.Decimal(10, 2)
+  taxable_amount        Decimal    @db.Decimal(10, 2)
+  gst_rate_percent      Decimal    @db.Decimal(5, 2)
+  cgst_amount           Decimal    @default(0) @db.Decimal(10, 2)
+  sgst_amount           Decimal    @default(0) @db.Decimal(10, 2)
+  igst_amount           Decimal    @default(0) @db.Decimal(10, 2)
+  total_tax_amount      Decimal    @default(0) @db.Decimal(10, 2)
+  line_total_amount     Decimal    @db.Decimal(10, 2)
+  created_at            DateTime   @default(now())
+  updated_at            DateTime   @updatedAt
+  invoice               GstInvoice @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+
+  @@index([invoice_id])
+  @@index([order_item_id])
+  @@map("gst_invoice_lines")
+}
+
 model RestaurantUser {
   id            String   @id @default(uuid()) @db.Uuid
   restaurant_id String   @db.Uuid
@@ -465,20 +823,24 @@ model RestaurantUser {
 model RestaurantHall {
   id            String            @id @default(uuid()) @db.Uuid
   restaurant_id String            @db.Uuid
+  outlet_id     String?           @db.Uuid
   name          String
   is_ac         Boolean           @default(false)
   created_at    DateTime          @default(now())
   restaurant    Restaurant        @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  outlet        RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)
   tables        RestaurantTable[]
   orders        Order[]
 
   @@index([restaurant_id])
+  @@index([outlet_id])
   @@map("restaurant_halls")
 }
 
 model RestaurantTable {
   id            String         @id @default(uuid()) @db.Uuid
   restaurant_id String         @db.Uuid
+  outlet_id     String?        @db.Uuid
   hall_id       String         @db.Uuid
   table_number  String
   seats         Int
@@ -486,14 +848,46 @@ model RestaurantTable {
   table_status  TableStatus    @default(AVAILABLE)
   created_at    DateTime       @default(now())
   restaurant    Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  outlet        RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)
   hall          RestaurantHall @relation(fields: [hall_id], references: [id], onDelete: Cascade)
   orders        Order[]
+  reservations  TableReservation[]
   qr_code       TableQRCode?
 
   @@unique([restaurant_id, table_number])
   @@index([restaurant_id])
+  @@index([outlet_id])
   @@index([hall_id])
   @@map("restaurant_tables")
+}
+
+model TableReservation {
+  id                 String            @id @default(uuid()) @db.Uuid
+  tenant_id          String            @db.Uuid
+  restaurant_id      String            @db.Uuid
+  outlet_id          String?           @db.Uuid
+  table_id           String            @db.Uuid
+  customer_name      String
+  customer_phone     String?
+  customer_email     String?
+  party_size         Int
+  reserved_from      DateTime
+  reserved_to        DateTime
+  notes              String?
+  status             ReservationStatus @default(BOOKED)
+  created_by_user_id String?           @db.Uuid
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
+  cancelled_at       DateTime?
+  restaurant         Restaurant        @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  outlet             RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)
+  table              RestaurantTable   @relation(fields: [table_id], references: [id], onDelete: Cascade)
+
+  @@index([restaurant_id, reserved_from])
+  @@index([outlet_id, reserved_from])
+  @@index([restaurant_id, status])
+  @@index([table_id, reserved_from, reserved_to])
+  @@map("table_reservations")
 }
 
 model ProductImage {

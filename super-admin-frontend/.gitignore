@@ -31,4 +31,11 @@ dist
 /dist
 /dist-ssr
 .cache
+<<<<<<< HEAD
 .next
+=======
+.next
+
+.next
+/.next
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f

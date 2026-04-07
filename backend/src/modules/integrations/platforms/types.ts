@@ -69,7 +69,7 @@ export interface ResolvedMenuItem {
 export interface ProcessOrderResult {
   success: boolean;
   order_id?: string;
-  order_number?: number;
+  order_number?: string;
   error?: string;
   is_duplicate?: boolean;
 }

@@ -3,7 +3,11 @@ import { useAdminOrdersStore } from "@/stores/orders";
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
 import { useProductsStore } from "@/stores/products";
 import { useOnboarding } from "@/hooks/use-onboarding";
+<<<<<<< HEAD
 import { Plus, Settings2, LayoutDashboard } from "lucide-react";
+=======
+import { Plus, Settings2, LayoutDashboard, CalendarClock } from "lucide-react";
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -177,6 +181,11 @@ export default function AdminDashboardPage() {
     navigate(`${base}/orders?new=true`);
   };
 
+  const handleNewReservation = () => {
+    const base = location.pathname.startsWith('/manager') ? '/manager' : '/admin';
+    navigate(`${base}/company/tables?tab=reservations&open=new`);
+  };
+
   if (ordersLoading && (!orders || orders.length === 0)) {
     return (
       <div className="space-y-6 py-4">
@@ -225,6 +234,14 @@ export default function AdminDashboardPage() {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive"></span>
               </span>
             )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleNewReservation}
+            className="h-10 sm:h-11 px-4 sm:px-5 rounded-lg border-border font-semibold text-sm text-muted-foreground hover:bg-accent transition-all w-full sm:w-auto"
+          >
+            <CalendarClock className="mr-2 h-4 w-4" />
+            Reservation
           </Button>
           <Button
             onClick={handleNewOrder}

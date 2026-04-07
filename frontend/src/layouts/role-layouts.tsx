@@ -11,7 +11,11 @@ import { useScopeLoading } from "@/stores/ui";
 type LayoutProps = PropsWithChildren<{ loading?: boolean }>;
 
 function ContentFrame({ children }: PropsWithChildren) {
+<<<<<<< HEAD
   return <div className="content-fade-in min-h-screen">{children}</div>;
+=======
+  return <div className="min-h-screen">{children}</div>;
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
 }
 
 export function AuthLayout({ loading, children }: LayoutProps) {

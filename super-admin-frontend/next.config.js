@@ -1,12 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+<<<<<<< HEAD
   reactStrictMode: true,
   
+=======
+  // Disable strict mode in dev — it causes double-renders which slow down
+  // route transitions noticeably. Enable only for production checks.
+  reactStrictMode: process.env.NODE_ENV === 'production',
+
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
   // Image optimization
   images: {
     domains: ['localhost'],
     formats: ['image/avif', 'image/webp'],
   },
+<<<<<<< HEAD
   
   // Experimental features
   experimental: {
@@ -17,6 +25,45 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+=======
+
+  // Experimental features
+  experimental: {
+    // Tree-shake named exports from heavy packages. Covers all major deps so
+    // Turbopack / webpack only bundle what each page actually uses.
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'recharts',
+      'date-fns',
+      'sonner',
+      '@radix-ui/react-accordion',
+      '@radix-ui/react-alert-dialog',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-checkbox',
+      '@radix-ui/react-collapsible',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-label',
+      '@radix-ui/react-navigation-menu',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-progress',
+      '@radix-ui/react-scroll-area',
+      '@radix-ui/react-select',
+      '@radix-ui/react-separator',
+      '@radix-ui/react-slot',
+      '@radix-ui/react-switch',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-toggle',
+      '@radix-ui/react-toggle-group',
+      '@radix-ui/react-tooltip',
+      '@tanstack/react-query',
+      '@tanstack/react-table',
+    ],
+  },
+
+>>>>>>> 2342221b164b9ed1048923ff5b31597650889d5f
   
   // Rewrites for API
   async rewrites() {

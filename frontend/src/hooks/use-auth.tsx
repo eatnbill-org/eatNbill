@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
+import i18n, { backendLanguageToUi, persistLanguage } from "@/i18n";
 
 interface User {
   id: string;
@@ -84,6 +85,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     init();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    const syncLanguagePreference = async () => {
+      try {
+        const response = await apiClient.get<{ data?: { effective_language?: string } }>('/restaurant/preferences/me');
+        const effectiveLanguage = response?.data?.data?.effective_language;
+        if (!effectiveLanguage || cancelled) return;
+        const language = backendLanguageToUi(effectiveLanguage);
+        await i18n.changeLanguage(language);
+        persistLanguage(language);
+      } catch {
+        // Ignore language sync failures and keep current language.
+      }
+    };
+
+    void syncLanguagePreference();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.allowed_restaurant_ids?.[0]]);
 
   /**
    * Sign in with email/phone and password
