@@ -294,7 +294,9 @@ export default function HeadTablesPage() {
                             {table.isOccupied && table.currentOrder ? (
                                 <div className="mt-1 flex items-center gap-1 text-rose-500 font-bold text-[8px] uppercase">
                                     <Clock className="h-2.5 w-2.5" />
-                                    {new Date(table.currentOrder.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {table.currentOrder.arrive_at
+                                        ? `Sch: ${new Date(table.currentOrder.arrive_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                        : new Date(table.currentOrder.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             ) : table.is_reserved_now && table.current_reservation ? (
                                 <div className="mt-1 flex flex-col items-center gap-0.5 text-amber-600 font-bold text-[8px] uppercase">
@@ -478,10 +480,10 @@ export default function HeadTablesPage() {
                                     <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
                                         <div className="flex items-center gap-2 mb-1 text-slate-400">
                                             <Calendar className="h-3 w-3" />
-                                            <span className="text-[10px] font-bold uppercase tracking-widest">Time</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest">{selectedTable.currentOrder.arrive_at ? "Scheduled Arrival" : "Ordered At"}</span>
                                         </div>
                                         <p className="text-sm font-black text-slate-700">
-                                            {new Date(selectedTable.currentOrder.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(selectedTable.currentOrder.arrive_at || selectedTable.currentOrder.placed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
                                     <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100">

@@ -65,7 +65,8 @@ import {
   subHours,
   addHours,
   isWithinInterval,
-  parseISO
+  parseISO,
+  isToday
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useCategoriesStore } from '@/stores/categories';
@@ -270,6 +271,20 @@ export default function AdminOrdersPage() {
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return format(date, 'hh:mm a');
+  };
+
+  const formatArriveAt = (arriveAt: string | null) => {
+    if (!arriveAt) return null;
+    const date = new Date(arriveAt);
+    if (isNaN(date.getTime())) {
+      // Handle legacy format "HH:MM"
+      return arriveAt;
+    }
+    
+    if (isToday(date)) {
+      return format(date, 'hh:mm a');
+    }
+    return format(date, 'MMM d, hh:mm a');
   };
 
   const getStatusBadge = (status: string) => (
@@ -479,7 +494,7 @@ export default function AdminOrdersPage() {
                   </div>
                   <div>
                     <p className="text-muted-foreground font-semibold uppercase tracking-wider">Time</p>
-                    <p className="font-bold">{order.arrive_at || formatTime(order.placed_at || order.created_at)}</p>
+                    <p className="font-bold">{formatArriveAt(order.arrive_at) || formatTime(order.placed_at || order.created_at)}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground font-semibold uppercase tracking-wider">Source</p>
@@ -592,7 +607,7 @@ export default function AdminOrdersPage() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-[11px] font-bold text-foreground">
-                          {order.arrive_at || formatTime(order.placed_at || order.created_at)}
+                          {formatArriveAt(order.arrive_at) || formatTime(order.placed_at || order.created_at)}
                         </span>
                         <span className="text-[9px] text-primary font-bold uppercase tracking-wider leading-none">
                           {order.source}

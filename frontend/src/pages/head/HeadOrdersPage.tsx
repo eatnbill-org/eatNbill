@@ -22,6 +22,7 @@ import {
     Check,
     Tag,
     Search,
+    CalendarClock
 } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +39,24 @@ function timeAgo(dateStr: string): string {
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function formatArriveAt(arriveAtStr?: string | null) {
+    if (!arriveAtStr) return null;
+    try {
+        const date = new Date(arriveAtStr);
+        const now = new Date();
+        const isToday = date.getDate() === now.getDate() &&
+            date.getMonth() === now.getMonth() &&
+            date.getFullYear() === now.getFullYear();
+
+        if (isToday) {
+            return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        return date.toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return arriveAtStr;
+    }
 }
 
 // Status configuration with unique card accent colors
@@ -455,6 +474,12 @@ export default function HeadOrdersPage() {
                                         <span className="text-[11px] text-slate-400 font-medium">
                                             #{order.order_number}
                                         </span>
+                                        {order.arrive_at && (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 rounded-md px-1.5 py-0.5 border border-amber-100/50">
+                                                <CalendarClock className="h-3 w-3" />
+                                                {formatArriveAt(order.arrive_at)}
+                                            </span>
+                                        )}
                                         {isPaid && (
                                             <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 rounded-md px-1.5 py-0.5">
                                                 <Check className="h-2.5 w-2.5" /> Paid
@@ -565,6 +590,12 @@ export default function HeadOrdersPage() {
                                                 <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-400">
                                                     <MapPin className="h-2.5 w-2.5" />{getOrderLocationLabel(selectedOrder)}
                                                 </span>
+                                                {selectedOrder.arrive_at && (
+                                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200/50">
+                                                        <CalendarClock className="h-2.5 w-2.5" />
+                                                        {formatArriveAt(selectedOrder.arrive_at)}
+                                                    </span>
+                                                )}
                                                 {mPaid && (
                                                     <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-100 rounded px-1 py-0.5">
                                                         <Check className="h-2 w-2" /> Paid

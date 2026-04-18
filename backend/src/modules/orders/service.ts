@@ -100,6 +100,16 @@ export async function placePublicOrder(
   let orderType: OrderType = input.source === "QR" ? "DINE_IN" : "TAKEAWAY";
 
   if (table) {
+    // 🔴 Prevent double-booking: Check for existing open order on this table
+    const existingOrder = await repository.findOpenOrderByTable(restaurant.tenant_id, restaurant.id, table.id);
+    if (existingOrder) {
+      throw new AppError(
+        "CONFLICT", 
+        `Table ${table.table_number} is already occupied. Please add items to existing order #${existingOrder.order_number}.`, 
+        409
+      );
+    }
+
     tableId = table.id;
     hallId = table.hall_id;
     resolvedTableNumber = table.table_number;
@@ -210,6 +220,17 @@ export async function createInternalOrder(
     if (!table) {
       throw new AppError("VALIDATION_ERROR", "Valid table is required for DINE_IN orders", 400);
     }
+    
+    // 🔴 Prevent double-booking: Check for existing open order on this table
+    const existingOrder = await repository.findOpenOrderByTable(tenantId, restaurantId, table.id);
+    if (existingOrder) {
+      throw new AppError(
+        "CONFLICT", 
+        `Table ${table.table_number} is already occupied by order #${existingOrder.order_number}.`, 
+        409
+      );
+    }
+
     tableId = table.id;
     hallId = table.hall_id;
   } else {

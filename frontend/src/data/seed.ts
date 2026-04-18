@@ -39,7 +39,7 @@ function makeOrder(partial: Omit<Order, "total" | "statusHistory"> & { statusHis
 
 const mockOrders: Order[] = [
   makeOrder({
-    id: "ORD-001",
+    id: "#ord-0011",
     source: "new",
     customerName: "Raj Kumar",
     customerPhone: "+91-9876543210",
@@ -59,7 +59,7 @@ const mockOrders: Order[] = [
     creditAmount: 0,
   }),
   makeOrder({
-    id: "ORD-002",
+    id: "#ord-0022",
     source: "zomato",
     customerName: "Aisha",
     customerPhone: "+91-9000012345",
@@ -83,7 +83,7 @@ const mockOrders: Order[] = [
     ],
   }),
   makeOrder({
-    id: "ORD-003",
+    id: "#ord-0033",
     source: "new",
     customerName: "Suresh",
     customerPhone: "+91-9111122222",
@@ -108,7 +108,7 @@ const mockOrders: Order[] = [
     ],
   }),
   makeOrder({
-    id: "ORD-004",
+    id: "#ord-0044",
     source: "zomato",
     customerName: "Neha",
     customerPhone: "+91-9888877777",

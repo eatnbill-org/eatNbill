@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { User, Phone, MapPin, Clock, FileText, Wallet, Hash, Utensils, ReceiptText, X, Printer as PrinterIcon, Sparkles } from 'lucide-react';
 import type { Order } from '@/types/order';
 import { formatINR } from '@/lib/format';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -150,6 +150,18 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                                     <span className="text-[7px] font-black uppercase text-slate-400 block tracking-tighter">Station</span>
                                     <p className="text-[9px] font-extrabold text-slate-700 uppercase">Table {order.table_number || 'TBA'}</p>
                                 </div>
+                                {order.arrive_at && (
+                                    <div className="space-y-0.5 col-span-2">
+                                        <span className="text-[7px] font-black uppercase text-slate-400 block tracking-tighter">Scheduled Arrival</span>
+                                        <p className="text-[9px] font-extrabold text-indigo-600 uppercase">
+                                            {(() => {
+                                                const d = new Date(order.arrive_at);
+                                                if (isNaN(d.getTime())) return order.arrive_at;
+                                                return isToday(d) ? format(d, 'hh:mm a') : format(d, 'MMM d, hh:mm a');
+                                            })()}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

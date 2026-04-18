@@ -110,33 +110,30 @@ export async function findProductsByIds(
 }
 
 /**
- * Generate a random non-repeating alphanumeric order ID
- * Format: #ORD-[RANDOM][SAME-DIGIT-TWICE]
- * Example: #ORD-A122, #ORD-5V99
+ * Generate a unique numeric order ID for a restaurant
+ * Format: #ord-[4-DIGITS]
+ * Example: #ord-4489
  */
-async function generateAlphanumericOrderId(
-  tx: Prisma.TransactionClient
+async function generateNumericOrderId(
+  tx: Prisma.TransactionClient,
+  restaurantId: string
 ): Promise<string> {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed similar looking chars like I, O, 0, 1
-  const digits = "0123456789";
-
   let orderId = "";
   let isUnique = false;
   let attempts = 0;
 
-  while (!isUnique && attempts < 10) {
+  while (!isUnique && attempts < 50) {
     attempts++;
-    // Generate alphanumeric part (2 chars)
-    const randomPart = Array.from({ length: 2 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    // Generate same digit twice
-    const sameDigit = digits[Math.floor(Math.random() * digits.length)] || "0";
-    const digitPart = sameDigit + sameDigit;
+    // Generate 4 random digits (0000-9999)
+    const randomDigits = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+    orderId = `#ord-${randomDigits}`;
 
-    orderId = `#ORD-${randomPart}${digitPart}`;
-
-    // Check uniqueness
+    // Check uniqueness within this restaurant
     const existing = await tx.order.findFirst({
-      where: { order_number: orderId },
+      where: {
+        order_number: orderId,
+        restaurant_id: restaurantId,
+      },
       select: { id: true },
     });
 
@@ -145,7 +142,7 @@ async function generateAlphanumericOrderId(
     }
   }
 
-  return orderId;
+  return orderId || `#ord-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
 }
 
 /**
@@ -191,8 +188,8 @@ export async function createOrder(
       return sum + discountedPrice * item.quantity;
     }, 0);
 
-    // Generate unique random alphanumeric order ID
-    const orderNumber = await generateAlphanumericOrderId(tx);
+    // Generate unique random numeric order ID (per restaurant)
+    const orderNumber = await generateNumericOrderId(tx, data.restaurant_id);
 
     // Create order
     const order = await tx.order.create({

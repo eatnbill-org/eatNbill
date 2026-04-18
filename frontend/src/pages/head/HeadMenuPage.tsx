@@ -136,14 +136,22 @@ export default function HeadMenuPage() {
 
   // ✅ Compute occupied tables from ACTIVE orders
   const occupiedTableIds = React.useMemo(() => {
-    const orders = ordersData?.orders || [];
-    return new Set(
+    // Backend returns orders in 'data' field
+    const orders = ordersData?.data || [];
+    const set = new Set<string>(
       orders
         .filter((order: any) => order.status === 'ACTIVE')
         .map((order: any) => order.table_id)
         .filter(Boolean)
     );
-  }, [ordersData]);
+    
+    // 💡 If we are in reorder mode, our OWN table shouldn't be "occupied" for us
+    if (isReorderMode && existingOrder?.table_id) {
+      set.delete(existingOrder.table_id);
+    }
+    
+    return set;
+  }, [ordersData, isReorderMode, existingOrder]);
 
   // Process products into usable format
   const processedProducts = React.useMemo(() => {
@@ -208,6 +216,7 @@ export default function HeadMenuPage() {
     customerName: string;
     customerPhone: string;
     specialInstructions: string;
+    arrivingAt?: string;
   }) => {
     try {
       if (isReorderMode && reorderId) {
@@ -237,7 +246,8 @@ export default function HeadMenuPage() {
           })),
           table_id: tableId,
           order_type: tableId ? 'DINE_IN' : 'TAKEAWAY',
-          notes: payload.specialInstructions
+          notes: payload.specialInstructions,
+          arrive_at: payload.arrivingAt
         });
 
         toast.success("Order placed successfully!");
@@ -462,6 +472,7 @@ export default function HeadMenuPage() {
         } : undefined}
         onSubmit={handlePlaceOrder}
         onTableChange={(tableId) => setSelectedTable(tableId)}
+        occupiedTableIds={occupiedTableIds}
       />
     </div >
   );
