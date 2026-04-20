@@ -172,21 +172,6 @@ type Props = {
   occupiedTableIds?: Set<string>;
 };
 
-function formatTableReservationHint(table: any) {
-  if (!table) return "";
-  if (table.is_reserved_now && table.current_reservation) {
-    return `Reserved now (${table.current_reservation.customer_name})`;
-  }
-  if (table.next_reservation?.reserved_from) {
-    const at = new Date(table.next_reservation.reserved_from).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `Reserved at ${at}`;
-  }
-  return "";
-}
-
 export default function CheckoutDialog({
   open,
   onOpenChange,
