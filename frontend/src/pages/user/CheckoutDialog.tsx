@@ -8,7 +8,9 @@ import { Separator } from "@/components/ui/separator";
 import { useDemoStore } from "@/store/demo-store";
 import type { OrderItem } from "@/types/demo";
 import { formatINR } from "@/lib/format";
-import { User, Phone, MapPin } from "lucide-react";
+import { User, Phone, MapPin, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -45,6 +47,21 @@ function getStoredCustomer(): StoredCustomer | null {
 function saveCustomerInfo(name: string, phone: string) {
   const data: StoredCustomer = { name, phone, savedAt: Date.now() };
   localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(data));
+}
+
+function formatTableReservationHint(table: any) {
+  if (!table) return "";
+  if (table.is_reserved_now && table.current_reservation) {
+    return `Reserved now (${table.current_reservation.customer_name})`;
+  }
+  if (table.next_reservation?.reserved_from) {
+    const at = new Date(table.next_reservation.reserved_from).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `Reserved at ${at}`;
+  }
+  return "";
 }
 
 /**
@@ -149,9 +166,26 @@ type Props = {
     customerPhone: string;
     specialInstructions: string;
     consentWhatsapp: boolean;
+    arrivingAt?: string;
   }) => void;
   onTableChange?: (tableId: string) => void; // Callback when table is changed
+  occupiedTableIds?: Set<string>;
 };
+
+function formatTableReservationHint(table: any) {
+  if (!table) return "";
+  if (table.is_reserved_now && table.current_reservation) {
+    return `Reserved now (${table.current_reservation.customer_name})`;
+  }
+  if (table.next_reservation?.reserved_from) {
+    const at = new Date(table.next_reservation.reserved_from).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `Reserved at ${at}`;
+  }
+  return "";
+}
 
 export default function CheckoutDialog({
   open,
@@ -164,12 +198,14 @@ export default function CheckoutDialog({
   reorderContext,
   onSubmit,
   onTableChange,
+  occupiedTableIds,
 }: Props) {
   const { state } = useDemoStore();
   const [name, setName] = React.useState(reorderContext?.customerName || "");
   const [phone, setPhone] = React.useState(reorderContext?.customerPhone || "");
   const [instructions, setInstructions] = React.useState("");
   const [consent, setConsent] = React.useState(true);
+  const [arriveAt, setArriveAt] = React.useState("");
   const [selectedTableLocal, setSelectedTableLocal] = React.useState(tableId || "TAKEAWAY");
 
   // Sync table from prop
@@ -194,12 +230,15 @@ export default function CheckoutDialog({
 
   const normalizedPhone = phone.replace(/\s+/g, "").trim();
   const repeatCustomer = state.customers.find((c) => c.phone.replace(/\s+/g, "") === normalizedPhone);
+  const selectedTableMeta = tables.find((t: any) => t.id === selectedTableLocal);
+  const selectedTableReservationHint = formatTableReservationHint(selectedTableMeta);
 
   const total = items.reduce((s, i) => s + i.qty * i.price, 0);
 
-  const canSubmit = customerFieldsOptional
+  const isTableOccupied = occupiedTableIds?.has(selectedTableLocal);
+  const canSubmit = (customerFieldsOptional
     ? items.length > 0
-    : name.trim().length >= 2 && normalizedPhone.length >= 10 && items.length > 0;
+    : name.trim().length >= 2 && normalizedPhone.length >= 10 && items.length > 0) && !isTableOccupied;
 
   const handleTableChange = (value: string) => {
     setSelectedTableLocal(value);
@@ -231,6 +270,7 @@ export default function CheckoutDialog({
       customerPhone: normalizedPhone,
       specialInstructions: instructions.trim(),
       consentWhatsapp: consent,
+      arrivingAt: arriveAt || undefined,
     });
   };
 
@@ -245,6 +285,9 @@ export default function CheckoutDialog({
               <span className="text-orange-500 font-medium">
                 • Table: {tables.find(t => t.id === selectedTableLocal)?.table_number || selectedTableLocal}
               </span>
+            )}
+            {isWaiterMode && selectedTableLocal !== 'TAKEAWAY' && selectedTableReservationHint && (
+              <span className="text-amber-600 font-medium"> • {selectedTableReservationHint}</span>
             )}
             {selectedTableLocal === 'TAKEAWAY' && (
               <span className="text-blue-500 font-medium">• Takeaway</span>
@@ -288,16 +331,46 @@ export default function CheckoutDialog({
                           <span>Takeaway</span>
                         </div>
                       </SelectItem>
-                      {tables.filter((t: any) => t.is_active !== false).map((table: any) => (
-                        <SelectItem key={table.id} value={table.id} className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <span>🪑</span>
-                            <span>Table {table.table_number} {table.hall?.name ? `(${table.hall.name})` : ''}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {tables.filter((t: any) => t.is_active !== false).map((table: any) => {
+                        const isOccupied = occupiedTableIds?.has(table.id);
+                        return (
+                          <SelectItem 
+                            key={table.id} 
+                            value={table.id} 
+                            disabled={isOccupied}
+                            className={cn(
+                              "font-medium",
+                              isOccupied && "opacity-50 grayscale cursor-not-allowed bg-slate-50"
+                            )}
+                          >
+                            <div className="flex items-center justify-between w-full gap-2">
+                              <div className="flex items-center gap-2">
+                                <span>{isOccupied ? "🔴" : "🪑"}</span>
+                                <span>
+                                  Table {table.table_number} {table.hall?.name ? `(${table.hall.name})` : ''}
+                                </span>
+                              </div>
+                              {isOccupied && (
+                                <Badge variant="outline" className="text-[9px] font-bold text-rose-500 border-rose-200 bg-rose-50 ml-auto">
+                                  OCCUPIED
+                                </Badge>
+                              )}
+                              {!isOccupied && formatTableReservationHint(table) && (
+                                <span className="text-[10px] text-amber-600">
+                                  • {formatTableReservationHint(table)}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  {selectedTableLocal !== "TAKEAWAY" && selectedTableReservationHint && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                      {selectedTableReservationHint}. Order is allowed, but confirm with guest.
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -316,6 +389,38 @@ export default function CheckoutDialog({
                   I consent to receive WhatsApp updates about my order
                 </label>
               </div>
+
+              {/* Date & Time Selection (only for staff/waiter mode) */}
+              {isWaiterMode && (
+                <div className="space-y-2 pt-2">
+                  <label className="text-sm font-bold flex items-center gap-2 text-slate-700">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Schedule for Later? (Optional)
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="datetime-local"
+                      value={arriveAt}
+                      onChange={(e) => setArriveAt(e.target.value)}
+                      className="h-11 rounded-xl border-slate-200 bg-white focus:ring-primary/20 shadow-sm font-semibold pl-10"
+                    />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                      <Clock className="h-4 w-4 text-slate-400" />
+                    </div>
+                  </div>
+                  {arriveAt && (
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-wider pl-1">
+                      Scheduled: {new Date(arriveAt).toLocaleString([], {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

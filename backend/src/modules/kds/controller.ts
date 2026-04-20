@@ -90,7 +90,7 @@ export async function getOrder(
   try {
     const { tenantId, allowedRestaurantIds } = req.user!;
     const restaurantId = req.restaurantId;
-    const orderId = req.params.id;
+    const orderId = typeof req.params.id === "string" ? req.params.id : undefined;
 
     if (!restaurantId) {
       return next(
@@ -101,6 +101,12 @@ export async function getOrder(
     if (!allowedRestaurantIds.includes(restaurantId)) {
       return next(
         new AppError("FORBIDDEN", "Access denied to this restaurant", 403)
+      );
+    }
+
+    if (!orderId) {
+      return next(
+        new AppError("VALIDATION_ERROR", "Order ID is required", 400)
       );
     }
 

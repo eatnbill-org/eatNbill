@@ -20,10 +20,15 @@ import {
     Clock,
     UtensilsCrossed,
     Check,
+    Tag,
+    Search,
+    CalendarClock
 } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
+import { useCategoriesStore } from "@/stores/categories";
+import { useProductsStore } from "@/stores/products";
 
 // Relative time helper
 function timeAgo(dateStr: string): string {
@@ -34,6 +39,24 @@ function timeAgo(dateStr: string): string {
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function formatArriveAt(arriveAtStr?: string | null) {
+    if (!arriveAtStr) return null;
+    try {
+        const date = new Date(arriveAtStr);
+        const now = new Date();
+        const isToday = date.getDate() === now.getDate() &&
+            date.getMonth() === now.getMonth() &&
+            date.getFullYear() === now.getFullYear();
+
+        if (isToday) {
+            return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        return date.toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return arriveAtStr;
+    }
 }
 
 // Status configuration with unique card accent colors
@@ -76,14 +99,25 @@ export default function HeadOrdersPage() {
     const [cancelDialogOpen, setCancelDialogOpen] = React.useState(false);
     const [orderToCancel, setOrderToCancel] = React.useState<any | null>(null);
     const [cancelReason, setCancelReason] = React.useState("");
+    const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
+    const [localSearch, setLocalSearch] = React.useState("");
 
     // Order Details Dialog State
     const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
 
     // Search state from layout context
     const { headerSearch } = useOutletContext<{ headerSearch: string }>();
+    // Categories & Products stores for category filter
+    const { categories, fetchCategories } = useCategoriesStore();
+    const { products, fetchProducts } = useProductsStore();
 
     const { restaurant } = useHeadAuth();
+
+    // Fetch categories & products on mount
+    React.useEffect(() => {
+        fetchCategories();
+        fetchProducts();
+    }, []);
 
     // Subscribe to realtime updates
     React.useEffect(() => {
@@ -131,6 +165,22 @@ export default function HeadOrdersPage() {
         []
     );
 
+    // Build maps for fast lookup
+    const { categoryMap, categoryIdToNameMap } = React.useMemo(() => {
+        const cMap: Record<string, string | null> = {};
+        const nMap: Record<string, string> = {};
+
+        products.forEach((p) => {
+            cMap[p.id] = p.category_id;
+        });
+
+        categories.forEach((c) => {
+            nMap[c.id] = c.name;
+        });
+
+        return { categoryMap: cMap, categoryIdToNameMap: nMap };
+    }, [products, categories]);
+
     // Filter orders
     const filteredOrders = React.useMemo(() => {
         let result = orders;
@@ -140,16 +190,38 @@ export default function HeadOrdersPage() {
             result = result.filter((o: any) => o.status === statusFilter);
         }
 
-        // Search Filter
-        if (headerSearch.trim()) {
-            const q = headerSearch.toLowerCase();
+        // Category Filter
+        if (selectedCategoryId) {
             result = result.filter((o: any) =>
-                o.order_number?.toLowerCase().includes(q) ||
-                o.customer_name?.toLowerCase().includes(q) ||
-                o.customer_phone?.includes(q) ||
-                getOrderTableNumber(o)?.toLowerCase().includes(q) ||
-                o.total_amount?.toString().includes(q)
+                o.items?.some((item: any) =>
+                    categoryMap[item.product_id] === selectedCategoryId
+                )
             );
+        }
+
+        // Combined Search Filter (layout headerSearch + local search)
+        const searchQuery = (headerSearch || localSearch).trim();
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter((o: any) => {
+                // 1. Basic Order Info matches
+                const matchesOrderInfo =
+                    (o.order_number?.toString().toLowerCase() || '').includes(q) ||
+                    (o.customer_name?.toLowerCase() || '').includes(q) ||
+                    (o.customer_phone || '').includes(q) ||
+                    (getOrderTableNumber(o)?.toString().toLowerCase() || '').includes(q) ||
+                    (o.total_amount?.toString() || '').includes(q);
+
+                if (matchesOrderInfo) return true;
+
+                // 2. Check Item Names or Category Names
+                return o.items?.some((item: any) => {
+                    const itemName = (item.name_snapshot?.toLowerCase() || '').includes(q);
+                    const catId = categoryMap[item.product_id];
+                    const catName = (categoryIdToNameMap[catId || '']?.toLowerCase() || '').includes(q);
+                    return itemName || catName;
+                });
+            });
         }
 
         // Sort by updated_at descending (new/updated orders first)
@@ -159,7 +231,7 @@ export default function HeadOrdersPage() {
 
         // ✅ Cap to 50 items for performance
         return sorted.slice(0, 50);
-    }, [orders, statusFilter, headerSearch, getOrderTableNumber]);
+    }, [orders, statusFilter, selectedCategoryId, headerSearch, localSearch, getOrderTableNumber, categoryMap, categoryIdToNameMap]);
 
     // Active orders count
     const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
@@ -260,13 +332,40 @@ export default function HeadOrdersPage() {
         cancelOrderMutation.mutate({ orderId: orderToCancel.id, reason: cancelReason.trim() });
     }, [cancelOrderMutation, cancelReason, orderToCancel]);
 
+    // Active categories only (that have products)
+    const activeCategories = React.useMemo(() =>
+        categories.filter((c) => c.is_active),
+        [categories]
+    );
 
     return (
-        <div className="space-y-4 max-w-7xl mx-auto">
+        <div className="space-y-1 max-w-7xl mx-auto">
 
+            {/* Search Bar */}
+            {/* {!headerSearch && (
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Search by customer, item name, phone, order#..."
+                        value={localSearch}
+                        onChange={(e) => setLocalSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm transition-all"
+                    />
+                    {localSearch && (
+                        <button
+                            onClick={() => setLocalSearch('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
+            )} */}
 
-            {/* Filter Buttons Row */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* Status Filter Buttons Row */}
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+
                 <button
                     onClick={() => setStatusFilter("all")}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm ${statusFilter === "all"
@@ -290,6 +389,34 @@ export default function HeadOrdersPage() {
                     </button>
                 ))}
             </div>
+
+            {/* Category Filter Tabs */}
+            {activeCategories.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                    <button
+                        onClick={() => setSelectedCategoryId(null)}
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm ${selectedCategoryId === null
+                            ? "bg-primary text-white shadow-primary/30 shadow-md"
+                            : "bg-white text-slate-500 border border-slate-200 hover:border-primary/40 hover:text-primary"
+                            }`}
+                    >
+                        <Tag className="h-3 w-3" />
+                        All Categories
+                    </button>
+                    {activeCategories.map((cat) => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategoryId(cat.id)}
+                            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm ${selectedCategoryId === cat.id
+                                ? "bg-primary text-white shadow-primary/30 shadow-md"
+                                : "bg-white text-slate-500 border border-slate-200 hover:border-primary/40 hover:text-primary"
+                                }`}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Orders Grid */}
             {filteredOrders.length === 0 ? (
@@ -347,6 +474,12 @@ export default function HeadOrdersPage() {
                                         <span className="text-[11px] text-slate-400 font-medium">
                                             #{order.order_number}
                                         </span>
+                                        {order.arrive_at && (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 rounded-md px-1.5 py-0.5 border border-amber-100/50">
+                                                <CalendarClock className="h-3 w-3" />
+                                                {formatArriveAt(order.arrive_at)}
+                                            </span>
+                                        )}
                                         {isPaid && (
                                             <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 rounded-md px-1.5 py-0.5">
                                                 <Check className="h-2.5 w-2.5" /> Paid
@@ -457,6 +590,12 @@ export default function HeadOrdersPage() {
                                                 <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-400">
                                                     <MapPin className="h-2.5 w-2.5" />{getOrderLocationLabel(selectedOrder)}
                                                 </span>
+                                                {selectedOrder.arrive_at && (
+                                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200/50">
+                                                        <CalendarClock className="h-2.5 w-2.5" />
+                                                        {formatArriveAt(selectedOrder.arrive_at)}
+                                                    </span>
+                                                )}
                                                 {mPaid && (
                                                     <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-100 rounded px-1 py-0.5">
                                                         <Check className="h-2 w-2" /> Paid

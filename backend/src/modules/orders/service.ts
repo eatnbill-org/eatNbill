@@ -6,6 +6,7 @@ import { updateCustomerStats, updateCustomerCredit } from "../customers/reposito
 import { prisma } from "../../utils/prisma";
 import type { Prisma } from "@prisma/client";
 import { supabaseAdmin } from "../../utils/supabase";
+import { assertFinanceMutationAllowed, inferOutletIdForRestaurant } from "../restaurants/enterprise.service";
 
 // Input types
 export interface CreatePublicOrderInput {
@@ -99,6 +100,16 @@ export async function placePublicOrder(
   let orderType: OrderType = input.source === "QR" ? "DINE_IN" : "TAKEAWAY";
 
   if (table) {
+    // 🔴 Prevent double-booking: Check for existing open order on this table
+    const existingOrder = await repository.findOpenOrderByTable(restaurant.tenant_id, restaurant.id, table.id);
+    if (existingOrder) {
+      throw new AppError(
+        "CONFLICT", 
+        `Table ${table.table_number} is already occupied. Please add items to existing order #${existingOrder.order_number}.`, 
+        409
+      );
+    }
+
     tableId = table.id;
     hallId = table.hall_id;
     resolvedTableNumber = table.table_number;
@@ -118,6 +129,11 @@ export async function placePublicOrder(
   const order = await repository.createOrder({
     tenant_id: restaurant.tenant_id,
     restaurant_id: restaurant.id,
+    outlet_id: await inferOutletIdForRestaurant(
+      restaurant.tenant_id,
+      restaurant.id,
+      (table as any)?.outlet_id ?? undefined
+    ),
     table_id: tableId,
     hall_id: hallId,
     customer_id: customer.id,
@@ -204,6 +220,17 @@ export async function createInternalOrder(
     if (!table) {
       throw new AppError("VALIDATION_ERROR", "Valid table is required for DINE_IN orders", 400);
     }
+    
+    // 🔴 Prevent double-booking: Check for existing open order on this table
+    const existingOrder = await repository.findOpenOrderByTable(tenantId, restaurantId, table.id);
+    if (existingOrder) {
+      throw new AppError(
+        "CONFLICT", 
+        `Table ${table.table_number} is already occupied by order #${existingOrder.order_number}.`, 
+        409
+      );
+    }
+
     tableId = table.id;
     hallId = table.hall_id;
   } else {
@@ -229,6 +256,11 @@ export async function createInternalOrder(
   const order = await repository.createOrder({
     tenant_id: tenantId,
     restaurant_id: restaurantId,
+    outlet_id: await inferOutletIdForRestaurant(
+      tenantId,
+      restaurantId,
+      (table as any)?.outlet_id ?? undefined
+    ),
     table_id: tableId,
     hall_id: hallId,
     waiter_id: staff?.id ?? null,
@@ -564,6 +596,11 @@ export async function updatePayment(
     throw new AppError("VALIDATION_ERROR", "Cannot update payment for cancelled order", 400);
   }
 
+  await assertFinanceMutationAllowed({
+    outletId: order.outlet_id ?? null,
+    businessDate: order.paid_at ?? order.placed_at,
+  });
+
   const updated = await repository.updateOrderPayment(orderId, {
     payment_method: data.payment_method,
     payment_status: data.payment_status,
@@ -638,6 +675,11 @@ export async function deleteOrder(tenantId: string, orderId: string) {
       console.error("Failed to recover customer credit on deletion:", error);
     }
   }
+
+  await assertFinanceMutationAllowed({
+    outletId: order.outlet_id ?? null,
+    businessDate: order.paid_at ?? order.placed_at,
+  });
 
   const deleted = await repository.deleteOrder(tenantId, orderId);
   return deleted;
@@ -735,6 +777,12 @@ export async function settleCredit(
   if (actualSettleAmount <= 0) {
     return customer;
   }
+
+  const defaultOutletId = await inferOutletIdForRestaurant(tenantId, restaurantId, null);
+  await assertFinanceMutationAllowed({
+    outletId: defaultOutletId,
+    businessDate: new Date(),
+  });
 
   // Find oldest pending credit orders to mark as paid
   const pendingOrders = await repository.findPendingCreditOrders(tenantId, restaurantId, customerId);

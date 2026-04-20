@@ -16,7 +16,7 @@ import { useCategoriesStore } from '@/stores/categories';
 import { useTableStore } from '@/stores/tables';
 import type { CreateOrderPayload } from '@/types/order';
 import type { Product } from '@/types/product';
-import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check } from 'lucide-react';
+import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check, CalendarDays, Utensils } from 'lucide-react';
 import { formatINR } from '@/lib/format';
 import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,7 +25,8 @@ import { TableSkeleton } from '@/components/ui/skeleton';
 
 // CSS override for time picker aesthetics
 const timePickerStyles = `
-  input[type="time"]::-webkit-calendar-picker-indicator {
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     background: transparent;
     bottom: 0;
     color: transparent;
@@ -57,13 +58,14 @@ import { printKitchenSlip } from '@/lib/print-utils';
 import { Label } from 'recharts';
 
 export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrderDialogProps) {
-  const { createOrder, creating, orders } = useAdminOrdersStore();
+  const { createOrder, creating, orders, error: storeError, clearError } = useAdminOrdersStore();
   const { products, fetchProducts, loading: productsLoading } = useProductsStore();
   const { categories, fetchCategories, activeCategories } = useCategoriesStore();
   const { tables, fetchTables } = useTableStore();
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [tableId, setTableId] = useState('');
   const [tableNumber, setTableNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [arriveAt, setArriveAt] = useState('');
@@ -97,7 +99,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       if (categories.length === 0) fetchCategories();
       if (tables.length === 0) fetchTables();
     }
-  }, [open, products.length, categories.length, tables.length, fetchProducts, fetchCategories, fetchTables]);
+  }, [open, products.length, categories.length, tables.length, fetchProducts, fetchCategories, fetchTables, clearError]);
 
   const activeCats = activeCategories();
 
@@ -107,12 +109,11 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [products, selectedCategoryId, searchQuery]);
 
-  // ✅ FIXED: Use correct ACTIVE status instead of old statuses
-  const tablesWithOrders = new Set(
+  const tablesWithOrders = new Set<string>(
     orders
       .filter(order => order.status === 'ACTIVE')
-      .map(order => order.table_number)
-      .filter(Boolean)
+      .map(order => order.table_id)
+      .filter(Boolean) as string[]
   );
 
   const addItem = (product: Product) => {
@@ -159,14 +160,15 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
     const payload: CreateOrderPayload = {
       customer_name: normalizedName || undefined,
       customer_phone: normalizedPhone || undefined,
+      table_id: tableId || undefined,
       table_number: tableNumber || undefined,
       notes: notes || undefined,
       arrive_at: arriveAt || undefined,
-      order_type: tableNumber ? 'DINE_IN' : 'TAKEAWAY',
+      order_type: tableId ? 'DINE_IN' : 'TAKEAWAY',
       items: orderItems.map(item => ({
         product_id: item.product_id,
         quantity: item.quantity,
-        unit_price: item.unit_price,
+        notes: item.notes,
       })),
     };
 
@@ -174,6 +176,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
     if (order) {
       setCustomerName('');
       setCustomerPhone('');
+      setTableId('');
       setTableNumber('');
       setNotes('');
       setArriveAt('');
@@ -408,27 +411,55 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative group">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors z-10" />
-                      <Select value={tableNumber} onValueChange={setTableNumber}>
-                        <SelectTrigger className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary rounded-xl font-bold px-9 text-xs transition-all">
+                      <Utensils className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                      <Select
+                        value={tableId}
+                        onValueChange={(id) => {
+                          setTableId(id);
+                          const table = tables.find(t => t.id === id);
+                          if (table) setTableNumber(table.table_number);
+                        }}
+                      >
+                        <SelectTrigger className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] focus:shadow-[0_8px_20px_-6px_rgba(16,185,129,0.15)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary transition-all rounded-xl font-bold px-9 text-xs">
                           <SelectValue placeholder="Table" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-none shadow-2xl p-1">
-                          {tables.filter(t => t.is_active).map(table => (
-                            <SelectItem key={table.id} value={table.table_number} disabled={tablesWithOrders.has(table.table_number)} className="rounded-xl py-2.5 font-bold text-xs">
-                              Table {table.table_number} {tablesWithOrders.has(table.table_number) ? '• Busy' : ''}
-                            </SelectItem>
-                          ))}
+                        <SelectContent className="rounded-xl border-slate-100 shadow-xl p-1">
+                          {tables.map(table => {
+                            const isOccupied = tablesWithOrders.has(table.id);
+                            return (
+                              <SelectItem
+                                key={table.id}
+                                value={table.id}
+                                disabled={isOccupied}
+                                className={cn(
+                                  "rounded-lg font-bold text-xs transition-all",
+                                  isOccupied && "opacity-50 grayscale cursor-not-allowed bg-slate-50"
+                                )}
+                              >
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span>{isOccupied ? "🔴" : "🪑"}</span>
+                                    <span>Table {table.table_number}</span>
+                                  </div>
+                                  {isOccupied && (
+                                    <Badge variant="outline" className="text-[8px] font-black text-rose-500 border-rose-200 bg-rose-50 py-0 h-4">
+                                      OCCUPIED
+                                    </Badge>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="relative group">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors z-20 pointer-events-none" />
+                      <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors z-20 pointer-events-none" />
                       <Input
-                        type="time"
+                        type="datetime-local"
                         value={arriveAt}
                         onChange={e => setArriveAt(e.target.value)}
-                        className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary rounded-xl font-bold px-10 text-xs transition-all"
+                        className="h-11 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary rounded-xl font-bold px-10 text-[10px] sm:text-xs transition-all"
                       />
                     </div>
                   </div>
@@ -541,6 +572,12 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     <div className="absolute top-0 left-[-150%] w-[100%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-30deg] group-hover:left-[150%] transition-all duration-1000 ease-in-out pointer-events-none" />
                   )}
                 </Button>
+
+                {storeError && (
+                  <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-widest text-center animate-shake">
+                    {storeError.message}
+                  </div>
+                )}
 
                 {/* Secondary Help Text */}
                 <p className="text-center text-[9px] font-bold text-slate-400 mt-4 uppercase tracking-widest opacity-60">

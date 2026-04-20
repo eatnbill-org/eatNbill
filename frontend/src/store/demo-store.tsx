@@ -312,4 +312,4 @@ export function DemoStoreProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useDemoStore() { return React.useContext(DemoStoreContext); }
-export function makeOrderId() { return `ORD-${Math.floor(Math.random() * 10000)}`; }
+export function makeOrderId() { return `#ord-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`; }

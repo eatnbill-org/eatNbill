@@ -1,5 +1,5 @@
 import { prisma } from '../../utils/prisma';
-import type { Prisma, Role } from '@prisma/client';
+import type { Prisma, Role, ReservationStatus } from '@prisma/client';
 import { generateUniqueRestaurantSlug } from '../../utils/slug';
 
 export async function createRestaurant(
@@ -278,33 +278,38 @@ export async function deleteRestaurantUser(restaurantUserId: string) {
 export async function listHalls(restaurantId: string) {
   return prisma.restaurantHall.findMany({
     where: { restaurant_id: restaurantId },
+    include: { outlet: true },
     orderBy: { created_at: 'asc' },
   });
 }
 
 export async function createHall(
   restaurantId: string,
-  data: { name: string; is_ac?: boolean }
+  data: { name: string; is_ac?: boolean; outlet_id?: string }
 ) {
   return prisma.restaurantHall.create({
     data: {
       restaurant_id: restaurantId,
+      outlet_id: data.outlet_id ?? null,
       name: data.name,
       is_ac: data.is_ac ?? false,
     },
+    include: { outlet: true },
   });
 }
 
 export async function updateHall(
   hallId: string,
-  data: { name?: string; is_ac?: boolean }
+  data: { name?: string; is_ac?: boolean; outlet_id?: string }
 ) {
   return prisma.restaurantHall.update({
     where: { id: hallId },
     data: {
       name: data.name,
       is_ac: data.is_ac,
+      outlet_id: data.outlet_id ?? undefined,
     },
+    include: { outlet: true },
   });
 }
 
@@ -319,6 +324,7 @@ export async function listTables(restaurantId: string) {
     where: { restaurant_id: restaurantId },
     include: {
       hall: true,
+      outlet: true,
       qr_code: true,
     },
     orderBy: { created_at: 'asc' },
@@ -327,17 +333,18 @@ export async function listTables(restaurantId: string) {
 
 export async function createTable(
   restaurantId: string,
-  data: { hall_id: string; table_number: string; seats: number; is_active?: boolean }
+  data: { hall_id: string; outlet_id?: string; table_number: string; seats: number; is_active?: boolean }
 ) {
   return prisma.restaurantTable.create({
     data: {
       restaurant_id: restaurantId,
       hall_id: data.hall_id,
+      outlet_id: data.outlet_id ?? null,
       table_number: data.table_number,
       seats: data.seats,
       is_active: data.is_active ?? true,
     },
-    include: { hall: true },
+    include: { hall: true, outlet: true },
   });
 }
 
@@ -364,17 +371,18 @@ export async function findExistingTableNumbers(
 
 export async function updateTable(
   tableId: string,
-  data: { hall_id?: string; table_number?: string; seats?: number; is_active?: boolean }
+  data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean }
 ) {
   return prisma.restaurantTable.update({
     where: { id: tableId },
     data: {
       hall_id: data.hall_id,
+      outlet_id: data.outlet_id ?? undefined,
       table_number: data.table_number,
       seats: data.seats,
       is_active: data.is_active,
     },
-    include: { hall: true },
+    include: { hall: true, outlet: true },
   });
 }
 
@@ -396,7 +404,7 @@ export async function hasActiveDineInOrdersForTable(tableId: string) {
     where: {
       table_id: tableId,
       order_type: 'DINE_IN',
-      status: { in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED'] },
+      status: { in: ['ACTIVE'] },
     },
   });
   return count > 0;
@@ -411,8 +419,311 @@ export async function deleteTable(tableId: string) {
 export async function getTableWithHall(restaurantId: string, tableId: string) {
   return prisma.restaurantTable.findFirst({
     where: { id: tableId, restaurant_id: restaurantId },
-    include: { hall: true, restaurant: true },
+    include: { hall: true, outlet: true, restaurant: true },
   });
+}
+
+export async function listTableReservations(params: {
+  restaurantId: string;
+  from?: Date;
+  to?: Date;
+  status?: ReservationStatus;
+  tableId?: string;
+}) {
+  return prisma.tableReservation.findMany({
+    where: {
+      restaurant_id: params.restaurantId,
+      ...(params.status ? { status: params.status } : {}),
+      ...(params.tableId ? { table_id: params.tableId } : {}),
+      ...((params.from || params.to)
+        ? {
+            reserved_from: {
+              ...(params.from ? { gte: params.from } : {}),
+              ...(params.to ? { lte: params.to } : {}),
+            },
+          }
+        : {}),
+    },
+    include: {
+      table: {
+        include: {
+          hall: true,
+          outlet: true,
+        },
+      },
+      outlet: true,
+    },
+    orderBy: [
+      { reserved_from: 'asc' },
+      { created_at: 'asc' },
+    ],
+  });
+}
+
+export async function getTableReservationById(restaurantId: string, reservationId: string) {
+  return prisma.tableReservation.findFirst({
+    where: {
+      id: reservationId,
+      restaurant_id: restaurantId,
+    },
+    include: {
+      table: {
+        include: { hall: true, outlet: true },
+      },
+      outlet: true,
+    },
+  });
+}
+
+export async function createTableReservation(data: {
+  tenant_id: string;
+  restaurant_id: string;
+  outlet_id?: string | null;
+  table_id: string;
+  customer_name: string;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  party_size: number;
+  reserved_from: Date;
+  reserved_to: Date;
+  notes?: string | null;
+  status?: ReservationStatus;
+  created_by_user_id?: string | null;
+}) {
+  return prisma.tableReservation.create({
+    data: {
+      tenant_id: data.tenant_id,
+      restaurant_id: data.restaurant_id,
+      outlet_id: data.outlet_id ?? null,
+      table_id: data.table_id,
+      customer_name: data.customer_name,
+      customer_phone: data.customer_phone ?? null,
+      customer_email: data.customer_email ?? null,
+      party_size: data.party_size,
+      reserved_from: data.reserved_from,
+      reserved_to: data.reserved_to,
+      notes: data.notes ?? null,
+      status: data.status ?? 'BOOKED',
+      created_by_user_id: data.created_by_user_id ?? null,
+    },
+    include: {
+      table: {
+        include: { hall: true, outlet: true },
+      },
+      outlet: true,
+    },
+  });
+}
+
+export async function updateTableReservation(reservationId: string, data: {
+  table_id?: string;
+  outlet_id?: string | null;
+  customer_name?: string;
+  customer_phone?: string | null;
+  customer_email?: string | null;
+  party_size?: number;
+  reserved_from?: Date;
+  reserved_to?: Date;
+  notes?: string | null;
+  status?: ReservationStatus;
+}) {
+  return prisma.tableReservation.update({
+    where: { id: reservationId },
+    data: {
+      ...(data.table_id ? { table_id: data.table_id } : {}),
+      ...(data.outlet_id !== undefined ? { outlet_id: data.outlet_id } : {}),
+      ...(data.customer_name ? { customer_name: data.customer_name } : {}),
+      ...(data.customer_phone !== undefined ? { customer_phone: data.customer_phone } : {}),
+      ...(data.customer_email !== undefined ? { customer_email: data.customer_email } : {}),
+      ...(data.party_size ? { party_size: data.party_size } : {}),
+      ...(data.reserved_from ? { reserved_from: data.reserved_from } : {}),
+      ...(data.reserved_to ? { reserved_to: data.reserved_to } : {}),
+      ...(data.notes !== undefined ? { notes: data.notes } : {}),
+      ...(data.status ? { status: data.status } : {}),
+      ...(data.status === 'CANCELLED' ? { cancelled_at: new Date() } : {}),
+      ...(data.status && data.status !== 'CANCELLED' ? { cancelled_at: null } : {}),
+    },
+    include: {
+      table: {
+        include: { hall: true, outlet: true },
+      },
+      outlet: true,
+    },
+  });
+}
+
+export async function deleteTableReservation(reservationId: string) {
+  return prisma.tableReservation.delete({
+    where: { id: reservationId },
+  });
+}
+
+export async function findReservationConflict(params: {
+  restaurantId: string;
+  tableId: string;
+  reservedFrom: Date;
+  reservedTo: Date;
+  excludeReservationId?: string;
+}) {
+  return prisma.tableReservation.findFirst({
+    where: {
+      restaurant_id: params.restaurantId,
+      table_id: params.tableId,
+      status: { in: ['BOOKED', 'SEATED'] },
+      ...(params.excludeReservationId ? { id: { not: params.excludeReservationId } } : {}),
+      reserved_from: { lt: params.reservedTo },
+      reserved_to: { gt: params.reservedFrom },
+    },
+    select: {
+      id: true,
+      customer_name: true,
+      reserved_from: true,
+      reserved_to: true,
+      status: true,
+    },
+  });
+}
+
+export async function getReservationContextForTables(restaurantId: string, tableIds: string[]) {
+  if (tableIds.length === 0) return [];
+
+  const now = new Date();
+  return prisma.tableReservation.findMany({
+    where: {
+      restaurant_id: restaurantId,
+      table_id: { in: tableIds },
+      status: { in: ['BOOKED', 'SEATED'] },
+      reserved_to: { gte: now },
+    },
+    select: {
+      id: true,
+      table_id: true,
+      outlet_id: true,
+      customer_name: true,
+      customer_phone: true,
+      customer_email: true,
+      party_size: true,
+      reserved_from: true,
+      reserved_to: true,
+      notes: true,
+      status: true,
+      created_at: true,
+      updated_at: true,
+    },
+    orderBy: {
+      reserved_from: 'asc',
+    },
+  });
+}
+
+export async function listTableAvailability(restaurantId: string, startAt: Date, endAt: Date) {
+  const [tables, conflicts] = await Promise.all([
+    prisma.restaurantTable.findMany({
+      where: {
+        restaurant_id: restaurantId,
+        is_active: true,
+      },
+      include: {
+        hall: true,
+        outlet: true,
+        qr_code: true,
+      },
+      orderBy: { created_at: 'asc' },
+    }),
+    prisma.tableReservation.findMany({
+      where: {
+        restaurant_id: restaurantId,
+        status: { in: ['BOOKED', 'SEATED'] },
+        reserved_from: { lt: endAt },
+        reserved_to: { gt: startAt },
+      },
+      select: {
+        id: true,
+        table_id: true,
+        outlet_id: true,
+        customer_name: true,
+        customer_phone: true,
+        customer_email: true,
+        party_size: true,
+        reserved_from: true,
+        reserved_to: true,
+        status: true,
+      },
+      orderBy: { reserved_from: 'asc' },
+    }),
+  ]);
+
+  const conflictsByTable = conflicts.reduce<Record<string, typeof conflicts>>((acc, reservation) => {
+    const key = reservation.table_id;
+    if (!acc[key]) acc[key] = [];
+    acc[key]!.push(reservation);
+    return acc;
+  }, {});
+
+  return tables.map((table) => ({
+    ...table,
+    is_available: !conflictsByTable[table.id]?.length,
+    conflicting_reservations: conflictsByTable[table.id] ?? [],
+  }));
+}
+
+export async function listReservationAlerts(restaurantId: string, from: Date, to: Date) {
+  const alerts = await prisma.tableReservation.findMany({
+    where: {
+      restaurant_id: restaurantId,
+      status: { in: ['BOOKED', 'SEATED'] },
+      OR: [
+        {
+          reserved_from: {
+            gte: from,
+            lte: to,
+          },
+        },
+        {
+          reserved_from: {
+            gte: new Date(from.getTime() + 10 * 60 * 1000),
+            lte: new Date(to.getTime() + 10 * 60 * 1000),
+          },
+        },
+      ],
+    },
+    include: {
+      table: {
+        include: { hall: true, outlet: true },
+      },
+      outlet: true,
+    },
+    orderBy: { reserved_from: 'asc' },
+  });
+
+  const dueAlerts: Array<{
+    event_type: 'T_MINUS_10' | 'START';
+    reservation: typeof alerts[number];
+    event_at: Date;
+  }> = [];
+
+  for (const reservation of alerts) {
+    const startAt = reservation.reserved_from;
+    const tMinus10At = new Date(startAt.getTime() - 10 * 60 * 1000);
+
+    if (tMinus10At >= from && tMinus10At <= to) {
+      dueAlerts.push({
+        event_type: 'T_MINUS_10',
+        reservation,
+        event_at: tMinus10At,
+      });
+    }
+
+    if (startAt >= from && startAt <= to) {
+      dueAlerts.push({
+        event_type: 'START',
+        reservation,
+        event_at: startAt,
+      });
+    }
+  }
+
+  return dueAlerts.sort((a, b) => a.event_at.getTime() - b.event_at.getTime());
 }
 
 export async function createAuditLog(

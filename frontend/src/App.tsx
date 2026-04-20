@@ -26,12 +26,16 @@ const HeadOrdersPage = lazy(() => import("./pages/head/HeadOrdersPage"));
 const HeadStockPage = lazy(() => import("./pages/head/HeadStockPage"));
 const HeadMenuPage = lazy(() => import("./pages/head/HeadMenuPage"));
 const HeadTablesPage = lazy(() => import("./pages/head/HeadTablesPage"));
+const HeadSettingsPage = lazy(() => import("./pages/head/HeadSettingsPage"));
 const ManagerLayoutPage = lazy(() => import("./pages/manager/ManagerLayout"));
 const ManagerDashboardPage = lazy(() => import("./pages/manager/ManagerDashboardPage"));
 const ManagerOrdersPage = lazy(() => import("./pages/manager/ManagerOrdersPage"));
 const ManagerStockPage = lazy(() => import("./pages/manager/ManagerStockPage"));
 const ManagerCustomersPage = lazy(() => import("./pages/manager/ManagerCustomersPage"));
 const ManagerStaffPage = lazy(() => import("./pages/manager/ManagerStaffPage"));
+const ManagerSettingsPage = lazy(() => import("./pages/manager/ManagerSettingsPage"));
+const ManagerDayEndPage = lazy(() => import("./pages/manager/ManagerDayEndPage"));
+const ManagerExportCenterPage = lazy(() => import("./pages/manager/ManagerExportCenterPage"));
 const AdminLayoutPage = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboardPage = lazy(() => import("./pages/admin/dashboard/AdminDashboardPage"));
 const AdminCustomersPage = lazy(() => import("./pages/admin/customer/AdminCustomersPage"));
@@ -44,6 +48,8 @@ const AdminSideSettings = lazy(() => import("./pages/admin/adminSettings/AdminSi
 const CompanyProfilePage = lazy(() => import("./pages/admin/company/CompanyProfilePage"));
 const TablePage = lazy(() => import("./pages/admin/company/TablePage"));
 const StaffPage = lazy(() => import("./pages/admin/company/staff/StaffPage"));
+const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage"));
+const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
 const RestaurantSlugDebugPage = lazy(() => import("./pages/admin/RestaurantSlugDebugPage"));
 const DebugAuthPage = lazy(() => import("./pages/admin/DebugAuthPage"));
 const CustomerEntry = lazy(() => import("./pages/admin/customerSettings/CustomerEntry"));
@@ -85,6 +91,7 @@ const App = () => (
                 <Route path="menu/:orderId" element={<HeadMenuPage />} />
                 <Route path="tables" element={<HeadTablesPage />} />
                 <Route path="stock" element={<HeadStockPage />} />
+                <Route path="settings" element={<HeadSettingsPage />} />
             </Route>
             {/* BACKWARD COMPATIBILITY: Redirect /staff and /waiter to /head */}
             <Route path="/staff" element={<Navigate to="/head/orders" replace />} />
@@ -92,10 +99,12 @@ const App = () => (
             <Route path="/staff/menu" element={<Navigate to="/head/menu" replace />} />
             <Route path="/staff/menu/:orderId" element={<Navigate to="/head/menu" replace />} />
             <Route path="/staff/stock" element={<Navigate to="/head/stock" replace />} />
+            <Route path="/staff/settings" element={<Navigate to="/head/settings" replace />} />
             <Route path="/waiter" element={<Navigate to="/head/orders" replace />} />
             <Route path="/waiter/orders" element={<Navigate to="/head/orders" replace />} />
             <Route path="/waiter/menu" element={<Navigate to="/head/menu" replace />} />
             <Route path="/waiter/stock" element={<Navigate to="/head/stock" replace />} />
+            <Route path="/waiter/settings" element={<Navigate to="/head/settings" replace />} />
 
             {/* RESTAURANT SETUP */}
             <Route path="/restaurant/setup" element={withRoleSuspense("auth", <AuthLayoutShell><RestaurantSetupPage /></AuthLayoutShell>)} />
@@ -117,6 +126,8 @@ const App = () => (
                 <Route path="company/profile" element={<CompanyProfilePage />} />
                 <Route path="company/tables" element={<TablePage />} />
                 <Route path="company/staff" element={<StaffPage />} />
+                <Route path="day-end" element={<AdminDayEndPage />} />
+                <Route path="exports" element={<AdminExportCenterPage />} />
 
                 {/* DEBUG: Restaurant Slug */}
                 <Route path="debug/slug" element={<RestaurantSlugDebugPage />} />
@@ -141,6 +152,9 @@ const App = () => (
                 <Route path="company/profile" element={<CompanyProfilePage />} />
                 <Route path="company/tables" element={<TablePage />} />
                 <Route path="company/staff" element={<StaffPage />} />
+                <Route path="settings" element={<ManagerSettingsPage />} />
+                <Route path="day-end" element={<ManagerDayEndPage />} />
+                <Route path="exports" element={<ManagerExportCenterPage />} />
             </Route>
 
             <Route path="*" element={withRoleSuspense("customer", <CustomerLayoutShell><NotFound /></CustomerLayoutShell>)} />

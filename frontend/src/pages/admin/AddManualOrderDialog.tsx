@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useDemoStore, makeOrderId } from "@/store/demo-store";
 import type { OrderItem, OrderSource, Product } from "@/types/demo";
 import { clamp, formatINR } from "@/lib/format";
-import { Search, ImageOff } from "lucide-react";
+import { Search, ImageOff, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -117,13 +117,17 @@ export default function AddManualOrderDialog({
                 </Select>
               </div>
               {/* Arrive At Input */}
-              <div className="space-y-2">
-                <Label>Arrive At (Optional)</Label>
-                <Input
-                  type="time"
-                  value={arriveAt}
-                  onChange={(e) => setArriveAt(e.target.value)}
-                />
+              <div className="space-y-2 relative">
+                <Label>Arrive At (Date & Time)</Label>
+                <div className="relative">
+                  <Input
+                    type="datetime-local"
+                    value={arriveAt}
+                    onChange={(e) => setArriveAt(e.target.value)}
+                    className="pl-10"
+                  />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
             </div>
 

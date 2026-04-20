@@ -268,6 +268,7 @@ export async function createOrder(payload: {
     table_id?: string;
     hall_id?: string;
     notes?: string;
+    arrive_at?: string;
 }) {
     const token = getStaffToken();
     const restaurantId = getRestaurantId();

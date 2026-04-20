@@ -11,6 +11,7 @@ const ACTIVE_DINE_IN_STATUSES: OrderStatus[] = ["ACTIVE"];
 export interface CreateOrderData {
   tenant_id: string;
   restaurant_id: string;
+  outlet_id?: string | null;
   table_id?: string | null;
   hall_id?: string | null;
   waiter_id?: string | null;
@@ -35,6 +36,7 @@ export interface OrderWithItems {
   id: string;
   tenant_id: string;
   restaurant_id: string;
+  outlet_id: string | null;
   table_id: string | null;
   hall_id: string | null;
   customer_id: string | null;
@@ -108,33 +110,30 @@ export async function findProductsByIds(
 }
 
 /**
- * Generate a random non-repeating alphanumeric order ID
- * Format: #ORD-[RANDOM][SAME-DIGIT-TWICE]
- * Example: #ORD-A122, #ORD-5V99
+ * Generate a unique numeric order ID for a restaurant
+ * Format: #ord-[4-DIGITS]
+ * Example: #ord-4489
  */
-async function generateAlphanumericOrderId(
-  tx: Prisma.TransactionClient
+async function generateNumericOrderId(
+  tx: Prisma.TransactionClient,
+  restaurantId: string
 ): Promise<string> {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed similar looking chars like I, O, 0, 1
-  const digits = "0123456789";
-
   let orderId = "";
   let isUnique = false;
   let attempts = 0;
 
-  while (!isUnique && attempts < 10) {
+  while (!isUnique && attempts < 50) {
     attempts++;
-    // Generate alphanumeric part (2 chars)
-    const randomPart = Array.from({ length: 2 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-    // Generate same digit twice
-    const sameDigit = digits[Math.floor(Math.random() * digits.length)] || "0";
-    const digitPart = sameDigit + sameDigit;
+    // Generate 4 random digits (0000-9999)
+    const randomDigits = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+    orderId = `#ord-${randomDigits}`;
 
-    orderId = `#ORD-${randomPart}${digitPart}`;
-
-    // Check uniqueness
+    // Check uniqueness within this restaurant
     const existing = await tx.order.findFirst({
-      where: { order_number: orderId },
+      where: {
+        order_number: orderId,
+        restaurant_id: restaurantId,
+      },
       select: { id: true },
     });
 
@@ -143,7 +142,7 @@ async function generateAlphanumericOrderId(
     }
   }
 
-  return orderId;
+  return orderId || `#ord-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
 }
 
 /**
@@ -162,7 +161,15 @@ export async function createOrder(
         restaurant_id: data.restaurant_id,
         deleted_at: null,
       },
-      select: { id: true, name: true, price: true, discount_percent: true, costprice: true },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        discount_percent: true,
+        costprice: true,
+        hsn_sac: true,
+        gst_rate_percent: true,
+      },
     });
 
     // Validate all products still exist
@@ -181,14 +188,15 @@ export async function createOrder(
       return sum + discountedPrice * item.quantity;
     }, 0);
 
-    // Generate unique random alphanumeric order ID
-    const orderNumber = await generateAlphanumericOrderId(tx);
+    // Generate unique random numeric order ID (per restaurant)
+    const orderNumber = await generateNumericOrderId(tx, data.restaurant_id);
 
     // Create order
     const order = await tx.order.create({
       data: {
         tenant_id: data.tenant_id,
         restaurant_id: data.restaurant_id,
+        outlet_id: data.outlet_id ?? null,
         table_id: data.table_id ?? null,
         hall_id: data.hall_id ?? null,
         waiter_id: data.waiter_id ?? null,
@@ -210,11 +218,19 @@ export async function createOrder(
             const product = productMap.get(item.product_id)!;
             const discount = Number(product.discount_percent || 0);
             const discountedPrice = Number(product.price) * (1 - discount / 100);
+            const taxableAmount = discountedPrice * item.quantity;
             return {
               product_id: item.product_id,
               name_snapshot: product.name,
               price_snapshot: discountedPrice,
               cost_snapshot: product.costprice ? Number(product.costprice) : null,
+              hsn_sac_snapshot: product.hsn_sac ?? null,
+              gst_rate_snapshot: product.gst_rate_percent ? Number(product.gst_rate_percent) : null,
+              taxable_amount_snapshot: taxableAmount,
+              cgst_amount_snapshot: 0,
+              sgst_amount_snapshot: 0,
+              igst_amount_snapshot: 0,
+              total_tax_snapshot: 0,
               quantity: item.quantity,
               notes: item.notes,
             };
@@ -415,6 +431,19 @@ export async function findTableByNumber(restaurantId: string, tableNumber: strin
   });
 }
 
+export async function findDefaultOutletByRestaurant(restaurantId: string) {
+  return prisma.restaurantOutlet.findFirst({
+    where: {
+      restaurant_id: restaurantId,
+      is_default: true,
+    },
+    select: {
+      id: true,
+    },
+    orderBy: { created_at: 'asc' },
+  });
+}
+
 /**
  * Find order by ID with tenant isolation
  */
@@ -469,7 +498,15 @@ export async function addItemsToOrder(
         is_active: true,
         deleted_at: null,
       },
-      select: { id: true, name: true, price: true, discount_percent: true, costprice: true },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        discount_percent: true,
+        costprice: true,
+        hsn_sac: true,
+        gst_rate_percent: true,
+      },
     });
 
     const productMap = new Map(products.map((p) => [p.id, p]));
@@ -479,10 +516,10 @@ export async function addItemsToOrder(
       if (!productMap.has(item.product_id)) {
         const productName = await tx.product.findUnique({
           where: { id: item.product_id },
-          select: { name: true, is_available: true }
+          select: { name: true, is_active: true }
         });
 
-        if (productName && !productName.is_available) {
+        if (productName && !productName.is_active) {
           throw new Error(`Product "${productName.name}" is currently out of stock`);
         }
         throw new Error(`Product ${item.product_id} not found or unavailable`);
@@ -515,11 +552,19 @@ export async function addItemsToOrder(
             const product = productMap.get(item.product_id)!;
             const discount = Number(product.discount_percent || 0);
             const discountedPrice = Number(product.price) * (1 - discount / 100);
+            const taxableAmount = discountedPrice * item.quantity;
             return {
               product_id: item.product_id,
               name_snapshot: product.name,
               price_snapshot: discountedPrice,
               cost_snapshot: product.costprice ? Number(product.costprice) : null,
+              hsn_sac_snapshot: product.hsn_sac ?? null,
+              gst_rate_snapshot: product.gst_rate_percent ? Number(product.gst_rate_percent) : null,
+              taxable_amount_snapshot: taxableAmount,
+              cgst_amount_snapshot: 0,
+              sgst_amount_snapshot: 0,
+              igst_amount_snapshot: 0,
+              total_tax_snapshot: 0,
               quantity: item.quantity,
               notes: item.notes,
               status: "REORDER" // 🟢 New items from reorder get REORDER status

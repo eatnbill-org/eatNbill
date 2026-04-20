@@ -32,8 +32,8 @@ export function applyCommonMiddleware(app: Express) {
   const allowedOrigins = new Set(env.CORS_ALLOWED_ORIGINS.map((origin) => origin.replace(/\/+$/, '')));
 
   // CORS configuration - must be before other middleware
-  app.use(cors({
-    origin: (origin, callback) => {
+  const corsOptions = {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       // Allow non-browser and same-origin requests (no Origin header)
       if (!origin) return callback(null, true);
 
@@ -42,12 +42,20 @@ export function applyCommonMiddleware(app: Express) {
         return callback(null, true);
       }
 
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      // Pass null (not an Error) so CORS middleware still sets headers,
+      // then we return false to block the request with proper CORS headers present.
+      console.warn(`[CORS] Blocked request from origin: ${origin}`);
+      return callback(null, false);
     },
     credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-restaurant-id'],
-  }));
+  };
+
+  app.use(cors(corsOptions));
+
+  // Handle preflight OPTIONS requests explicitly
+  app.options('*', cors(corsOptions));
 
   // Logging middleware (development only)
   if (env.NODE_ENV === 'development') {

@@ -12,6 +12,8 @@ export const createProductSchema = z
     isVeg: z.boolean().nullable().optional(),
     preparationTimeMinutes: z.number().int().positive().optional(),
     discount_percent: z.union([z.number(), z.string()]).transform((val) => typeof val === 'string' ? parseFloat(val) : val).optional(),
+    hsn_sac: z.string().max(16).optional(),
+    gst_rate_percent: z.union([z.number(), z.string()]).transform((val) => typeof val === 'string' ? parseFloat(val) : val).optional(),
   })
   .strict();
 
@@ -27,6 +29,8 @@ export const updateProductSchema = z
     isVeg: z.boolean().nullable().optional(),
     preparationTimeMinutes: z.number().int().positive().optional(),
     discount_percent: z.union([z.number(), z.string()]).transform((val) => typeof val === 'string' ? parseFloat(val) : val).optional(),
+    hsn_sac: z.string().max(16).optional(),
+    gst_rate_percent: z.union([z.number(), z.string()]).transform((val) => typeof val === 'string' ? parseFloat(val) : val).optional(),
   })
   .strict();
 

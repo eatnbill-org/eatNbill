@@ -91,6 +91,8 @@ export interface Product {
   is_active: boolean; // Backend maps is_available to is_active
   is_veg: boolean | null;
   preparation_time_minutes: number | null;
+  hsn_sac?: string | null;
+  gst_rate_percent?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -126,6 +128,8 @@ export interface CreateProductPayload {
   isVeg?: boolean | null;
   preparationTimeMinutes?: number;
   discount_percent?: string | number;
+  hsn_sac?: string;
+  gst_rate_percent?: string | number;
 }
 
 export interface UpdateProductPayload {
@@ -139,6 +143,8 @@ export interface UpdateProductPayload {
   isVeg?: boolean | null;
   preparationTimeMinutes?: number;
   discount_percent?: string | number;
+  hsn_sac?: string;
+  gst_rate_percent?: string | number;
 }
 
 export interface UploadProductImagePayload {

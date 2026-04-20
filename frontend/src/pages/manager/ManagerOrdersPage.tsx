@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, RefreshCw, ShoppingCart } from "lucide-react";
+import { Plus, RefreshCw, ShoppingCart, Search, Tag } from "lucide-react";
 import type { Order } from "@/types/order";
+import { useCategoriesStore } from "@/stores/categories";
+import { useProductsStore } from "@/stores/products";
 import CreateOrderDialog from "@/pages/admin/orders/CreateOrderDialog";
 import MarkPaidDialog from "@/pages/admin/orders/MarkPaidDialog";
 import OrderDetailsDialog from "@/pages/admin/orders/OrderDetailsDialog";
@@ -40,10 +42,18 @@ export default function ManagerOrdersPage() {
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [fromDate, setFromDate] = React.useState<string>("");
   const [toDate, setToDate] = React.useState<string>("");
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
+
+  // Categories & Products for filter
+  const { categories, fetchCategories } = useCategoriesStore();
+  const { products, fetchProducts } = useProductsStore();
 
   React.useEffect(() => {
     fetchOrders({ limit: 50 });
-  }, [fetchOrders]);
+    fetchCategories();
+    fetchProducts();
+  }, [fetchOrders, fetchCategories, fetchProducts]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -64,6 +74,65 @@ export default function ManagerOrdersPage() {
     }
     fetchOrders(filters);
   }, [fetchOrders, statusFilter, fromDate, toDate]);
+
+  // Build maps for fast category lookup
+  const { categoryMap, categoryIdToNameMap } = React.useMemo(() => {
+    const cMap: Record<string, string | null> = {};
+    const nMap: Record<string, string> = {};
+
+    products.forEach((p) => {
+      cMap[p.id] = p.category_id;
+    });
+
+    categories.forEach((c) => {
+      nMap[c.id] = c.name;
+    });
+
+    return { categoryMap: cMap, categoryIdToNameMap: nMap };
+  }, [products, categories]);
+
+  // Active categories for filter tabs
+  const activeCategories = React.useMemo(
+    () => categories.filter((c) => c.is_active),
+    [categories]
+  );
+
+  const filteredOrders = React.useMemo(() => {
+    let result = [...orders];
+
+    // Category filter
+    if (selectedCategoryId) {
+      result = result.filter((o) =>
+        o.items?.some((item) =>
+          categoryMap[item.product_id] === selectedCategoryId
+        )
+      );
+    }
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((o) => {
+        // 1. Basic Info
+        const matchesInfo =
+          (o.customer_name?.toLowerCase() || '').includes(q) ||
+          (o.customer_phone?.toLowerCase() || '').includes(q) ||
+          (o.order_number?.toString() || '').includes(q) ||
+          (o.table_number?.toString().toLowerCase() || '').includes(q);
+
+        if (matchesInfo) return true;
+
+        // 2. Items & Categories
+        return o.items?.some((item) => {
+          const itemName = (item.name_snapshot?.toLowerCase() || '').includes(q);
+          const catId = categoryMap[item.product_id];
+          const catName = (categoryIdToNameMap[catId || '']?.toLowerCase() || '').includes(q);
+          return itemName || catName;
+        });
+      });
+    }
+
+    return result;
+  }, [orders, searchQuery, selectedCategoryId, categoryMap, categoryIdToNameMap]);
 
   const handleStatusChange = (orderId: string, status: string) => {
     updateOrderStatus(orderId, { status });
@@ -119,95 +188,145 @@ export default function ManagerOrdersPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center">
-          <div className="flex flex-col">
-            <label className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">From</label>
+      {/* Enhanced Local Filters */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
+        {/* Row 1: Search & Actions */}
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="h-9 w-full sm:w-44 rounded-lg"
+              placeholder="Quick search by name, phone, order#, item or category..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 rounded-xl bg-slate-50/50 border-slate-200 focus:bg-white transition-all"
             />
           </div>
-          <div className="flex flex-col">
-            <label className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">To</label>
-            <Input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="h-9 w-full sm:w-44 rounded-lg"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Status</label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-full sm:w-40 text-xs rounded-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {STATUS_FLOW.map((s) => (
-                  <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
-                ))}
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="h-10 px-3 rounded-xl border-slate-200 hover:bg-slate-50 transition-all"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              className="h-10 px-4 rounded-xl bg-slate-900 hover:bg-black text-white shadow-md transition-all font-bold gap-2 whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4" />
+              New Order
+            </Button>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            className="h-9 rounded-lg border-slate-200 hover:bg-slate-50"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const now = new Date();
-              const from = new Date(now);
-              from.setDate(now.getDate() - 7);
-              setFromDate(from.toISOString().slice(0, 10));
-              setToDate(now.toISOString().slice(0, 10));
-            }}
-            className="h-9 rounded-lg border-slate-200 hover:bg-slate-50"
-          >
-            Last 7 Days
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCreateDialogOpen(true)}
-            className="h-9 rounded-lg border-purple-200 text-purple-600 hover:bg-purple-50"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Order
-          </Button>
-          <Button
-            size="sm"
-            onClick={applyFilters}
-            className="h-9 rounded-lg bg-slate-900 hover:bg-black text-white"
-          >
-            Apply
-          </Button>
+
+        {/* Row 2: Category Tabs */}
+        {activeCategories.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <button
+              onClick={() => setSelectedCategoryId(null)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap shadow-sm border ${
+                selectedCategoryId === null
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-slate-900 hover:text-slate-900"
+              }`}
+            >
+              <Tag className="h-3 w-3" />
+              All Categories
+            </button>
+            {activeCategories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategoryId(cat.id)}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap shadow-sm border ${
+                  selectedCategoryId === cat.id
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-900 hover:text-slate-900"
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Row 3: Server-side Filters (Advanced) */}
+        <div className="pt-2 border-t border-slate-100 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col">
+              <label className="text-[9px] uppercase tracking-[0.15em] text-slate-400 font-black mb-1.5">Date From</label>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="h-9 w-36 rounded-lg text-xs border-slate-200"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-[9px] uppercase tracking-[0.15em] text-slate-400 font-black mb-1.5">Date To</label>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="h-9 w-36 rounded-lg text-xs border-slate-200"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-[9px] uppercase tracking-[0.15em] text-slate-400 font-black mb-1.5">By Status</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-9 w-32 text-[11px] font-bold rounded-lg border-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any Status</SelectItem>
+                  {STATUS_FLOW.map((s) => (
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                  ))}
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const now = new Date();
+                const from = new Date(now);
+                from.setDate(now.getDate() - 7);
+                setFromDate(from.toISOString().slice(0, 10));
+                setToDate(now.toISOString().slice(0, 10));
+              }}
+              className="h-9 rounded-lg border-slate-200 text-[11px] font-bold hover:bg-slate-50 px-3"
+            >
+              Past Week
+            </Button>
+            <Button
+              size="sm"
+              onClick={applyFilters}
+              className="h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-5 font-bold text-[11px]"
+            >
+              Fetch Orders
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        {orders.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 text-sm">No orders</div>
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        {filteredOrders.length === 0 ? (
+          <div className="py-20 text-center space-y-3">
+            <div className="bg-slate-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto">
+              <Search className="h-8 w-8 text-slate-200" />
+            </div>
+            <p className="text-slate-400 text-sm font-medium">No orders found matching your criteria</p>
+          </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {orders.map((o) => (
+            {filteredOrders.map((o) => (
               <div
                 key={o.id}
-                className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between hover:bg-slate-50/60 cursor-pointer"
+                className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between hover:bg-slate-50/60 cursor-pointer transition-colors"
                 onClick={() => setDetailsOrder(o as Order)}
               >
                 <div>
