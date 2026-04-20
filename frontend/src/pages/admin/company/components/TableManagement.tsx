@@ -282,7 +282,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                         <Armchair className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-foreground tracking-tight">Tables</h2>
+                        <h2 className="text-xl font-bold text-foreground tracking-tight">Dining Tables</h2>
                         <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-sm font-medium text-muted-foreground">Total: {tables.length} tables</span>
                             {loading && <Skeleton className="h-3 w-3" rounded="full" />}
@@ -296,7 +296,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                         disabled={tables.length === 0}
                         className="h-10 sm:h-11 px-4 sm:px-6 rounded-xl font-bold uppercase tracking-widest text-[10px] sm:text-[11px] border-border hover:bg-muted transition-all shadow-sm w-full sm:w-auto"
                     >
-                        <QrCode className="w-4 h-4 mr-2 text-primary" /> Batch Print QRs
+                        <QrCode className="w-4 h-4 mr-2 text-primary" /> Print All QR Codes
                     </Button>
 
                     <Button
@@ -318,7 +318,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                 {/* Bulk Mode Toggle (only for new tables) */}
                                 {!editingId && (
                                     <div className="flex items-center justify-between p-4 bg-primary/10 rounded-xl border border-primary/20">
-                                        <Label className="text-xs font-bold uppercase tracking-wide text-primary">Bulk Creation Mode</Label>
+                                        <Label className="text-xs font-bold uppercase tracking-wide text-primary">Add Multiple Tables</Label>
                                         <button
                                             type="button"
                                             onClick={() => setIsBulkMode(!isBulkMode)}
@@ -341,11 +341,11 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                         <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                                             <MapPin className="h-3 w-3" />
                                         </div>
-                                        <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Hall / Area</Label>
+                                        <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Section</Label>
                                     </div>
                                     <Select value={hallId} onValueChange={setHallId}>
                                         <SelectTrigger className="h-12 bg-muted/20 border-border rounded-xl focus:ring-primary font-bold text-foreground">
-                                            <SelectValue placeholder="Select Hall" />
+                                            <SelectValue placeholder="Select Section" />
                                         </SelectTrigger>
                                         <SelectContent className="rounded-xl shadow-2xl border-border">
                                             {halls.map(hall => (
@@ -382,7 +382,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                             <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                                                 <Hash className="h-3 w-3" />
                                             </div>
-                                            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Table Range (e.g., 1-10)</Label>
+                                            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">From Number to Number</Label>
                                         </div>
                                         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                                             <Input
@@ -408,7 +408,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                             <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                                                 <Hash className="h-3 w-3" />
                                             </div>
-                                            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Table Number</Label>
+                                            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Table Name/No.</Label>
                                         </div>
                                         <Input
                                             value={name}
@@ -425,7 +425,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                             <UsersIcon className="h-3 w-3" />
                                         </div>
                                         <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                            Table Capacity {isBulkMode && "(for all tables)"}
+                                            Number of Seats {isBulkMode && "(for all tables)"}
                                         </Label>
                                     </div>
                                     <Input
@@ -464,9 +464,9 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                     <TableHeader>
                         <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                             <TableHead className="py-6 pl-8 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">QR Code</TableHead>
-                            <TableHead className="py-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Table Number</TableHead>
-                            <TableHead className="py-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Hall / Area</TableHead>
-                            <TableHead className="py-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Capacity</TableHead>
+                            <TableHead className="py-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Table Name/No.</TableHead>
+                            <TableHead className="py-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Section</TableHead>
+                            <TableHead className="py-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Seats</TableHead>
                             <TableHead className="py-6 pr-8 text-right text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -488,13 +488,13 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                 </TableCell>
                                 <TableCell>
                                     <Badge variant="outline" className={cn("px-3 py-1 rounded-lg font-bold uppercase tracking-widest text-[9px]", getHallBadgeStyle(t.hall?.name || ""))}>
-                                        {t.hall?.name || "Unassigned"}
+                                        {t.hall?.name || "Other"}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
                                         <UsersIcon className="w-4 h-4 text-muted-foreground/50" />
-                                        <span className="font-bold text-muted-foreground text-sm tracking-tight">{t.seats} <span className="text-[10px] opacity-70 uppercase font-bold ml-0.5">Pax</span></span>
+                                        <span className="font-bold text-muted-foreground text-sm tracking-tight">{t.seats} <span className="text-[10px] opacity-70 uppercase font-bold ml-0.5">People</span></span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="pr-8 text-right">
@@ -552,7 +552,7 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                                                 onClick={handleCreateRandomTable}
                                                 className="h-11 px-5 rounded-xl font-bold uppercase tracking-widest text-[11px] border-border hover:bg-muted transition-all shadow-sm w-full sm:w-auto"
                                             >
-                                                <Armchair className="w-4 h-4 mr-2" /> Auto Create
+                                                <Armchair className="w-4 h-4 mr-2" /> Quick Add
                                             </Button>
                                         </div>
                                     </div>

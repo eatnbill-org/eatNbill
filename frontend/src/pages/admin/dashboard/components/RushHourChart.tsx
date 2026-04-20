@@ -9,7 +9,7 @@ export function RushHourChart({ data }: { data: any[] }) {
       <CardHeader className="py-3 border-b border-border/50">
         <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
           <Zap className="w-3.5 h-3.5 text-orange-500" />
-          Propagation
+          Busy Hours
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 flex-1 overflow-visible">

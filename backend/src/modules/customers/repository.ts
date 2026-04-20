@@ -113,6 +113,31 @@ export async function getCustomerById(
   });
 }
 
+/**
+ * Search for a customer by phone number in a specific restaurant
+ * Used for public checkout to detect duplicate entries
+ */
+export async function findCustomerByPhone(
+  restaurantId: string,
+  phone: string
+) {
+  const normalizedPhone = phone.replace(/\s+/g, '').trim();
+  return prisma.customer.findFirst({
+    where: {
+      restaurant_id: restaurantId,
+      phone: {
+        equals: normalizedPhone,
+        mode: 'insensitive',
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+    },
+  });
+}
+
 export async function getCustomerOrders(
   customerPhone: string,
   restaurantId: string,

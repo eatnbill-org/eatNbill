@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShoppingBag, X, Plus, Minus, User } from 'lucide-react';
+import { ShoppingBag, X, Plus, Minus, User, AlertCircle } from 'lucide-react';
 import { formatINR } from '@/lib/format';
 import { useParams } from 'react-router-dom';
+import { useSearchCustomerByPhone } from '@/hooks/use-customers';
 
 export function PublicCart({ onOrderSuccess }: { onOrderSuccess?: () => void }) {
     const { slug } = useParams<{ slug: string }>();
@@ -31,6 +32,10 @@ export function PublicCart({ onOrderSuccess }: { onOrderSuccess?: () => void }) 
     const [formName, setFormName] = React.useState(customerInfo?.name || '');
     const [formPhone, setFormPhone] = React.useState(customerInfo?.phone || '');
     const [showCheckout, setShowCheckout] = React.useState(false);
+
+    // Search for existing customer by phone
+    const normalizedPhone = formPhone.replace(/\s+/g, '').trim();
+    const { data: existingCustomer } = useSearchCustomerByPhone(slug || '', normalizedPhone);
 
     const total = items.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
 
@@ -132,7 +137,7 @@ export function PublicCart({ onOrderSuccess }: { onOrderSuccess?: () => void }) 
                                         style={{ borderRadius: 'var(--theme-radius)', borderColor: 'var(--theme-primary)' }}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                            <div className="space-y-2">
                                     <Label htmlFor="cust-phone">Phone Number</Label>
                                     <Input
                                         id="cust-phone"
@@ -143,6 +148,20 @@ export function PublicCart({ onOrderSuccess }: { onOrderSuccess?: () => void }) 
                                         className="h-12 border-2 focus:ring-0"
                                         style={{ borderRadius: 'var(--theme-radius)', borderColor: 'var(--theme-primary)' }}
                                     />
+                                    {/* Existing Customer Suggestion */}
+                                    {existingCustomer && formName !== existingCustomer.name && (
+                                        <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                                            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                            <div className="flex-1 text-xs">
+                                                <p className="font-semibold text-amber-900">
+                                                    This phone number is registered as: <span className="font-bold">{existingCustomer.name}</span>
+                                                </p>
+                                                <p className="text-amber-700 mt-1">
+                                                    If you're a new customer, use a different name. To keep the existing name, clear the name field and submit.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

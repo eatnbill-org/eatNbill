@@ -47,7 +47,7 @@ export function SecuritySettings() {
         <Card className="shadow-sm border-t-4 border-t-red-600 rounded-xl">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-red-600" /> Security & Access
+                    <ShieldCheck className="w-5 h-5 text-red-600" /> Login Security
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -57,7 +57,7 @@ export function SecuritySettings() {
                             <Lock className="w-4 h-4 text-slate-500" /> Change Password
                         </h3>
                         <p className="text-sm text-slate-500">
-                            Secure your account by updating your password regularly.
+                            Change your login password here.
                         </p>
                     </div>
 
@@ -71,7 +71,7 @@ export function SecuritySettings() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Reset Password</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    We will send a password reset link to your registered email address <strong>{user?.email}</strong>.
+                                    We will send a link to your email to change your password. Your email is <strong>{user?.email}</strong>.
                                     <br /><br />
                                     Are you sure you want to continue?
                                 </AlertDialogDescription>

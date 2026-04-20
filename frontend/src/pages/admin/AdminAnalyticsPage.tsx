@@ -137,7 +137,7 @@ export default function AdminAnalyticsPage() {
     }, [debts]);
 
     const handleSettleUdhaar = async (customerId: string, amount: number, name: string) => {
-        const settleAmountStr = prompt(`Enter amount to settle for ${name}:`, amount.toString());
+        const settleAmountStr = prompt(`How much did ${name} pay?`, amount.toString());
         if (!settleAmountStr) return;
 
         const settleAmount = parseFloat(settleAmountStr);
@@ -153,7 +153,7 @@ export default function AdminAnalyticsPage() {
 
         if (success) {
             toast.success(`Received ${formatINR(settleAmount)} from ${name}`, {
-                description: "Successfully merged into operational revenue.",
+                description: "Added to today's income.",
                 icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             });
             refetch(); // Refresh analytics after settlement
@@ -201,10 +201,10 @@ export default function AdminAnalyticsPage() {
                             <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                                 <Activity className="w-4 h-4" />
                             </div>
-                            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Analytics Dashboard</h1>
+                            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Reports</h1>
                         </div>
                         <p className="text-sm font-medium text-muted-foreground max-w-lg leading-snug px-0.5">
-                            View your restaurant's performance, sales, and order trends in real-time.
+                            Check how your business is doing, sales, and total bills.
                         </p>
                     </motion.div>
 
@@ -298,7 +298,7 @@ export default function AdminAnalyticsPage() {
                 <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                         { 
-                            label: "Total Revenue", 
+                            label: "Total Income", 
                             value: formatINR(metrics.totalRevenue), 
                             icon: DollarSign, 
                             comparisonKey: "revenue" as const,
@@ -312,15 +312,15 @@ export default function AdminAnalyticsPage() {
                             color: "emerald" 
                         },
                         { 
-                            label: "Pending Dues", 
+                            label: "Pending Udhaar", 
                             value: formatINR(debts.reduce((acc: number, curr: any) => acc + curr.amount, 0)), 
                             icon: Wallet, 
-                            trend: `${debts.length} Accounts`, 
+                            trend: `${debts.length} Customers`, 
                             color: "orange",
                             comparisonKey: null
                         },
                         { 
-                            label: "Orders Fulfilled", 
+                            label: "Total Bills", 
                             value: metrics.totalOrders, 
                             icon: ShoppingBag, 
                             comparisonKey: "orders" as const,
@@ -397,9 +397,9 @@ export default function AdminAnalyticsPage() {
                                     <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                         <Layers className="w-3 h-3" />
                                     </div>
-                                    <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wider">Revenue Trend</CardTitle>
+                                    <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wider">Income Chart</CardTitle>
                                 </div>
-                                <CardDescription className="text-xs font-medium text-muted-foreground">Analysis of sales over time</CardDescription>
+                                <CardDescription className="text-xs font-medium text-muted-foreground">Your sales day by day</CardDescription>
                             </CardHeader>
                             <CardContent className="p-0 h-[320px]">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -452,12 +452,12 @@ export default function AdminAnalyticsPage() {
                                             cursor={{ stroke: '#4f46e5', strokeWidth: 1, strokeDasharray: '4 4' }}
                                         />
                                         <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }} />
-                                        <Bar yAxisId="right" dataKey="orders" name="Orders Count" fill="#fbbf24" radius={[4, 4, 0, 0]} barSize={20} />
+                                        <Bar yAxisId="right" dataKey="orders" name="Bills" fill="#fbbf24" radius={[4, 4, 0, 0]} barSize={20} />
                                         <Area
                                             yAxisId="left"
                                             type="monotone"
                                             dataKey="revenue"
-                                            name="Revenue"
+                                            name="Income"
                                             stroke="hsl(var(--primary))"
                                             strokeWidth={3}
                                             fillOpacity={1}
@@ -479,10 +479,10 @@ export default function AdminAnalyticsPage() {
                                             <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                                 <TrendingUp className="w-3 h-3" />
                                             </div>
-                                            <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wider">Top Performing Categories</CardTitle>
+                                            <CardTitle className="text-sm font-bold text-foreground uppercase tracking-wider">Best Selling Categories</CardTitle>
                                         </div>
                                         <CardDescription className="text-[11px] font-medium text-slate-400">
-                                            {showProducts ? 'Top selling products breakdown' : 'Revenue distribution by category'}
+                                            {showProducts ? 'Best selling items breakdown' : 'Money made from each category'}
                                         </CardDescription>
                                     </div>
                                     <Button
@@ -491,7 +491,7 @@ export default function AdminAnalyticsPage() {
                                         onClick={() => setShowProducts(!showProducts)}
                                         className="h-8 px-4 rounded-xl border-slate-200 hover:bg-slate-50 font-black text-[9px] uppercase tracking-widest"
                                     >
-                                        {showProducts ? 'Categories' : 'Products'}
+                                        {showProducts ? 'Categories' : 'Items'}
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -543,9 +543,9 @@ export default function AdminAnalyticsPage() {
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow className="border-slate-100 hover:bg-transparent">
-                                                        <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Product</TableHead>
+                                                        <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Item</TableHead>
                                                         <TableHead className="text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Sold</TableHead>
-                                                        <TableHead className="text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Revenue</TableHead>
+                                                        <TableHead className="text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Income</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -568,7 +568,7 @@ export default function AdminAnalyticsPage() {
                                                             <TableCell colSpan={3} className="py-20 text-center">
                                                                 <div className="flex flex-col items-center gap-2 opacity-30">
                                                                     <ShoppingBag className="h-8 w-8 text-slate-400" />
-                                                                    <p className="font-black text-slate-600 uppercase tracking-widest text-[10px]">No Products Sold</p>
+                                                                    <p className="font-black text-slate-600 uppercase tracking-widest text-[10px]">No Items Sold</p>
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -603,9 +603,9 @@ export default function AdminAnalyticsPage() {
                                             <div className="h-6 w-6 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
                                                 <Wallet className="h-3 w-3" />
                                             </div>
-                                            <CardTitle className="text-sm font-black text-orange-900 uppercase tracking-widest">Receivable Recovery</CardTitle>
+                                            <CardTitle className="text-sm font-black text-orange-900 uppercase tracking-widest">Udhaar Recovery</CardTitle>
                                         </div>
-                                        <CardDescription className="text-[10px] font-semibold text-orange-700/60 uppercase tracking-widest">Active Credit Protocols</CardDescription>
+                                        <CardDescription className="text-[10px] font-semibold text-orange-700/60 uppercase tracking-widest">Pending Udhaar</CardDescription>
                                     </div>
                                     <Badge className="bg-orange-200 text-orange-800 font-black text-[9px] px-3 py-1 rounded-lg">
                                         {udhaarList.length} PENDING
@@ -617,7 +617,7 @@ export default function AdminAnalyticsPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="border-orange-100/50 hover:bg-transparent">
-                                                <TableHead className="text-[10px] font-black text-orange-900/40 uppercase tracking-widest pl-8">Account</TableHead>
+                                                <TableHead className="text-[10px] font-black text-orange-900/40 uppercase tracking-widest pl-8">Customer</TableHead>
                                                 <TableHead className="text-right text-[10px] font-black text-orange-900/40 uppercase tracking-widest">Balance</TableHead>
                                                 <TableHead className="text-right text-[10px] font-black text-orange-900/40 uppercase tracking-widest pr-8">Status</TableHead>
                                             </TableRow>
@@ -638,7 +638,7 @@ export default function AdminAnalyticsPage() {
                                                             className="h-8 rounded-xl bg-white text-orange-600 border border-orange-100 hover:bg-orange-600 hover:text-white hover:border-orange-600 font-black uppercase text-[9px] tracking-widest shadow-sm transition-all px-4"
                                                             onClick={() => handleSettleUdhaar(c.id, c.amount, c.customer)}
                                                         >
-                                                            Settle
+                                                            Pay Off
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
@@ -648,7 +648,7 @@ export default function AdminAnalyticsPage() {
                                                     <TableCell colSpan={3} className="py-20 text-center">
                                                         <div className="flex flex-col items-center gap-2 opacity-30">
                                                             <CheckCircle2 className="h-8 w-8 text-orange-400" />
-                                                            <p className="font-black text-orange-800 uppercase tracking-widest text-[10px]">Accounts Cleared</p>
+                                                            <p className="font-black text-orange-800 uppercase tracking-widest text-[10px]">All Udhaar Paid</p>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>

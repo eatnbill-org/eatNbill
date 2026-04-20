@@ -273,28 +273,28 @@ function AdminSidebar() {
           <SidebarMenu className="gap-0.5">
 
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Dashboard" isActive={pathname === "/admin/dashboard"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+              <SidebarMenuButton asChild tooltip="Home" isActive={pathname === "/admin/dashboard"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/dashboard" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <LayoutDashboard className="h-[18px] w-[18px] shrink-0" />
-                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Dashboard</span>
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Home</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Orders" isActive={pathname === "/admin/orders"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+              <SidebarMenuButton asChild tooltip="Bills" isActive={pathname === "/admin/orders"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/orders" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <UtensilsCrossed className="h-[18px] w-[18px] shrink-0" />
-                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Orders</span>
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Bills</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Products" isActive={pathname === "/admin/products"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+              <SidebarMenuButton asChild tooltip="Items" isActive={pathname === "/admin/products"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/products" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <Package className="h-[18px] w-[18px] shrink-0" />
-                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Products</span>
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Items</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -302,10 +302,10 @@ function AdminSidebar() {
             {/* Campaigns - Conditional Render */}
             {prefs.sidebar.showCampaigns && (
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Campaigns" isActive={pathname === "/admin/campaigns"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                <SidebarMenuButton asChild tooltip="Offers" isActive={pathname === "/admin/campaigns"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                   <NavLink to="/admin/campaigns" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                     <Megaphone className="h-[18px] w-[18px] shrink-0" />
-                    <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Campaigns</span>
+                    <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Offers</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -324,10 +324,10 @@ function AdminSidebar() {
             )}
 
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Analytics" isActive={pathname === "/admin/analytics"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+              <SidebarMenuButton asChild tooltip="Reports" isActive={pathname === "/admin/analytics"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/analytics" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <BarChart3 className="h-[18px] w-[18px] shrink-0" />
-                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Analytics</span>
+                  <span className="text-sm font-semibold group-data-[collapsible=icon]:hidden">Reports</span>
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -353,12 +353,12 @@ function AdminSidebar() {
             {/* --- COMPANY SECTION --- */}
             <HoverableMenuItem
               icon={Briefcase}
-              label="Restaurant"
+              label="Shop"
               active={pathname.startsWith("/admin/company")}
               basePath="/admin/company"
               isCollapsed={isCollapsed}
               subItems={[
-                { label: "Restaurant Profile", path: "/admin/company/profile", icon: Store },
+                { label: "Shop Details", path: "/admin/company/profile", icon: Store },
                 { label: "Tables", path: "/admin/company/tables", icon: Armchair },
                 { label: "Staff", path: "/admin/company/staff", icon: UserCog }
               ]}
@@ -372,8 +372,8 @@ function AdminSidebar() {
               basePath="/admin/settings"
               isCollapsed={isCollapsed}
               subItems={[
-                { label: "Admin Side", path: "/admin/settings/admin", icon: ShieldCheck },
-                { label: "Customer Side", path: "/admin/settings/customer", icon: Smartphone }
+                { label: "Admin Access", path: "/admin/settings/admin", icon: ShieldCheck },
+                { label: "Customer App", path: "/admin/settings/customer", icon: Smartphone }
               ]}
             />
 
@@ -576,7 +576,7 @@ export default function AdminLayout() {
               className="hidden lg:flex fixed top-20 right-6 z-30 h-11 rounded-full px-5 shadow-lg shadow-primary/20"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Order
+              New Bill
             </Button>
             <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
               <Outlet />

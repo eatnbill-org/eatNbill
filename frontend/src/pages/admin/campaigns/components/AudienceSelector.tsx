@@ -31,7 +31,7 @@ function AllContactsPicker({ customers, selected, onToggle }: { customers: Custo
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search via name or identifier..."
+          placeholder="Search by name or phone..."
           className="pl-11 h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium"
         />
       </div>
@@ -61,14 +61,14 @@ function AllContactsPicker({ customers, selected, onToggle }: { customers: Custo
           })}
           {filtered.length === 0 && (
             <div className="py-20 text-center space-y-2">
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No nodes found</p>
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No customers found</p>
               <p className="text-xs text-slate-300">Try refining your search parameters.</p>
             </div>
           )}
         </div>
       </ScrollArea>
       <div className="flex justify-between items-center px-2">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Authorized Nodes: <span className="text-indigo-600">{selected.size}</span></p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Selected: <span className="text-indigo-600">{selected.size}</span></p>
       </div>
     </div>
   );
@@ -100,7 +100,7 @@ export function AudienceSelector({
         <CardHeader className="p-6 border-b border-slate-50">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-              <span className="text-indigo-500 font-black">3.</span> Audience Matrix
+              <span className="text-indigo-500 font-black">3.</span> Select Audience
             </CardTitle>
             <Users className="h-4 w-4 text-slate-400" />
           </div>
@@ -108,7 +108,7 @@ export function AudienceSelector({
 
         <CardContent className="space-y-6 p-6">
           <div className="space-y-2">
-            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Define Segment</Label>
+            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Select Group</Label>
             <Select value={audienceSeg} onValueChange={(v: any) => { setAudienceSeg(v); setManualSelectedIds(new Set()); }}>
               <SelectTrigger className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium">
                 <SelectValue />
@@ -121,14 +121,14 @@ export function AudienceSelector({
               </SelectContent>
             </Select>
             <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400 px-1 pt-1">
-              <span>Segment Density:</span>
+              <span>Group Size:</span>
               <span className="text-slate-800 tracking-normal">{segmentCustomersCount} Members</span>
             </div>
           </div>
 
           <div className="relative flex py-2 items-center">
             <div className="flex-grow border-t border-slate-100"></div>
-            <span className="flex-shrink-0 mx-4 text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Selective Protocol</span>
+            <span className="flex-shrink-0 mx-4 text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Choose Manually</span>
             <div className="flex-grow border-t border-slate-100"></div>
           </div>
 
@@ -167,7 +167,7 @@ export function AudienceSelector({
                   onClick={() => setContactsOpen(true)}
                   className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors"
                 >
-                  Access Master Directory
+                  See All Contacts
                 </button>
               </div>
             </div>
@@ -177,10 +177,10 @@ export function AudienceSelector({
                 onClick={() => setManualSelectedIds(new Set())}
                 className="text-[9px] font-black uppercase tracking-widest text-slate-300 hover:text-red-500 transition-colors"
               >
-                Reset List
+                Clear All
               </button>
               <p className="text-[11px] font-black text-indigo-600 uppercase tracking-widest">
-                Active Nodes: {recipientsCount}
+                Total Selected: {recipientsCount}
               </p>
             </div>
           </div>
@@ -191,7 +191,7 @@ export function AudienceSelector({
       <Dialog open={contactsOpen} onOpenChange={setContactsOpen}>
         <DialogContent className="sm:max-w-[560px] rounded-[3rem] p-8 border-none shadow-2xl">
           <DialogHeader className="mb-4">
-            <DialogTitle className="text-xl font-black text-slate-800 uppercase tracking-tight">Master Directory</DialogTitle>
+            <DialogTitle className="text-xl font-black text-slate-800 uppercase tracking-tight">All Contacts</DialogTitle>
           </DialogHeader>
           <AllContactsPicker customers={customers} selected={manualSelectedIds} onToggle={toggleManual} />
           <DialogFooter className="mt-6">
@@ -199,7 +199,7 @@ export function AudienceSelector({
               onClick={() => setContactsOpen(false)}
               className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px] bg-slate-900 text-white shadow-xl shadow-slate-200"
             >
-              Verify & Lock
+              Save Selection
             </Button>
           </DialogFooter>
         </DialogContent>

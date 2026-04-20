@@ -35,7 +35,7 @@ export function UnpaidBillsCard() {
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                         <Wallet className="w-3.5 h-3.5 text-orange-500" />
-                        Oustanding
+                        Pending Bills
                     </CardTitle>
                     <ArrowUpRight className="w-3 h-3 text-muted-foreground group-hover:text-orange-500 transition-colors" />
                 </div>
@@ -44,7 +44,7 @@ export function UnpaidBillsCard() {
                 <div className="space-y-4">
                     <div className="flex items-end justify-between">
                         <div>
-                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Total Unpaid</p>
+                            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">Pending Amount</p>
                             <h3 className="text-2xl font-black text-foreground tracking-tighter italic">
                                 {formatINR(unpaidStats.total)}
                             </h3>
@@ -56,7 +56,7 @@ export function UnpaidBillsCard() {
 
                     <div className="grid grid-cols-2 gap-2">
                         <div className="bg-muted/40 rounded-xl p-2.5 border border-border/50">
-                            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">On Credit</p>
+                            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Udhaar</p>
                             <div className="flex items-baseline gap-1">
                                 <span className="text-[11px] font-black text-foreground">{formatINR(unpaidStats.creditAmount)}</span>
                                 <span className="text-[7px] font-bold text-muted-foreground">({unpaidStats.creditCount})</span>

@@ -9,14 +9,14 @@ export function TopSellingCard({ data, products }: { data: any[], products: any[
       <CardHeader className="py-3 border-b border-border/50">
         <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
           <Trophy className="w-3.5 h-3.5 text-amber-500" />
-          Top Items
+          Best Sellers
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-4 flex-1 overflow-auto no-scrollbar">
         <div className="space-y-3">
           {data.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground/50">
-              <p className="text-[9px] font-black uppercase tracking-widest italic opacity-50">Market inactive</p>
+              <p className="text-[9px] font-black uppercase tracking-widest italic opacity-50">No sales yet</p>
             </div>
           ) : (
             data.map((it, idx) => {
@@ -29,7 +29,7 @@ export function TopSellingCard({ data, products }: { data: any[], products: any[
                     {it.imageUrl ? (
                       <img src={it.imageUrl} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="grid h-full w-full place-items-center text-[8px] font-black text-muted-foreground/30">VOID</div>
+                      <div className="grid h-full w-full place-items-center text-[8px] font-black text-muted-foreground/30">N/A</div>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">

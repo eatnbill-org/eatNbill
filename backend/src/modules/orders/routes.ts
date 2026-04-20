@@ -44,9 +44,18 @@ const publicOrderLimiter = rateLimit({
 /**
  * Public order routes (no auth)
  * POST /public/:restaurant_slug/orders
+ * GET /public/:restaurant_slug/customers/search
  */
 export function publicOrderRoutes() {
   const router = Router();
+
+  // Import customer controller
+  const { searchCustomerByPhoneController } = require('../customers/controller');
+
+  router.get(
+    "/:restaurant_slug/customers/search",
+    searchCustomerByPhoneController
+  );
 
   router.post(
     "/:restaurant_slug/orders",

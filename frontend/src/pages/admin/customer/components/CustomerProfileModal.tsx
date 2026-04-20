@@ -177,13 +177,13 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                 {/* Stats Section - In One Row */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Total Orders</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Total Bills</p>
                     <p className="text-xs font-black text-slate-800 leading-none mt-2">
                       {statsLoading ? "..." : (stats?.visit_count || 0)}
                     </p>
                   </div>
                   <div className="bg-slate-50/80 rounded-xl p-2.5 border border-slate-100">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Total Spent</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Total Paid</p>
                     <p className="text-xs font-black text-slate-800 leading-none mt-2">
                       {statsLoading ? "..." : formatINR(Number(stats?.total_spent) || 0)}
                     </p>
@@ -198,7 +198,7 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                   <div className="relative z-10 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-[9px] font-black text-indigo-200 uppercase tracking-[0.2em] leading-none">Wallet Ledger</p>
+                        <p className="text-[9px] font-black text-indigo-200 uppercase tracking-[0.2em] leading-none">Balance</p>
                         <p className="text-xl font-black leading-none mt-2 tracking-tighter italic">{formatINR(Number(customer.credit_balance))}</p>
                       </div>
                     </div>
@@ -207,18 +207,18 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                         onClick={() => { setCreditAmount(""); setAddCreditOpen(true); }}
                         className="flex-1 h-8 bg-white/10 hover:bg-white/20 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1.5 transition-all border border-white/10"
                       >
-                        <Plus className="w-3 h-3" /> Add
+                        <Plus className="w-3 h-3" /> Add Balance
                       </button>
                       <button
                         onClick={() => {
-                          const amount = prompt("Enter amount to deduct from credit:");
+                          const amount = prompt("Enter amount to pay:");
                           if (amount && !isNaN(Number(amount))) {
                             creditMutation.mutate({ id: customer.id, amount: -Number(amount) });
                           }
                         }}
                         className="flex-1 h-8 bg-white/10 hover:bg-white/20 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1.5 transition-all border border-white/10"
                       >
-                        <Trash2 className="w-3 h-3" /> Debt
+                        <Trash2 className="w-3 h-3" /> Pay Balance
                       </button>
                     </div>
                   </div>
@@ -228,18 +228,18 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                 <div className="pt-2">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="h-[1px] flex-1 bg-slate-100" />
-                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">Timeline</span>
+                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.3em]">History</span>
                     <div className="h-[1px] flex-1 bg-slate-100" />
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-slate-400">First Interaction</span>
+                      <span className="text-[10px] font-bold text-slate-400">First Bill</span>
                       <span className="text-[10px] font-black text-slate-600 uppercase tracking-tighter">
                         {stats?.first_visit_date ? formatDateTime(stats.first_visit_date).split(',')[0] : "N/A"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-slate-400">Recent Terminal</span>
+                      <span className="text-[10px] font-bold text-slate-400">Last Bill</span>
                       <span className="text-[10px] font-black text-slate-600 uppercase tracking-tighter">
                         {stats?.last_visit_date ? formatDateTime(stats.last_visit_date).split(',')[0] : "N/A"}
                       </span>
@@ -255,7 +255,7 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                   className="w-full h-10 text-[9px] font-black uppercase tracking-widest text-rose-500 bg-white hover:bg-rose-50 border border-slate-100 rounded-xl"
                   onClick={() => onDelete(customer)}
                 >
-                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Expunge Customer Record
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Customer
                 </Button>
               </div>
             </div>
@@ -281,7 +281,7 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                   <div className="bg-slate-50/80 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                     <div className="flex items-center gap-3">
                       <ShoppingBag className="w-4 h-4 text-slate-400" />
-                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Transaction History</h3>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Past Bills</h3>
                     </div>
 
                     <Tabs value={sourceFilter} onValueChange={(v) => setSourceFilter(v as any)}>
@@ -298,10 +298,10 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                     <Table>
                       <TableHeader className="bg-white sticky top-0 z-10">
                         <TableRow className="hover:bg-transparent border-slate-50">
-                          <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-4 pl-8">Timeline</TableHead>
-                          <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-4">Ref #</TableHead>
-                          <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-4">Manifest</TableHead>
-                          <TableHead className="text-right text-[10px] font-black text-slate-400 uppercase tracking-widest py-4 pr-8">Terminal Total</TableHead>
+                          <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-4 pl-8">Date</TableHead>
+                          <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-4">Bill #</TableHead>
+                          <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-4">Items</TableHead>
+                          <TableHead className="text-right text-[10px] font-black text-slate-400 uppercase tracking-widest py-4 pr-8">Total</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -311,7 +311,7 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
                               <TableCell colSpan={4} className="h-64 text-center">
                                 <div className="flex flex-col items-center justify-center space-y-2">
                                   <ShoppingBag className="w-6 h-6 text-slate-200" />
-                                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">No transactions yet</p>
+                                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tighter">No bills yet</p>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -377,8 +377,8 @@ export default function CustomerProfileModal({ customer, onClose, onDelete }: Cu
               <div className="h-14 w-14 bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-200 mb-2">
                 <Wallet className="w-7 h-7" />
               </div>
-              <h3 className="text-xl font-black text-slate-800 tracking-tight">Add Credits</h3>
-              <p className="text-sm text-slate-400 font-medium">How much store credit would you like to assign?</p>
+              <h3 className="text-xl font-black text-slate-800 tracking-tight">Add Udhaar</h3>
+              <p className="text-sm text-slate-400 font-medium">How much udhaar would you like to add?</p>
             </div>
 
             <div className="relative group">

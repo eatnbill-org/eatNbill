@@ -11,6 +11,7 @@ import {
   getRestaurantCustomerOrders,
   getPublicOrderHistory,
   deleteRestaurantCustomer,
+  searchCustomerByPhone,
 } from './service';
 import {
   createCustomerSchema,
@@ -237,6 +238,46 @@ export async function publicOrderHistoryController(
       parsed.data.limit
     );
     return res.json(result);
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+/**
+ * Public endpoint: Search customer by phone
+ * GET /public/:restaurant_slug/customers/search?phone={phone}
+ * Used during checkout to show existing customer name
+ * Returns customer name if found (for duplicate detection)
+ */
+export async function searchCustomerByPhoneController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { restaurant_slug } = req.params;
+    const { phone } = req.query;
+
+    if (!restaurant_slug || !phone) {
+      return next(new AppError('VALIDATION_ERROR', 'restaurant_slug and phone are required', 400));
+    }
+
+    // Import here to avoid circular dependency
+    const { findRestaurantBySlug } = await import('./../../modules/orders/repository');
+    const restaurant = await findRestaurantBySlug(restaurant_slug as string);
+    
+    if (!restaurant) {
+      return next(new AppError('NOT_FOUND', 'Restaurant not found', 404));
+    }
+
+    const customer = await searchCustomerByPhone(
+      restaurant.id,
+      phone as string
+    );
+
+    return res.json({
+      data: customer,
+    });
   } catch (error) {
     return next(error as Error);
   }

@@ -55,7 +55,7 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, phone or membership..."
+            placeholder="Search by name or phone..."
             className="pl-11 pr-11 h-12 bg-white/80 border-slate-100 rounded-2xl focus-visible:ring-orange-500 focus-visible:ring-offset-0 shadow-sm transition-all"
           />
           {query.trim().length > 0 && (
@@ -73,7 +73,7 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
           onClick={onAddCustomer}
           className="h-12 px-6 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-slate-200 transition-all shrink-0 w-full md:w-auto"
         >
-          <Plus className="mr-2 h-4 w-4" /> Add Premium Customer
+          <Plus className="mr-2 h-4 w-4" /> Add Customer
         </Button>
       </div>
 
@@ -85,9 +85,9 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100">
               <TableHead className="w-[300px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-slate-500">Customer</TableHead>
               <TableHead className="w-[180px] py-6 text-xs font-bold uppercase tracking-wider text-slate-500">Last Visit</TableHead>
-              <TableHead className="py-6 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Total Spent</TableHead>
-              <TableHead className="py-6 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Credit Balance</TableHead>
-              <TableHead className="py-6 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Orders</TableHead>
+              <TableHead className="py-6 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Total Paid</TableHead>
+              <TableHead className="py-6 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Udhaar Balance</TableHead>
+              <TableHead className="py-6 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Bills</TableHead>
               <TableHead className="py-6 pr-8 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -97,7 +97,7 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
                 <TableCell colSpan={6} className="h-64 text-center">
                   <div className="flex flex-col items-center justify-center space-y-4 opacity-40">
                     <User className="h-12 w-12 text-slate-300" />
-                    <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">No records matching your criteria</p>
+                    <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">No customers found</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -155,7 +155,7 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
                             </span>
                           </div>
                         ) : (
-                          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">— empty —</span>
+                          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">None</span>
                         )}
                       </TableCell>
 
@@ -195,7 +195,7 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
                                 className="rounded-xl font-bold text-xs uppercase tracking-widest py-2.5"
                                 onSelect={() => onCustomerSelect(customer)}
                               >
-                                <User className="mr-2 h-4 w-4" /> View Portfolio
+                                <User className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="rounded-xl font-bold text-xs uppercase tracking-widest py-2.5 text-rose-500 focus:text-rose-600 focus:bg-rose-50"
@@ -204,7 +204,7 @@ export default function CustomerTable({ customers, onCustomerSelect, onDeleteCus
                                   onDeleteCustomer(customer);
                                 }}
                               >
-                                <Trash2 className="mr-2 h-4 w-4" /> Terminate Account
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Customer
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

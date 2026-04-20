@@ -8,9 +8,10 @@ import { Separator } from "@/components/ui/separator";
 import { useDemoStore } from "@/store/demo-store";
 import type { OrderItem } from "@/types/demo";
 import { formatINR } from "@/lib/format";
-import { User, Phone, MapPin, Clock } from "lucide-react";
+import { User, Phone, MapPin, Clock, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useSearchCustomerByPhone, useSearchCustomerByPhoneStaff } from "@/hooks/use-customers";
 import {
   Select,
   SelectContent,
@@ -155,6 +156,8 @@ type Props = {
   isWaiterMode?: boolean; // Waiter mode doesn't auto-fill from storage
   orderType?: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
   customerFieldsOptional?: boolean;
+  restaurantSlug?: string; // For public orders to check existing customers
+  existingCustomerData?: { id: string; name: string; phone: string } | null; // For staff orders
   reorderContext?: {
     orderNumber: string;
     customerName: string;
@@ -180,6 +183,8 @@ export default function CheckoutDialog({
   tables = [],
   isWaiterMode = false,
   customerFieldsOptional = false,
+  restaurantSlug,
+  existingCustomerData,
   reorderContext,
   onSubmit,
   onTableChange,
@@ -192,6 +197,17 @@ export default function CheckoutDialog({
   const [consent, setConsent] = React.useState(true);
   const [arriveAt, setArriveAt] = React.useState("");
   const [selectedTableLocal, setSelectedTableLocal] = React.useState(tableId || "TAKEAWAY");
+
+  // Search for existing customer by phone
+  // For public orders (with restaurantSlug), use the public hook
+  // For staff orders (waiter mode), use the staff hook
+  // For staff orders with existingCustomerData prop, use the prop
+  const normalizedPhone = phone.replace(/\s+/g, "").trim();
+  const { data: existingCustomerPublic } = useSearchCustomerByPhone(restaurantSlug || '', normalizedPhone);
+  const { data: existingCustomerStaff } = useSearchCustomerByPhoneStaff(isWaiterMode ? normalizedPhone : '');
+  
+  // Use the appropriate data source: prop (staff), staff hook (waiter), or public hook
+  const existingCustomer = existingCustomerData || existingCustomerStaff || existingCustomerPublic;
 
   // Sync table from prop
   React.useEffect(() => {
@@ -213,7 +229,6 @@ export default function CheckoutDialog({
     }
   }, [isWaiterMode, reorderContext]);
 
-  const normalizedPhone = phone.replace(/\s+/g, "").trim();
   const repeatCustomer = state.customers.find((c) => c.phone.replace(/\s+/g, "") === normalizedPhone);
   const selectedTableMeta = tables.find((t: any) => t.id === selectedTableLocal);
   const selectedTableReservationHint = formatTableReservationHint(selectedTableMeta);
@@ -296,6 +311,21 @@ export default function CheckoutDialog({
                   Phone Number {customerFieldsOptional ? "(optional)" : ""}
                 </label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91-XXXXXXXXXX" inputMode="tel" />
+                
+                {/* Existing Customer Suggestion */}
+                {restaurantSlug && existingCustomer && name !== existingCustomer.name && (
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 text-xs">
+                      <p className="font-semibold text-amber-900">
+                        This phone is saved as: <span className="font-bold">{existingCustomer.name}</span>
+                      </p>
+                      <p className="text-amber-700 mt-1">
+                        If this is a different person, use a different name.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Table Selection (only for staff/waiter mode) */}

@@ -115,3 +115,46 @@ export function useDeleteCustomer() {
         },
     });
 }
+
+/**
+ * Public hook: Search for existing customer by phone number
+ * Used during public checkout to detect duplicate entries
+ */
+export function useSearchCustomerByPhone(restaurantSlug: string, phone: string) {
+    return useQuery({
+        queryKey: ['search-customer', restaurantSlug, phone],
+        queryFn: async () => {
+            if (!phone || phone.length < 5) return null;
+            
+            const response = await apiClient.get<{ data: { id: string; name: string; phone: string } | null }>(
+                `/public/${restaurantSlug}/customers/search?phone=${encodeURIComponent(phone)}`
+            );
+            if (response.error) return null;
+            return response.data.data;
+        },
+        enabled: !!restaurantSlug && !!phone && phone.length >= 5,
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+    });
+}
+
+/**
+ * Hook for staff orders: Search for customer by phone
+ * Uses authenticated API call with staff token
+ */
+export function useSearchCustomerByPhoneStaff(phone: string) {
+    return useQuery({
+        queryKey: ['search-customer-staff', phone],
+        queryFn: async () => {
+            if (!phone || phone.length < 5) return null;
+            
+            // Dynamic import to avoid circular dependency
+            const { searchCustomerByPhone } = await import('@/lib/staff-api');
+            const customer = await searchCustomerByPhone(phone);
+            return customer;
+        },
+        enabled: !!phone && phone.length >= 5,
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        gcTime: 1000 * 60 * 10, // 10 minutes
+    });
+}

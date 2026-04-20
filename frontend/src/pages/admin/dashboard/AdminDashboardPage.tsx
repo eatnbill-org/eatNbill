@@ -204,7 +204,7 @@ export default function AdminDashboardPage() {
             <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
               <LayoutDashboard className="w-5 h-5" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Home</h1>
           </div>
           <div className="px-1 flex flex-col">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-0.5">
@@ -223,7 +223,7 @@ export default function AdminDashboardPage() {
             className="relative h-10 sm:h-11 px-4 sm:px-5 rounded-lg border-border font-semibold text-sm text-muted-foreground hover:bg-accent transition-all w-full sm:w-auto"
           >
             <Settings2 className="mr-2 h-4 w-4" />
-            Manage Stock
+            Item Stock
             {hasOutOfStock && (
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive/75"></span>
@@ -237,13 +237,13 @@ export default function AdminDashboardPage() {
             className="h-10 sm:h-11 px-4 sm:px-5 rounded-lg border-border font-semibold text-sm text-muted-foreground hover:bg-accent transition-all w-full sm:w-auto"
           >
             <CalendarClock className="mr-2 h-4 w-4" />
-            Reservation
+            Booking
           </Button>
           <Button
             onClick={handleNewOrder}
             className="h-10 sm:h-11 px-4 sm:px-6 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm shadow-md transition-all w-full sm:w-auto"
           >
-            <Plus className="mr-2 h-4 w-4" /> New Order
+            <Plus className="mr-2 h-4 w-4" /> New Bill
           </Button>
         </div>
       </motion.div>

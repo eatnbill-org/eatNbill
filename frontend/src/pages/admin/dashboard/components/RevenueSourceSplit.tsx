@@ -45,7 +45,7 @@ export function RevenueSourceSplit({ profit = 0, showProfit = false, setShowProf
             <CardHeader className="py-3 border-b border-slate-50 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
                     <PieChartIcon className="w-3.5 h-3.5 text-indigo-500" />
-                    Revenue Channels
+                    Income Source
                 </CardTitle>
                 {setShowProfit && (
                     <button
@@ -55,7 +55,7 @@ export function RevenueSourceSplit({ profit = 0, showProfit = false, setShowProf
                             : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100"
                             }`}
                     >
-                        {showProfit ? "View Revenue" : "View Profit"}
+                        {showProfit ? "View Income" : "View Profit"}
                     </button>
                 )}
             </CardHeader>

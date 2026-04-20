@@ -61,24 +61,24 @@ export function ComposeSection({
             <Card className="rounded-[2.5rem] shadow-sm border-none bg-white overflow-hidden h-fit">
                 <CardHeader className="p-6 border-b border-slate-50">
                     <CardTitle className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                        <span className="text-indigo-500 font-black">1.</span> Composition Matrix
+                        <span className="text-indigo-500 font-black">1.</span> Compose Message
                         <MessageCircle className="h-4 w-4 text-slate-400 ml-auto" />
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Campaign Identifier</Label>
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Message Name</Label>
                         <Input
                             value={campaignName}
                             onChange={(e) => setCampaignName(e.target.value.slice(0, 100))}
-                            placeholder="e.g. RAMADAN_FEST_2025"
+                            placeholder="e.g. Ramadan Offer 2025"
                             className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium placeholder:text-slate-300"
                         />
                     </div>
 
                     <div className="space-y-2">
                         <div className="flex items-center justify-between px-1">
-                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Message Payload</Label>
+                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Message</Label>
                             <span className={cn("text-[10px] font-bold tabular-nums", messageCount > 450 ? "text-orange-500" : "text-slate-300")}>
                                 {messageCount}/500
                             </span>
@@ -89,7 +89,7 @@ export function ComposeSection({
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value.slice(0, 500))}
                                 className="min-h-[120px] rounded-[2rem] border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium p-5 resize-none placeholder:text-slate-300 leading-relaxed"
-                                placeholder="Construct your broadcast message..."
+                                placeholder="Write your message here..."
                             />
                             <div className="absolute right-4 bottom-4 flex gap-1 bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-sm border border-slate-100 opacity-0 group-focus-within:opacity-100 transition-opacity">
                                 {EMOJIS.slice(0, 4).map((e) => (
@@ -105,7 +105,7 @@ export function ComposeSection({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Visual Content</Label>
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Image</Label>
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => onImageFile(e.target.files?.[0] ?? null)} />
                         {!imageUrl ? (
                             <Button
@@ -114,7 +114,7 @@ export function ComposeSection({
                                 className="w-full h-11 justify-start rounded-2xl border-dashed border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all font-bold text-xs uppercase tracking-widest"
                                 onClick={() => fileInputRef.current?.click()}
                             >
-                                <Camera className="mr-2 h-4 w-4 text-indigo-500" /> Attach Asset
+                                <Camera className="mr-2 h-4 w-4 text-indigo-500" /> Add Image
                             </Button>
                         ) : (
                             <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-2 pr-4 flex gap-3 items-center">
@@ -122,7 +122,7 @@ export function ComposeSection({
                                     <img src={imageUrl} alt="Uploaded" className="h-full w-full object-cover" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Asset Locked</div>
+                                    <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Image Added</div>
                                     <div className="text-xs font-semibold text-slate-500 truncate">Image attachment active</div>
                                 </div>
                                 <button
@@ -136,10 +136,10 @@ export function ComposeSection({
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Linked Protocol</Label>
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Link to Item</Label>
                         <Select onValueChange={(val) => toggleProduct(Number(val))}>
                             <SelectTrigger className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-medium overflow-hidden">
-                                <SelectValue placeholder="Anchor Product..." />
+                                <SelectValue placeholder="Select item..." />
                             </SelectTrigger>
                             <SelectContent className="max-h-[200px] rounded-[2rem] border-slate-100">
                                 {products.map((p) => (
@@ -169,7 +169,7 @@ export function ComposeSection({
                             onClick={onSendNow}
                             className="h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-[0.15em] shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
                         >
-                            <Send className="mr-2 h-3.5 w-3.5" /> Deploy
+                            <Send className="mr-2 h-3.5 w-3.5" /> Send
                         </Button>
                         <Button
                             type="button"
@@ -191,20 +191,20 @@ export function ComposeSection({
                             <div className="h-10 w-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                                 <CalendarRange className="w-5 h-5" />
                             </div>
-                            <DialogTitle className="text-xl font-black text-slate-800 uppercase tracking-tight">Schedule Execution</DialogTitle>
+                            <DialogTitle className="text-xl font-black text-slate-800 uppercase tracking-tight">Schedule Send</DialogTitle>
                         </div>
                         <DialogDescription className="text-sm font-medium text-slate-500">
-                            Configure a delayed dispatch sequence for this campaign message.
+                            Choose when to send your message.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-6">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Effective Date</Label>
+                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Date</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className={cn("w-full h-12 rounded-2xl justify-start text-left font-bold text-xs uppercase tracking-widest border-slate-100 bg-slate-50/50", !scheduleDate && "text-slate-300")}>
                                         <CalendarIcon className="mr-2 h-4 w-4 text-indigo-500" />
-                                        {scheduleDate ? format(scheduleDate, "PPP") : "Select Deployment Date"}
+                                        {scheduleDate ? format(scheduleDate, "PPP") : "Pick a date"}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0 rounded-3xl border-slate-100 shadow-xl overflow-hidden" align="start">
@@ -213,7 +213,7 @@ export function ComposeSection({
                             </Popover>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Target Time (24h)</Label>
+                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Time (24h)</Label>
                             <Input
                                 value={scheduleTime}
                                 onChange={(e) => setScheduleTime(e.target.value)}
@@ -223,12 +223,12 @@ export function ComposeSection({
                         </div>
                     </div>
                     <DialogFooter className="gap-3">
-                        <Button variant="ghost" className="h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px]" onClick={() => setScheduleOpen(false)}>Abort</Button>
+                        <Button variant="ghost" className="h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px]" onClick={() => setScheduleOpen(false)}>Cancel</Button>
                         <Button
                             className="h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px] bg-slate-900 text-white shadow-xl shadow-slate-200"
                             onClick={() => { onCommitSchedule(); setScheduleOpen(false); }}
                         >
-                            Lock Schedule
+                            Save Schedule
                         </Button>
                     </DialogFooter>
                 </DialogContent>

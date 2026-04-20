@@ -20,6 +20,7 @@ export interface CreateOrderData {
   customer_phone: string;
   table_number?: string;
   notes?: string;
+  description?: string;  // Order description
   arrive_at?: string;
   source: OrderSource;
   order_type?: OrderType;
@@ -206,6 +207,7 @@ export async function createOrder(
         customer_phone: data.customer_phone,
         table_number: data.table_number,
         notes: data.notes,
+        description: data.description,
         arrive_at: data.arrive_at,
         total_amount: total,
         source: data.source,

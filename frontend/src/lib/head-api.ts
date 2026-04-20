@@ -622,3 +622,50 @@ export async function rejectQROrder(orderId: string, reason?: string, restaurant
 
     return response.json();
 }
+
+/**
+ * Search for customer by phone number
+ * Used for staff/admin orders to check existing customer names
+ */
+export async function searchCustomerByPhone(phone: string) {
+    const token = getStaffToken();
+    const restaurantId = getRestaurantId();
+
+    if (!token) {
+        return null;
+    }
+
+    const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    if (restaurantId) {
+        headers['x-restaurant-id'] = restaurantId;
+    }
+
+    try {
+        const response = await fetch(getPath(`customers?search=${encodeURIComponent(phone)}`), {
+            headers,
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const data = await response.json();
+        
+        // Find exact phone match in the results
+        if (data.data && Array.isArray(data.data)) {
+            const normalizedPhone = phone.replace(/\s+/g, '').trim();
+            const match = data.data.find((c: any) => 
+                c.phone && c.phone.replace(/\s+/g, '').trim() === normalizedPhone
+            );
+            return match || null;
+        }
+        
+        return null;
+    } catch {
+        return null;
+    }
+}

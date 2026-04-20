@@ -184,10 +184,10 @@ export default function AdminCampaignPage() {
               <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <Megaphone className="w-4 h-4" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">Campaigns</h1>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Offers</h1>
             </div>
             <p className="text-sm font-medium text-muted-foreground max-w-lg leading-snug px-0.5">
-              Create and send WhatsApp messages to your customers to keep them engaged.
+              Send WhatsApp messages to your customers to keep them updated.
             </p>
           </motion.div>
 
@@ -339,7 +339,7 @@ export default function AdminCampaignPage() {
         <DialogContent className="max-w-[95vw] sm:max-w-[420px] rounded-[2rem] sm:rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
           <div className="p-8 pb-4">
             <DialogHeader>
-              <DialogTitle className="text-sm font-black text-slate-800 uppercase tracking-widest text-center">Protocol Preview</DialogTitle>
+              <DialogTitle className="text-sm font-black text-slate-800 uppercase tracking-widest text-center">Message Preview</DialogTitle>
             </DialogHeader>
           </div>
           <div className="p-8 pt-2">
@@ -352,7 +352,7 @@ export default function AdminCampaignPage() {
               onClick={() => setFullPreviewOpen(false)}
               className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-[11px] bg-slate-900 text-white"
             >
-              Close Terminal
+              Close
             </Button>
           </div>
         </DialogContent>

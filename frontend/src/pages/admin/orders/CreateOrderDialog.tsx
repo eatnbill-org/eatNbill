@@ -16,9 +16,10 @@ import { useCategoriesStore } from '@/stores/categories';
 import { useTableStore } from '@/stores/tables';
 import type { CreateOrderPayload } from '@/types/order';
 import type { Product } from '@/types/product';
-import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check, CalendarDays, Utensils } from 'lucide-react';
+import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check, CalendarDays, Utensils, FileText, AlertCircle } from 'lucide-react';
 import { formatINR } from '@/lib/format';
 import { useRef } from 'react';
+import { useSearchCustomerByPhoneStaff } from '@/hooks/use-customers';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/skeleton';
@@ -54,8 +55,8 @@ interface OrderItem {
 }
 
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { printKitchenSlip } from '@/lib/print-utils';
-import { Label } from 'recharts';
 
 export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: CreateOrderDialogProps) {
   const { createOrder, creating, orders, error: storeError, clearError } = useAdminOrdersStore();
@@ -65,9 +66,15 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  
+  // Normalize phone and search for existing customers
+  const normalizedPhone = customerPhone.trim();
+  const { data: existingCustomer } = useSearchCustomerByPhoneStaff(normalizedPhone.length >= 5 ? normalizedPhone : '');
   const [tableId, setTableId] = useState('');
   const [tableNumber, setTableNumber] = useState('');
   const [notes, setNotes] = useState('');
+  const [description, setDescription] = useState('');
+  const [descriptionEnabled, setDescriptionEnabled] = useState(false);
   const [arriveAt, setArriveAt] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [printSlip, setPrintSlip] = useState(false); // Default OFF per plan
@@ -163,6 +170,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       table_id: tableId || undefined,
       table_number: tableNumber || undefined,
       notes: notes || undefined,
+      description: (descriptionEnabled && description.trim()) ? description.trim() : undefined,
       arrive_at: arriveAt || undefined,
       order_type: tableId ? 'DINE_IN' : 'TAKEAWAY',
       items: orderItems.map(item => ({
@@ -179,6 +187,8 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       setTableId('');
       setTableNumber('');
       setNotes('');
+      setDescription('');
+      setDescriptionEnabled(false);
       setArriveAt('');
       setOrderItems([]);
       setSelectedCategoryId(null);
@@ -383,11 +393,6 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
                 {/* Customer Identity Section - Fixed at top */}
                 <div className="space-y-3 shrink-0">
-                  <div className="flex items-center gap-2 px-1">
-                    <div className="w-1 h-3.5 bg-indigo-600 rounded-full" />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Customer Details</h3>
-                  </div>
-
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative group">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
@@ -408,6 +413,18 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                       />
                     </div>
                   </div>
+
+                  {/* Existing Customer Suggestion */}
+                  {existingCustomer && customerName !== existingCustomer.name && (
+                    <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                      <AlertCircle className="h-3.5 w-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 text-xs">
+                        <p className="font-semibold text-amber-900">
+                          This phone is saved as: <span className="font-bold">{existingCustomer.name}</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative group">
@@ -465,13 +482,24 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                   </div>
                 </div>
 
+                {/* Notes & Description Section */}
+                <div className="space-y-2">
+                  <div className="relative group">
+                    <FileText className="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                    <textarea
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      placeholder="Order notes..."
+                      className="w-full h-16 bg-white border-none shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] ring-1 ring-slate-100 focus:ring-2 focus:ring-primary rounded-xl font-bold px-9 pt-3 text-xs placeholder:text-slate-300 placeholder:font-medium resize-none transition-all"
+                    />
+                  </div>
+
+
+                </div>
+
                 {/* Order Summary Manifest - Independent Scroll Area */}
                 <div className="flex-1 flex flex-col min-h-0 bg-white rounded-[1.75rem] p-4 shadow-[0_10px_40px_-15px_rgba(16,185,129,0.08)] border border-primary/50 overflow-hidden">
                   <div className="flex items-center justify-between mb-3 px-1 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <ShoppingBag className="w-3.5 h-3.5 text-primary" />
-                      <p className="text-[10px] font-bold uppercase text-slate-800 tracking-widest">Order Summary</p>
-                    </div>
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-none rounded-lg text-[10px] font-bold px-2 py-0.5">
                       {orderItems.reduce((acc, item) => acc + item.quantity, 0)} ITEMS
                     </Badge>
@@ -542,7 +570,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                   type="submit"
                   disabled={creating || orderItems.length === 0}
                   className={cn(
-                    "w-full h-20 rounded-[1.75rem] shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] transition-all relative overflow-hidden group active:scale-[0.98]",
+                    "w-full h-12 rounded-[1.75rem] shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] transition-all relative overflow-hidden group active:scale-[0.98]",
                     (creating || orderItems.length === 0)
                       ? "bg-slate-100 text-slate-400"
                       : "bg-primary hover:bg-primary/90 text-white"
@@ -554,16 +582,10 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                       <span className="text-sm font-bold uppercase tracking-widest">Processing...</span>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between w-full px-4 h-full relative z-10">
-                      <div className="flex flex-col items-start gap-0.5">
-                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50">Total Payable</span>
-                        <span className="text-2xl font-bold tracking-tight">{formatINR(totalAmount)}</span>
-                      </div>
-                      <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 group-hover:bg-white/20 transition-all">
-                        <span className="text-[11px] font-bold uppercase tracking-widest">Confirm Order</span>
-                        <div className="h-6 w-6 rounded-lg bg-white text-primary flex items-center justify-center shadow-sm">
-                          <Check className="w-4 h-4" />
-                        </div>
+                    <div className="flex items-center justify-center w-full px-4 h-full relative z-10 gap-2">
+                      <span className="text-xs font-bold text-white">{formatINR(totalAmount)}</span>
+                      <div className="flex items-center gap-2 bg-white text-primary px-4 py-1.5 rounded-lg border border-white/20 group-hover:bg-white/20 transition-all">
+                        <Check className="w-3 h-3" />
                       </div>
                     </div>
                   )}
@@ -578,11 +600,6 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     {storeError.message}
                   </div>
                 )}
-
-                {/* Secondary Help Text */}
-                <p className="text-center text-[9px] font-bold text-slate-400 mt-4 uppercase tracking-widest opacity-60">
-                  By confirming, you agree to the restaurant POS protocols
-                </p>
               </div>
             </div>
           </div>

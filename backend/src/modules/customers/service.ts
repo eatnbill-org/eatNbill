@@ -11,6 +11,7 @@ import {
   getCustomerOrders,
   getOrdersByPhone,
   deleteCustomer,
+  findCustomerByPhone,
 } from './repository';
 
 export async function listRestaurantCustomers(
@@ -168,4 +169,19 @@ export async function getPublicOrderHistory(
   limit?: number
 ) {
   return getOrdersByPhone(phone, page, limit);
+}
+
+/**
+ * Public function: Search for existing customer by phone
+ * Used during checkout to detect duplicate customer entries
+ * Returns customer name if found, null otherwise
+ */
+export async function searchCustomerByPhone(
+  restaurantId: string,
+  phone: string
+) {
+  if (!phone?.trim()) {
+    return null;
+  }
+  return findCustomerByPhone(restaurantId, phone);
 }

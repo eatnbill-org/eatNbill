@@ -18,8 +18,8 @@ export function OrderStatsCards() {
 
     const statItems = [
         {
-            title: "Shift Volume",
-            label: "Total Orders",
+            title: "Today",
+            label: "Total Bills",
             value: stats.total,
             icon: <ShoppingBag className="h-5 w-5" />,
             color: "text-blue-600",
@@ -28,8 +28,8 @@ export function OrderStatsCards() {
             percentage: "Full Shift"
         },
         {
-            title: "Active Pulse",
-            label: "Current Waiting",
+            title: "Waiting",
+            label: "New Bills",
             value: stats.active,
             icon: <Clock className="h-5 w-5" />,
             color: "text-primary",
@@ -38,8 +38,8 @@ export function OrderStatsCards() {
             percentage: "Ongoing"
         },
         {
-            title: "Settled Flow",
-            label: "Paid Orders",
+            title: "Paid",
+            label: "Paid Bills",
             value: stats.completed,
             icon: <CheckCircle2 className="h-5 w-5" />,
             color: "text-emerald-700",
@@ -48,8 +48,8 @@ export function OrderStatsCards() {
             percentage: "Success"
         },
         {
-            title: "Voided Items",
-            label: "Cancelled",
+            title: "Cancelled",
+            label: "Cancelled Bills",
             value: stats.cancelled,
             icon: <XCircle className="h-5 w-5" />,
             color: "text-rose-600",

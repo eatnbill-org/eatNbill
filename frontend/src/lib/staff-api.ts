@@ -17,4 +17,5 @@ export {
   removeOrderItem,
   acceptQROrder,
   rejectQROrder,
+  searchCustomerByPhone,
 } from './head-api';

@@ -74,7 +74,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
 
       if (resData?.data?.logo_url) {
         onChange({ ...data, logo_url: resData.data.logo_url });
-        toast.success("Restaurant logo has been updated successfully.");
+        toast.success("Logo saved!");
       }
     } catch (err) {
       toast.error("Failed to upload logo.");
@@ -113,8 +113,8 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
       if (error) {
         setSlugValidation({ isValid: false, message: error.message });
       } else {
-        setSlugValidation({ isValid: true, message: "Slug is available and updated!" });
-        toast.success("Restaurant slug updated successfully!");
+        setSlugValidation({ isValid: true, message: "URL is available and saved!" });
+        toast.success("URL updated!");
       }
     } catch (err) {
       setSlugValidation({ isValid: false, message: "Failed to validate slug" });
@@ -180,7 +180,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                   <div className="h-5 w-5 rounded-md bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                     <Store className="h-3 w-3" />
                   </div>
-                  <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Restaurant Name</Label>
+                  <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Shop Name</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   {isEditingName ? (
@@ -196,7 +196,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                       className="flex-1 text-xl font-bold tracking-tight text-foreground uppercase leading-none cursor-pointer hover:text-primary transition-colors"
                       onClick={() => setIsEditingName(true)}
                     >
-                      {data.name || "Restaurant name"}
+                      {data.name || "Shop name"}
                     </div>
                   )}
                   <button
@@ -252,7 +252,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                     </p>
                   )}
                   <p className="text-[9px] text-slate-400 px-1 italic">
-                    ⚠️ Changing slug will break existing QR codes and shared links
+                    ⚠️ Changing this will stop old QR codes from working.
                   </p>
                 </div>
               </div>
@@ -285,7 +285,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
               <Input
                 value={data.address || ""}
                 onChange={(e) => onChange({ ...data, address: e.target.value })}
-                placeholder="Restaurant full address..."
+                placeholder="Shop full address..."
                 className="text-xs font-semibold text-muted-foreground bg-muted/20 border border-border rounded-xl px-3 h-10 transition-all hover:bg-white focus-visible:ring-1 focus-visible:ring-primary/10"
               />
             </div>
@@ -304,7 +304,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                 <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm">
                   <Utensils className="h-3 w-3" />
                 </div>
-                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Restaurant Type</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Shop Type</Label>
               </div>
               <Select
                 value={data.restaurant_type || ""}
@@ -404,7 +404,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
               <div className="relative z-10 flex flex-col gap-1">
                 <span className="text-[8px] font-bold uppercase tracking-widest opacity-60">Profile Status</span>
                 <p className="font-bold text-sm leading-tight tracking-tight text-white/90">
-                  Keep your restaurant information updated to help customers find and contact you easily.
+                  Keep your shop info updated so customers can find you.
                 </p>
               </div>
               <Store className="absolute -right-4 -bottom-4 h-24 w-24 opacity-10 rotate-12" />

@@ -188,7 +188,7 @@ export default function AdminProductsPage() {
               <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <Package className="w-5 h-5" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Products</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Items</h1>
             </div>
             <p className="text-sm font-medium text-muted-foreground max-w-lg leading-relaxed px-1">
               Manage your menu items, organize categories, and set pricing and discounts.
@@ -202,7 +202,7 @@ export default function AdminProductsPage() {
             <div className="flex flex-col">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-1">Catalog</span>
               <span className="text-sm font-bold text-foreground tracking-tight">
-                {products.length} Products / {categories.length} Categories
+                {products.length} Items / {categories.length} Categories
               </span>
             </div>
             <div className="h-8 w-[1px] bg-border" />
@@ -222,7 +222,7 @@ export default function AdminProductsPage() {
                 className="rounded-lg px-4 sm:px-6 py-2.5 font-bold uppercase tracking-widest text-[10px] sm:text-[11px] data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all flex-1 sm:flex-initial"
               >
                 <Package className="w-4 h-4 mr-2" />
-                Products
+                Items
               </TabsTrigger>
               <TabsTrigger
                 value="categories"
@@ -271,7 +271,7 @@ export default function AdminProductsPage() {
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products..."
+                  placeholder="Search items..."
                   className="pl-11 h-12 bg-muted/20 border-border rounded-xl focus-visible:ring-primary focus-visible:ring-offset-0 transition-all"
                 />
               </div>
@@ -314,7 +314,7 @@ export default function AdminProductsPage() {
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                     <TableHead className="w-[80px] py-6 pl-8 text-xs font-bold uppercase tracking-wider text-muted-foreground">Image</TableHead>
-                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Product</TableHead>
+                    <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Item</TableHead>
                     <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Category</TableHead>
                     <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Price</TableHead>
                     <TableHead className="py-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">Discount</TableHead>
@@ -329,7 +329,7 @@ export default function AdminProductsPage() {
                       <TableCell colSpan={showProfit ? 9 : 8} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center space-y-4 opacity-40">
                           <Package className="h-12 w-12 text-muted-foreground animate-pulse" />
-                          <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">Loading Products...</p>
+                          <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">Loading Items...</p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -338,7 +338,7 @@ export default function AdminProductsPage() {
                       <TableCell colSpan={showProfit ? 9 : 8} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center space-y-4 opacity-40">
                           <Search className="h-12 w-12 text-muted-foreground" />
-                          <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">No products found</p>
+                          <p className="font-bold text-muted-foreground uppercase tracking-widest text-xs">No items found</p>
                         </div>
                       </TableCell>
                     </TableRow>

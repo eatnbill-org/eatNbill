@@ -74,9 +74,9 @@ export default function AdminSideSettings() {
                         <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200">
                             <Settings2 className="w-5 h-5" />
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter uppercase">Admin Controls</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter uppercase">Settings</h1>
                     </div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Global system preferences & UI configuration</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Change how your shop and dashboard looks.</p>
                 </div>
             </div>
 
@@ -85,7 +85,7 @@ export default function AdminSideSettings() {
                 {/* 1. INTERFACE CUSTOMIZATION */}
                 <Card className="shadow-sm border border-slate-200">
                     <CardHeader className="py-3 bg-slate-50 border-b">
-                        <CardTitle className="text-base flex items-center gap-2 text-slate-800"><Monitor className="w-4 h-4" /> Interface Visibility</CardTitle>
+                        <CardTitle className="text-base flex items-center gap-2 text-slate-800"><Monitor className="w-4 h-4" /> Show or Hide Pages</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4 space-y-4">
 
@@ -93,18 +93,18 @@ export default function AdminSideSettings() {
                         <div>
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sidebar Menu</h3>
                             <div className="bg-white rounded-lg border px-3">
-                                <SettingRow label="Show Campaigns Page" checked={prefs.sidebar.showCampaigns} onChange={(v: boolean) => updatePrefs('sidebar', 'showCampaigns', v)} />
+                                <SettingRow label="Show Offers Page" checked={prefs.sidebar.showCampaigns} onChange={(v: boolean) => updatePrefs('sidebar', 'showCampaigns', v)} />
                                 <SettingRow label="Show Customers Page" checked={prefs.sidebar.showCustomers} onChange={(v: boolean) => updatePrefs('sidebar', 'showCustomers', v)} />
                             </div>
                         </div>
 
                         {/* Dashboard */}
                         <div>
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">New Order Form (Dashboard)</h3>
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Billing Form (Dashboard)</h3>
                             <div className="bg-white rounded-lg border px-3">
-                                <SettingRow label="Ask for Name" checked={prefs.dashboardFields.showName} onChange={(v: boolean) => updatePrefs('dashboardFields', 'showName', v)} />
-                                <SettingRow label="Ask for Number" checked={prefs.dashboardFields.showNumber} onChange={(v: boolean) => updatePrefs('dashboardFields', 'showNumber', v)} />
-                                <SettingRow label="Show 'Arrive At'" checked={prefs.dashboardFields.showArriveAt} onChange={(v: boolean) => updatePrefs('dashboardFields', 'showArriveAt', v)} />
+                                <SettingRow label="Customer Name" checked={prefs.dashboardFields.showName} onChange={(v: boolean) => updatePrefs('dashboardFields', 'showName', v)} />
+                                <SettingRow label="Customer Phone" checked={prefs.dashboardFields.showNumber} onChange={(v: boolean) => updatePrefs('dashboardFields', 'showNumber', v)} />
+                                <SettingRow label="Show 'Time'" checked={prefs.dashboardFields.showArriveAt} onChange={(v: boolean) => updatePrefs('dashboardFields', 'showArriveAt', v)} />
                                 <SettingRow label="Show 'Source'" checked={prefs.dashboardFields.showSource} onChange={(v: boolean) => updatePrefs('dashboardFields', 'showSource', v)} />
                                 <SettingRow label="Special Instructions" checked={prefs.dashboardFields.showSpecialInstructions} onChange={(v: boolean) => updatePrefs('dashboardFields', 'showSpecialInstructions', v)} />
                             </div>
@@ -118,7 +118,7 @@ export default function AdminSideSettings() {
                     <Card className="shadow-sm border-t-4 border-t-orange-500">
                         <CardHeader className="py-3 bg-orange-50/50 border-b flex flex-row items-center justify-between space-y-0">
                             <CardTitle className="text-base flex items-center gap-2 text-orange-700">
-                                <Bell className="w-4 h-4" /> Notification Sounds
+                                <Bell className="w-4 h-4" /> Sound Alerts
                             </CardTitle>
                             <Button
                                 size="sm"
@@ -137,11 +137,11 @@ export default function AdminSideSettings() {
                         <CardContent className="p-0">
                             <div className="divide-y divide-gray-100">
                                 {[
-                                    { key: 'qr', label: 'QR / Table Orders', icon: '📱' },
-                                    { key: 'takeaway', label: 'Takeaway / Walk-in', icon: '🛍️' },
+                                    { key: 'qr', label: 'Table Orders', icon: '📱' },
+                                    { key: 'takeaway', label: 'Counter Orders', icon: '🛍️' },
                                     { key: 'zomato', label: 'Zomato Orders', icon: '🍔' },
                                     { key: 'swiggy', label: 'Swiggy Orders', icon: '🍕' },
-                                    { key: 'reservation', label: 'Reservation Alerts', icon: '⏰' },
+                                    { key: 'reservation', label: 'Booking Alerts', icon: '⏰' },
                                 ].map(({ key, label, icon }) => (
                                     <div key={key} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center gap-3">
@@ -184,7 +184,7 @@ export default function AdminSideSettings() {
                                 <div className="flex items-center gap-2 text-blue-700 font-semibold">
                                     <ShieldCheck className="w-4 h-4" /> Security PIN
                                 </div>
-                                <p className="text-[10px] text-gray-500">Access control for sensitive actions.</p>
+                                <p className="text-[10px] text-gray-500">Password for important changes.</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="relative">
@@ -209,25 +209,25 @@ export default function AdminSideSettings() {
                     {/* 4. CUSTOMER ORDERING RULES */}
                     <Card className="shadow-sm border border-slate-200">
                         <CardHeader className="py-3 bg-indigo-50/50 border-b">
-                            <CardTitle className="text-base flex items-center gap-2 text-indigo-700"><SmartphoneIcon className="w-4 h-4" /> Ordering Rules</CardTitle>
+                            <CardTitle className="text-base flex items-center gap-2 text-indigo-700"><SmartphoneIcon className="w-4 h-4" /> Rules for Customers</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-4 space-y-4">
                             <div className="bg-white rounded-lg border px-3">
                                 <SettingRow 
-                                    label="Require Customer Details" 
-                                    subLabel="Ask for Name & Phone before ordering"
+                                    label="Ask for Customer Info" 
+                                    subLabel="Customers must give name and phone"
                                     checked={state.customerSettings.requireCustomerDetails} 
                                     onChange={(v: boolean) => dispatch({ type: "UPDATE_CUSTOMER_SETTINGS", payload: { requireCustomerDetails: v } })} 
                                 />
                                 <SettingRow 
-                                    label="Enable Pre-Orders" 
-                                    subLabel="Allow orders even if shop is closed"
+                                    label="Allow Orders when Closed" 
+                                    subLabel="Customers can order even if shop is not open"
                                     checked={state.customerSettings.enablePreOrder} 
                                     onChange={(v: boolean) => dispatch({ type: "UPDATE_CUSTOMER_SETTINGS", payload: { enablePreOrder: v } })} 
                                 />
                                 <SettingRow 
-                                    label="Show Product Demand" 
-                                    subLabel='Display "Trending" or "Bestseller" badges'
+                                    label="Show Popular Items" 
+                                    subLabel='Show "Best" or "Popular" tags'
                                     checked={state.customerSettings.showProductDemand} 
                                     onChange={(v: boolean) => dispatch({ type: "UPDATE_CUSTOMER_SETTINGS", payload: { showProductDemand: v } })} 
                                 />

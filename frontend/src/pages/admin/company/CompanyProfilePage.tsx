@@ -122,10 +122,10 @@ export default function CompanyProfilePage() {
               <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
                 <Store className="w-4 h-4" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">Restaurant Profile</h1>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Shop Profile</h1>
             </div>
             <p className="text-sm font-medium text-muted-foreground max-w-lg leading-snug px-0.5">
-              Manage your restaurant's profile and contact information.
+              Change your shop's name, logo, and address.
             </p>
           </div>
 

@@ -55,7 +55,7 @@ export function applyCommonMiddleware(app: Express) {
   app.use(cors(corsOptions));
 
   // Handle preflight OPTIONS requests explicitly
-  app.options('*', cors(corsOptions));
+  app.options(/.*/, cors(corsOptions));
 
   // Logging middleware (development only)
   if (env.NODE_ENV === 'development') {

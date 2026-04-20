@@ -10,10 +10,10 @@ import type { CampaignSend } from "@/types/demo";
 
 function segmentLabel(seg: string) {
   switch (seg) {
-    case "all": return "All Nodes";
-    case "new": return "New Discovery";
-    case "repeat": return "Core Retain";
-    case "udhaar": return "Debt recovery";
+    case "all": return "All Customers";
+    case "new": return "New";
+    case "repeat": return "Repeat";
+    case "udhaar": return "Udhaar";
     default: return seg;
   }
 }
@@ -82,7 +82,7 @@ function CampaignExpandedRow({ campaign, productsById, defaultOpen }: { campaign
         <div className="flex items-center gap-2.5">
           <Activity className="w-4 h-4 text-indigo-500" />
           <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-800 transition-colors">
-            {open ? "Collapse Performance Matrix" : "Inspect Performance Matrix"}
+            {open ? "Hide Details" : "View Details"}
           </span>
         </div>
         <ChevronRight className={cn("h-4 w-4 text-slate-300 transition-transform duration-300", open && "rotate-90 text-indigo-500")} />
@@ -95,7 +95,7 @@ function CampaignExpandedRow({ campaign, productsById, defaultOpen }: { campaign
             {/* Message Payload Snapshot */}
             <div className="rounded-3xl border border-slate-100 bg-white p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Manifest Snapshot</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Message Preview</p>
                 <Badge variant="outline" className="h-5 rounded-lg font-black text-[9px] uppercase tracking-widest border-slate-100 text-slate-500">Demo Sequence</Badge>
               </div>
               <div className="space-y-4">
@@ -120,8 +120,8 @@ function CampaignExpandedRow({ campaign, productsById, defaultOpen }: { campaign
             <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col justify-between">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex flex-col">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tactical Conversion</p>
-                  <p className="text-sm font-bold text-slate-800 tabular-nums">{Math.round((campaign.metrics.clicks / campaign.metrics.delivered) * 100 || 0)}% Integrity Score</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Engagement Rate</p>
+                  <p className="text-sm font-bold text-slate-800 tabular-nums">{Math.round((campaign.metrics.clicks / campaign.metrics.delivered) * 100 || 0)}% Engagement</p>
                 </div>
                 <div className="h-14 w-14">
                   <ResponsiveContainer width="100%" height="100%">
@@ -135,17 +135,17 @@ function CampaignExpandedRow({ campaign, productsById, defaultOpen }: { campaign
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <CompactMetric label="Dispatched" value={campaign.metrics.sent} />
-                <CompactMetric label="Confirmed" value={campaign.metrics.delivered} colorClass="text-emerald-600" icon={CheckCircle2} />
-                <CompactMetric label="Engagement" value={campaign.metrics.clicks} colorClass="text-indigo-600" icon={TrendingUp} />
-                <CompactMetric label="Anomalies" value={campaign.metrics.failed} colorClass="text-rose-500" icon={AlertCircle} />
+                <CompactMetric label="Sent" value={campaign.metrics.sent} />
+                <CompactMetric label="Delivered" value={campaign.metrics.delivered} colorClass="text-emerald-600" icon={CheckCircle2} />
+                <CompactMetric label="Clicks" value={campaign.metrics.clicks} colorClass="text-indigo-600" icon={TrendingUp} />
+                <CompactMetric label="Errors" value={campaign.metrics.failed} colorClass="text-rose-500" icon={AlertCircle} />
               </div>
             </div>
 
             {/* Target Nodes Registry */}
             <div className="rounded-3xl border border-slate-100 bg-white overflow-hidden shadow-sm flex flex-col h-full max-h-[340px]">
               <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Nodes Registry</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recipient List</p>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-100">
                   <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                   <span className="text-[9px] font-black text-slate-700 tabular-nums">{campaign.recipients.length}</span>
@@ -160,10 +160,10 @@ function CampaignExpandedRow({ campaign, productsById, defaultOpen }: { campaign
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{r.phone}</span>
                       </div>
                       <div>
-                        {r.status === "clicked" ? <Badge className="bg-indigo-50 text-indigo-600 border-indigo-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-2 h-6">ENGAGED</Badge> :
-                          r.status === "delivered" ? <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-2 h-6">REACHED</Badge> :
-                            r.status === "failed" ? <Badge className="bg-rose-50 text-rose-600 border-rose-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-2 h-6">LEAKED</Badge> :
-                              <Badge className="bg-slate-50 text-slate-400 border-slate-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-2 h-6">QUEUE</Badge>}
+                        {r.status === "clicked" ? <Badge className="bg-indigo-50 text-indigo-600 border-indigo-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-2 h-6">CLICKED</Badge> :
+                          r.status === "delivered" ? <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-2 h-6">DELIVERED</Badge> :
+                            r.status === "failed" ? <Badge className="bg-rose-50 text-rose-600 border-rose-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-2 h-6">FAILED</Badge> :
+                              <Badge className="bg-slate-50 text-slate-400 border-slate-100 rounded-lg font-black text-[9px] uppercase tracking-widest px-2 h-6">QUEUED</Badge>}
                       </div>
                     </div>
                   ))}
@@ -186,12 +186,12 @@ export function CampaignHistory({ campaigns, expandedId, setExpandedId, products
             <div className="h-6 w-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
               <History className="w-3.5 h-3.5" />
             </div>
-            <h2 className="text-base font-black text-slate-800 uppercase tracking-tight">Transmission Logs</h2>
+            <h2 className="text-base font-black text-slate-800 uppercase tracking-tight">Past Offers</h2>
           </div>
-          <p className="text-[11px] font-medium text-slate-400">Comprehensive registry of all authorized broadcast sequences and node engagement metrics.</p>
+          <p className="text-[11px] font-medium text-slate-400">List of messages you have sent or scheduled to your customers.</p>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Logged Sequences:</span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Total Messages:</span>
           <span className="text-[11px] font-black text-indigo-600 tabular-nums">{campaigns.length}</span>
         </div>
       </div>
@@ -202,12 +202,12 @@ export function CampaignHistory({ campaigns, expandedId, setExpandedId, products
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow className="hover:bg-transparent border-slate-100">
-                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 px-6">Manifest ID / Target</TableHead>
+                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 px-6">Message Name / Date</TableHead>
                   <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400">Class</TableHead>
-                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-center">Nodes</TableHead>
-                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-center">Reached</TableHead>
-                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-center">Engagement</TableHead>
-                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-right">Fiscal</TableHead>
+                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-center">Sent To</TableHead>
+                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-center">Delivered</TableHead>
+                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-center">Clicks</TableHead>
+                  <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-right">Cost</TableHead>
                   <TableHead className="h-14 font-black uppercase tracking-widest text-[10px] text-slate-400 text-right px-6">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -228,7 +228,7 @@ export function CampaignHistory({ campaigns, expandedId, setExpandedId, products
                           <div className="flex flex-col min-w-[120px]">
                             <p className="font-black text-slate-800 text-xs tracking-tight truncate uppercase">{c.name}</p>
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                              {c.sentAt ? formatWhen(c.sentAt) : c.scheduledFor ? `LOCKED: ${formatWhen(c.scheduledFor)}` : "VOID"}
+                              {c.sentAt ? formatWhen(c.sentAt) : c.scheduledFor ? `Scheduled: ${formatWhen(c.scheduledFor)}` : "None"}
                             </p>
                           </div>
                         </TableCell>
@@ -252,12 +252,12 @@ export function CampaignHistory({ campaigns, expandedId, setExpandedId, products
                         <TableCell className="text-right px-6">
                           {c.status === "completed" ? (
                             <div className="flex items-center justify-end gap-1.5 text-emerald-600">
-                              <span className="text-[10px] font-black uppercase tracking-widest">SUCCESS</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest">SENT</span>
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </div>
                           ) : c.status === "pending" ? (
                             <div className="flex items-center justify-end gap-1.5 text-orange-500">
-                              <span className="text-[10px] font-black uppercase tracking-widest">QUEUED</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest">PENDING</span>
                               <Clock className="w-3.5 h-3.5" />
                             </div>
                           ) : (
@@ -283,7 +283,7 @@ export function CampaignHistory({ campaigns, expandedId, setExpandedId, products
                     <TableCell colSpan={7} className="py-24 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <History className="w-8 h-8 text-slate-100" />
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Transmission registry is currently void.</p>
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">No messages sent yet.</p>
                       </div>
                     </TableCell>
                   </TableRow>

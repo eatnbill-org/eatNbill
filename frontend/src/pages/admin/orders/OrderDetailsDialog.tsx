@@ -165,6 +165,40 @@ export default function OrderDetailsDialog({ order, open, onOpenChange, onMarkPa
                             </div>
                         </div>
 
+                        {/* Description Section - Display if exists */}
+                        {order.description && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="rounded-xl bg-indigo-50/30 border border-indigo-100 p-3 space-y-1"
+                            >
+                                <div className="flex items-center gap-1.5">
+                                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span className="text-[7px] font-black uppercase tracking-widest text-indigo-600">Description</span>
+                                </div>
+                                <p className="text-xs font-bold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                    {order.description}
+                                </p>
+                            </motion.div>
+                        )}
+
+                        {/* Notes Section - Display if exists */}
+                        {order.notes && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="rounded-xl bg-amber-50/30 border border-amber-100 p-3 space-y-1"
+                            >
+                                <div className="flex items-center gap-1.5">
+                                    <FileText className="w-3.5 h-3.5 text-amber-600" />
+                                    <span className="text-[7px] font-black uppercase tracking-widest text-amber-600">Notes</span>
+                                </div>
+                                <p className="text-xs font-bold text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                    {order.notes}
+                                </p>
+                            </motion.div>
+                        )}
+
                         {/* Settlement Card - Shrunk */}
                         <div className={cn(
                             "rounded-xl p-3 border shadow-sm",

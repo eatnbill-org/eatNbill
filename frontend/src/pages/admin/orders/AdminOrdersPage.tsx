@@ -306,7 +306,7 @@ export default function AdminOrdersPage() {
     <div className="min-h-full bg-transparent p-3 sm:p-6 space-y-6 overflow-y-auto no-scrollbar">
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Orders</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Bills</h1>
           <div className="flex items-center gap-2 mt-1">
             {realtimeConnected && (
               <span className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">
@@ -391,7 +391,7 @@ export default function AdminOrdersPage() {
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, phone, order#, item..."
+            placeholder="Search by name, phone, bill#, item..."
             className="pl-10 h-10 bg-muted/20 border-none ring-1 ring-border focus-visible:ring-primary shadow-none rounded-xl"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -412,7 +412,7 @@ export default function AdminOrdersPage() {
             onClick={() => setCreateDialogOpen(true)}
           >
             <Plus className="h-4 w-4" />
-            New Order
+            New Bill
           </Button>
         </div>
       </div>
@@ -460,11 +460,11 @@ export default function AdminOrdersPage() {
         <div className="md:hidden space-y-3 p-3">
           {loading && orders.length === 0 ? (
             <div className="h-40 grid place-items-center text-muted-foreground font-bold uppercase tracking-widest animate-pulse text-xs">
-              Loading Orders...
+              Loading Bills...
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="h-40 grid place-items-center text-muted-foreground font-semibold italic text-sm">
-              No orders found.
+              No bills found.
             </div>
           ) : (
             filteredOrders.map((order) => (
@@ -552,7 +552,7 @@ export default function AdminOrdersPage() {
           <Table className="min-w-[920px]">
             <TableHeader className="bg-muted/50 border-b border-border">
               <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="w-[100px] text-[11px] uppercase tracking-wider font-bold text-muted-foreground pl-6 h-12">Order ID</TableHead>
+                <TableHead className="w-[100px] text-[11px] uppercase tracking-wider font-bold text-muted-foreground pl-6 h-12">Bill ID</TableHead>
                 <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Customer</TableHead>
                 <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Items</TableHead>
                 <TableHead className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground h-12">Total</TableHead>
@@ -566,13 +566,13 @@ export default function AdminOrdersPage() {
               {loading && orders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-48 text-center text-muted-foreground font-bold uppercase tracking-widest animate-pulse">
-                    Loading Orders...
+                    Loading Bills...
                   </TableCell>
                 </TableRow>
               ) : filteredOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-48 text-center space-y-2">
-                    <p className="text-muted-foreground font-semibold italic text-sm">No orders found.</p>
+                    <p className="text-muted-foreground font-semibold italic text-sm">No bills found.</p>
                   </TableCell>
                 </TableRow>
               ) : (

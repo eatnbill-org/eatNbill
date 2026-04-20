@@ -75,6 +75,7 @@ export interface Order {
   customer_phone: string;
   table_number: string | null;
   notes: string | null;
+  description: string | null;
   total_amount: string;  // Decimal as string
   discount_amount?: string; // Decimal as string - New field
 
@@ -136,6 +137,7 @@ export interface CreateOrderPayload {
   table_number?: string;
   order_type: OrderType;
   notes?: string;
+  description?: string;
   arrive_at?: string;
   items: Array<{
     product_id: string;

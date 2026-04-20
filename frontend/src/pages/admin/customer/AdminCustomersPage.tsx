@@ -64,7 +64,7 @@ export default function AdminCustomersPage() {
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Customers</h1>
               </div>
               <p className="text-sm font-medium text-muted-foreground max-w-lg leading-relaxed px-1">
-                Manage your customer database, track loyalty, and view order history.
+                Manage your customers, see their loyalty, and check past bills.
               </p>
             </div>
 
@@ -74,7 +74,7 @@ export default function AdminCustomersPage() {
             >
               <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
-                {data?.data?.length || 0} Total Customers
+                {data?.data?.length || 0} Customers
               </span>
             </motion.div>
           </motion.div>
@@ -122,9 +122,9 @@ export default function AdminCustomersPage() {
             </div>
 
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-2">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Consequence Warning</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Warning</p>
               <p className="text-xs text-slate-500 leading-relaxed italic">
-                All historical order tracking and store credit balances for this account will be permanently discarded.
+                All past bills and udhaar for this customer will be removed.
               </p>
             </div>
           </div>
