@@ -88,6 +88,7 @@ import {
   CreditCard,
   ScrollText,
   Beer,
+  CalendarDays,
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -511,7 +512,8 @@ function AdminSidebar() {
                 { label: "Tables", path: "/admin/company/tables", icon: Armchair },
                 { label: "Staff", path: "/admin/company/staff", icon: UserCog },
                 { label: "Scheduling", path: "/admin/company/scheduling", icon: Calendar },
-                { label: "Timesheets", path: "/admin/company/timesheets", icon: Timer }
+                { label: "Timesheets", path: "/admin/company/timesheets", icon: Timer },
+                { label: "Banquet & Events", path: "/admin/company/banquet", icon: CalendarDays }
               ]}
             />
 

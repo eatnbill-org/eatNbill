@@ -56,6 +56,7 @@ const TablePage = lazy(() => import("./pages/admin/company/TablePage"));
 const StaffPage = lazy(() => import("./pages/admin/company/staff/StaffPage"));
 const StaffSchedulingPage = lazy(() => import("./pages/admin/company/staff/StaffSchedulingPage"));
 const TimesheetPage = lazy(() => import("./pages/admin/company/staff/TimesheetPage"));
+const BanquetPage = lazy(() => import("./pages/admin/company/BanquetPage"));
 const PurchaseOrdersPage = lazy(() => import("./pages/admin/inventory/PurchaseOrdersPage"));
 const CustomerFacingDisplay = lazy(() => import("./pages/admin/display/CustomerFacingDisplay"));
 const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage"));
@@ -181,6 +182,7 @@ const App = () => (
                 <Route path="company/staff" element={<StaffPage />} />
                 <Route path="company/scheduling" element={<StaffSchedulingPage />} />
                 <Route path="company/timesheets" element={<TimesheetPage />} />
+                <Route path="company/banquet" element={<BanquetPage />} />
                 <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
                 <Route path="display" element={<CustomerFacingDisplay />} />
                 <Route path="day-end" element={<AdminDayEndPage />} />

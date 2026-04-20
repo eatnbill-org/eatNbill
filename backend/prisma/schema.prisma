@@ -142,6 +142,7 @@ model Restaurant {
   ingredients            Ingredient[]
   suppliers              Supplier[]
   gift_cards             GiftCard[]
+  event_bookings         EventBooking[]
 
   @@unique([slug])
   @@index([tenant_id])
@@ -1149,6 +1150,7 @@ model RestaurantHall {
   outlet        RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)
   tables        RestaurantTable[]
   orders        Order[]
+  event_bookings EventBooking[]
 
   @@index([restaurant_id])
   @@index([outlet_id])
@@ -1651,4 +1653,50 @@ model GiftCard {
   @@index([restaurant_id])
   @@index([tenant_id])
   @@map("gift_cards")
+}
+
+// ============================================================================
+// Event / Banquet Bookings
+// ============================================================================
+
+enum EventBookingStatus {
+  ENQUIRY
+  CONFIRMED
+  DEPOSIT_PAID
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model EventBooking {
+  id                String             @id @default(uuid()) @db.Uuid
+  tenant_id         String             @db.Uuid
+  restaurant_id     String             @db.Uuid
+  hall_id           String             @db.Uuid
+  event_type        String             // WEDDING | BIRTHDAY | CORPORATE | ANNIVERSARY | OTHER
+  event_name        String?
+  event_date        DateTime
+  event_end_date    DateTime?
+  guest_count       Int
+  customer_name     String
+  customer_phone    String?
+  customer_email    String?
+  menu_notes        String?
+  special_requests  String?
+  advance_amount    Decimal?           @db.Decimal(10, 2)
+  total_amount      Decimal?           @db.Decimal(10, 2)
+  status            EventBookingStatus @default(ENQUIRY)
+  created_by        String?            @db.Uuid
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+  cancelled_at      DateTime?
+  notes             String?
+
+  restaurant        Restaurant         @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  hall              RestaurantHall     @relation(fields: [hall_id], references: [id])
+
+  @@index([restaurant_id, event_date])
+  @@index([restaurant_id, status])
+  @@index([tenant_id])
+  @@map("event_bookings")
 }

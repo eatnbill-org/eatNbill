@@ -1877,6 +1877,93 @@ export function restaurantRoutes() {
     } catch (err) { next(err); }
   });
 
+  // ─── Event / Banquet Bookings ────────────────────────────────────────────────
+  router.get('/event-bookings', async (req: any, res: any, next: any) => {
+    try {
+      const { tenantId, restaurantId } = req as any;
+      const page = parseInt((req.query.page as string) || '1', 10);
+      const limit = parseInt((req.query.limit as string) || '50', 10);
+      const where: any = { tenant_id: tenantId, restaurant_id: restaurantId };
+      if (req.query.status) where.status = req.query.status as string;
+      if (req.query.from) where.event_date = { ...(where.event_date || {}), gte: new Date(req.query.from as string) };
+      if (req.query.to) where.event_date = { ...(where.event_date || {}), lte: new Date(req.query.to as string) };
+      const [total, bookings] = await Promise.all([
+        prisma.eventBooking.count({ where }),
+        prisma.eventBooking.findMany({
+          where,
+          orderBy: { event_date: 'asc' },
+          skip: (page - 1) * limit,
+          take: limit,
+          include: { hall: { select: { id: true, name: true } } },
+        }),
+      ]);
+      res.json({ data: bookings, total, page, limit, pages: Math.ceil(total / limit) });
+    } catch (err) { next(err); }
+  });
+
+  router.post('/event-bookings', async (req: any, res: any, next: any) => {
+    try {
+      const role = req.user?.restaurantRole;
+      if (role !== 'OWNER' && role !== 'MANAGER') throw new AppError('FORBIDDEN', 'Only owner/manager can manage event bookings', 403);
+      const { tenantId, restaurantId } = req as any;
+      const userId: string = req.user?.userId || req.user?.id || null;
+      const { hall_id, event_type, event_name, event_date, event_end_date, guest_count, customer_name, customer_phone, customer_email, menu_notes, special_requests, advance_amount, total_amount, notes } = req.body;
+      const booking = await prisma.eventBooking.create({
+        data: {
+          tenant_id: tenantId,
+          restaurant_id: restaurantId,
+          hall_id,
+          event_type,
+          event_name: event_name || null,
+          event_date: new Date(event_date),
+          event_end_date: event_end_date ? new Date(event_end_date) : null,
+          guest_count: parseInt(guest_count, 10),
+          customer_name,
+          customer_phone: customer_phone || null,
+          customer_email: customer_email || null,
+          menu_notes: menu_notes || null,
+          special_requests: special_requests || null,
+          advance_amount: advance_amount ? parseFloat(advance_amount) : null,
+          total_amount: total_amount ? parseFloat(total_amount) : null,
+          notes: notes || null,
+          created_by: userId,
+        },
+        include: { hall: { select: { id: true, name: true } } },
+      });
+      res.status(201).json({ data: booking });
+    } catch (err) { next(err); }
+  });
+
+  router.patch('/event-bookings/:id', async (req: any, res: any, next: any) => {
+    try {
+      const role = req.user?.restaurantRole;
+      if (role !== 'OWNER' && role !== 'MANAGER') throw new AppError('FORBIDDEN', 'Only owner/manager can manage event bookings', 403);
+      const { tenantId } = req as any;
+      const booking = await prisma.eventBooking.findFirst({ where: { id: req.params.id as string, tenant_id: tenantId } });
+      if (!booking) throw new AppError('NOT_FOUND', 'Event booking not found', 404);
+      const allowedFields = ['status', 'notes', 'menu_notes', 'special_requests', 'advance_amount', 'total_amount', 'event_name', 'guest_count', 'customer_phone', 'customer_email'];
+      const updateData: any = {};
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) updateData[field] = req.body[field];
+      }
+      if (req.body.status === 'CANCELLED') updateData.cancelled_at = new Date();
+      const updated = await prisma.eventBooking.update({ where: { id: booking.id }, data: updateData, include: { hall: { select: { id: true, name: true } } } });
+      res.json({ data: updated });
+    } catch (err) { next(err); }
+  });
+
+  router.delete('/event-bookings/:id', async (req: any, res: any, next: any) => {
+    try {
+      const role = req.user?.restaurantRole;
+      if (role !== 'OWNER' && role !== 'MANAGER') throw new AppError('FORBIDDEN', 'Only owner/manager can manage event bookings', 403);
+      const { tenantId } = req as any;
+      const booking = await prisma.eventBooking.findFirst({ where: { id: req.params.id as string, tenant_id: tenantId } });
+      if (!booking) throw new AppError('NOT_FOUND', 'Event booking not found', 404);
+      await prisma.eventBooking.delete({ where: { id: booking.id } });
+      res.json({ success: true });
+    } catch (err) { next(err); }
+  });
+
   // Audit Logs (owner/manager only)
   router.get('/audit-logs', async (req: any, res: any, next: any) => {
     try {
