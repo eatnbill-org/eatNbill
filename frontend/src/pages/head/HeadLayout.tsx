@@ -20,7 +20,10 @@ import { toast } from "sonner";
 import { useStaffAuth } from "@/hooks/use-head-auth";
 import i18n, { backendLanguageToUi, persistLanguage } from "@/i18n";
 import { fetchMyPreferences } from "@/lib/enterprise-api";
+<<<<<<< HEAD
 import { showNewOrderNotification } from "@/lib/push-notifications";
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
 import { LayoutGrid, Package } from "lucide-react";
 
@@ -45,6 +48,7 @@ export default function HeadLayout() {
     const knownOrderIdsRef = useRef<Set<string>>(new Set());
     const pollingInitializedRef = useRef(false);
 
+<<<<<<< HEAD
     // Swipe navigation (mobile only)
     const swipeTouchStart = useRef<{ x: number; y: number } | null>(null);
     const handleSwipeTouchStart = useCallback((e: React.TouchEvent) => {
@@ -62,6 +66,8 @@ export default function HeadLayout() {
         if (dx > 0 && currentIdx > 0) navigate(navPaths[currentIdx - 1]);
     }, [location.pathname, navigate]);
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     const handleQrNotification = useCallback(async (
         orderId: string,
         fallback?: Partial<{ order_number: string; customer_name: string; table_number: string; total_amount: number }>
@@ -76,12 +82,15 @@ export default function HeadLayout() {
             const fullOrder = response?.data;
             if (fullOrder?.id) {
                 useNotificationStore.getState().addNotification(fullOrder);
+<<<<<<< HEAD
                 void showNewOrderNotification({
                     orderNumber: fullOrder.order_number || orderId.slice(-4).toUpperCase(),
                     customerName: fullOrder.customer_name,
                     tableNumber: fullOrder.table?.table_number ?? fullOrder.table_number ?? null,
                     totalAmount: Number(fullOrder.total_amount),
                 });
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                 return;
             }
         } catch {
@@ -97,11 +106,14 @@ export default function HeadLayout() {
             total_amount: Number(fallback?.total_amount || 0),
             items: [],
         } as any);
+<<<<<<< HEAD
         void showNewOrderNotification({
             orderNumber: fallback?.order_number || orderId.slice(-4).toUpperCase(),
             customerName: fallback?.customer_name,
             tableNumber: fallback?.table_number,
         });
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
         // Keep head pages in sync immediately when QR notification arrives.
         queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
@@ -280,11 +292,15 @@ export default function HeadLayout() {
             </header>
 
             {/* Main Content Area */}
+<<<<<<< HEAD
             <div
                 className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-24 md:pb-10 relative bg-slate-50/50"
                 onTouchStart={handleSwipeTouchStart}
                 onTouchEnd={handleSwipeTouchEnd}
             >
+=======
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-24 md:pb-10 relative bg-slate-50/50">
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                 <Button
                     onClick={() => navigate("/head/menu")}
                     className="hidden lg:flex fixed top-20 right-6 z-30 h-11 rounded-full px-5 shadow-lg shadow-primary/20"

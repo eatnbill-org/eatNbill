@@ -380,7 +380,11 @@ export async function findExistingTableNumbers(
 
 export async function updateTable(
   tableId: string,
+<<<<<<< HEAD
   data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean; x_position?: number | null; y_position?: number | null; shape?: string | null; table_width?: number; table_height?: number; }
+=======
+  data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean; x_position?: number | null; y_position?: number | null; shape?: string | null; }
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 ) {
   return prisma.restaurantTable.update({
     where: { id: tableId },
@@ -393,8 +397,11 @@ export async function updateTable(
       ...(data.x_position !== undefined && { x_position: data.x_position }),
       ...(data.y_position !== undefined && { y_position: data.y_position }),
       ...(data.shape !== undefined && { shape: data.shape }),
+<<<<<<< HEAD
       ...(data.table_width !== undefined && { table_width: data.table_width }),
       ...(data.table_height !== undefined && { table_height: data.table_height }),
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     },
     include: { hall: true, outlet: true },
   });

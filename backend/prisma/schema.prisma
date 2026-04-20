@@ -141,8 +141,11 @@ model Restaurant {
   modifier_groups        ProductModifierGroup[]
   ingredients            Ingredient[]
   suppliers              Supplier[]
+<<<<<<< HEAD
   gift_cards             GiftCard[]
   event_bookings         EventBooking[]
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
   @@unique([slug])
   @@index([tenant_id])
@@ -317,8 +320,11 @@ model OrderItem {
   comp_reason    String? // Reason when status = COMPED
   voided_by_user_id String? @db.Uuid // Who voided/comped this item
   voided_at      DateTime? // When it was voided/comped
+<<<<<<< HEAD
   course         String? // Course grouping: STARTER | MAIN | DESSERT | DRINKS (null = no course assigned)
   course_fired_at DateTime? // When this course was fired to kitchen
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   modifiers_total Decimal @default(0) @db.Decimal(10, 2) // Sum of all modifier price_deltas
   created_at     DateTime @default(now())
   order          Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
@@ -1170,8 +1176,11 @@ model RestaurantTable {
   x_position    Int?           // Grid column position (0-based)
   y_position    Int?           // Grid row position (0-based)
   shape         String?        // RECTANGLE | CIRCLE (default RECTANGLE)
+<<<<<<< HEAD
   table_width   Int            @default(1) // Grid colspan (1 or 2)
   table_height  Int            @default(1) // Grid rowspan (1 or 2)
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   created_at    DateTime       @default(now())
   restaurant    Restaurant     @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   outlet        RestaurantOutlet? @relation(fields: [outlet_id], references: [id], onDelete: SetNull)
@@ -1522,7 +1531,10 @@ model Ingredient {
   reorder_level   Decimal?        @db.Decimal(12, 3)  // Alert threshold
   cost_per_unit   Decimal         @default(0) @db.Decimal(10, 4)
   category        String?
+<<<<<<< HEAD
   expiry_date     DateTime?       // Optional per-batch expiry tracking
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   is_active       Boolean         @default(true)
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt
@@ -1629,6 +1641,7 @@ model PurchaseOrderLine {
   @@index([po_id])
   @@map("purchase_order_lines")
 }
+<<<<<<< HEAD
 
 // ============================================================================
 // Gift Cards
@@ -1700,3 +1713,5 @@ model EventBooking {
   @@index([tenant_id])
   @@map("event_bookings")
 }
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980

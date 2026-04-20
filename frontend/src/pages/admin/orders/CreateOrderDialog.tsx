@@ -16,7 +16,11 @@ import { useCategoriesStore } from '@/stores/categories';
 import { useTableStore } from '@/stores/tables';
 import type { CreateOrderPayload } from '@/types/order';
 import type { Product } from '@/types/product';
+<<<<<<< HEAD
 import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check, Package, Tag, CheckCircle, AlertCircle } from 'lucide-react';
+=======
+import { Trash2, ShoppingBag, Search, UtensilsCrossed, Sparkles, X, Clock, MapPin, Tablet, User, ChevronLeft, ChevronRight, Plus, Minus, Check, Package } from 'lucide-react';
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 import { formatINR } from '@/lib/format';
 import { useRef } from 'react';
 import { validateVoucherCode } from '@/lib/enterprise-api';
@@ -61,8 +65,11 @@ interface ComboProduct {
   components: { product_id: string; quantity: number; product: { id: string; name: string; price: string } }[];
 }
 
+<<<<<<< HEAD
 type CourseType = 'STARTER' | 'MAIN' | 'DESSERT' | 'DRINKS';
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 interface OrderItem {
   key: string; // unique: product_id + sorted modifier option ids
   product_id: string;
@@ -71,7 +78,10 @@ interface OrderItem {
   unit_price: number; // base price + modifiers delta
   modifier_option_ids: string[];
   modifier_label?: string; // human readable summary
+<<<<<<< HEAD
   course?: CourseType; // optional course grouping
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   // combo-specific
   is_combo?: true;
   combo_components?: ComboComponent[];
@@ -108,6 +118,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
   const [showCombos, setShowCombos] = useState(false);
   const [combos, setCombos] = useState<ComboProduct[]>([]);
   const [combosLoading, setCombosLoading] = useState(false);
+<<<<<<< HEAD
 
   // Voucher / promo code
   const [voucherCode, setVoucherCode] = useState('');
@@ -115,6 +126,8 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
   const [appliedVoucher, setAppliedVoucher] = useState<{ voucher_id: string; code: string; discount_amount: number; description: string | null } | null>(null);
   const voucherDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -277,10 +290,13 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
   const removeItem = (itemKey: string) => {
     setOrderItems(orderItems.filter(item => item.key !== itemKey));
+<<<<<<< HEAD
   };
 
   const setCourse = (itemKey: string, course: CourseType | undefined) => {
     setOrderItems(orderItems.map(item => item.key === itemKey ? { ...item, course } : item));
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   };
 
   const totalAmount = orderItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
@@ -320,7 +336,10 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       notes: notes || undefined,
       arrive_at: arriveAt || undefined,
       order_type: tableNumber ? 'DINE_IN' : 'TAKEAWAY',
+<<<<<<< HEAD
       ...(appliedVoucher && { voucher_id: appliedVoucher.voucher_id }),
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
       items: orderItems.flatMap(item => {
         if (item.is_combo && item.combo_components) {
           return item.combo_components.map(comp => ({
@@ -329,7 +348,11 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
             unit_price: comp.unit_price,
           }));
         }
+<<<<<<< HEAD
         return [{ product_id: item.product_id, quantity: item.quantity, unit_price: item.unit_price, modifier_option_ids: item.modifier_option_ids.length > 0 ? item.modifier_option_ids : undefined, course: item.course ?? undefined }];
+=======
+        return [{ product_id: item.product_id, quantity: item.quantity, unit_price: item.unit_price, modifier_option_ids: item.modifier_option_ids.length > 0 ? item.modifier_option_ids : undefined }];
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
       }),
     };
 
@@ -344,9 +367,12 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       setSelectedCategoryId(null);
       setShowCombos(false);
       setProductModifierCache({});
+<<<<<<< HEAD
       setVoucherCode('');
       setAppliedVoucher(null);
       setVoucherStatus('idle');
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
       onOpenChange(false);
       if (printSlip) {
         printKitchenSlip(order);
@@ -714,7 +740,11 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                               {item.modifier_label && (
                                 <p className="text-[9px] text-violet-500 font-semibold truncate">{item.modifier_label}</p>
                               )}
+<<<<<<< HEAD
                               <div className="flex items-center gap-2 flex-wrap">
+=======
+                              <div className="flex items-center gap-2">
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                                 <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
                                   {item.quantity}x
                                 </span>

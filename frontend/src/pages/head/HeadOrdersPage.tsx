@@ -20,8 +20,11 @@ import {
     Clock,
     UtensilsCrossed,
     Check,
+<<<<<<< HEAD
     Star,
     AlertCircle,
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +41,7 @@ function timeAgo(dateStr: string): string {
     return `${Math.floor(hrs / 24)}d ago`;
 }
 
+<<<<<<< HEAD
 // Order age in minutes
 function orderAgeMinutes(dateStr: string): number {
     return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
@@ -51,6 +55,8 @@ function getAgeIndicator(dateStr: string): { cls: string; label: string } | null
     return { cls: "bg-rose-100 text-rose-700", label: `${mins}m ⚠` };
 }
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 // Status configuration with unique card accent colors
 const STATUS_CONFIG: Record<string, {
     label: string; color: string; bgColor: string; icon: React.ReactNode;
@@ -86,12 +92,16 @@ export default function HeadOrdersPage() {
     const connectionMode = useRealtimeStore((state) => state.connectionMode);
     const realtimeConnected = useRealtimeStore((state) => state.isConnected);
     const [statusFilter, setStatusFilter] = React.useState<string>("ACTIVE");
+<<<<<<< HEAD
     const [pinnedIds, setPinnedIds] = React.useState<Set<string>>(new Set());
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     const [selectedOrder, setSelectedOrder] = React.useState<any | null>(null);
     const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
     const [cancelDialogOpen, setCancelDialogOpen] = React.useState(false);
     const [orderToCancel, setOrderToCancel] = React.useState<any | null>(null);
     const [cancelReason, setCancelReason] = React.useState("");
+<<<<<<< HEAD
 
     // Pull-to-refresh
     const pullTouchStartY = React.useRef<number | null>(null);
@@ -117,6 +127,8 @@ export default function HeadOrdersPage() {
         setPullOffset(0);
         pullTouchStartY.current = null;
     }, [pullOffset, isRefreshing, queryClient]);
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
     // Order Details Dialog State
     const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
@@ -207,7 +219,11 @@ export default function HeadOrdersPage() {
 
         // ✅ Cap to 50 items for performance
         return sorted.slice(0, 50);
+<<<<<<< HEAD
     }, [orders, statusFilter, headerSearch, getOrderTableNumber, pinnedIds]);
+=======
+    }, [orders, statusFilter, headerSearch, getOrderTableNumber]);
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
     // Active orders count
     const activeOrdersCount = orders.filter((o: any) => o.status === "ACTIVE").length;
@@ -308,6 +324,7 @@ export default function HeadOrdersPage() {
         cancelOrderMutation.mutate({ orderId: orderToCancel.id, reason: cancelReason.trim() });
     }, [cancelOrderMutation, cancelReason, orderToCancel]);
 
+<<<<<<< HEAD
     const togglePin = React.useCallback((id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         setPinnedIds((prev) => {
@@ -336,6 +353,13 @@ export default function HeadOrdersPage() {
                 </div>
             )}
 
+=======
+
+    return (
+        <div className="space-y-4 max-w-7xl mx-auto">
+
+
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
             {/* Filter Buttons Row */}
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 <button
@@ -384,14 +408,21 @@ export default function HeadOrdersPage() {
                         const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.ACTIVE;
                         const isPaid = order.payment_status === 'PAID';
                         const tableNum = getOrderTableNumber(order);
+<<<<<<< HEAD
 
                         const isPinned = pinnedIds.has(order.id);
                         const ageIndicator = order.status === 'ACTIVE' ? getAgeIndicator(order.created_at) : null;
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
                         return (
                             <div
                                 key={order.id}
+<<<<<<< HEAD
                                 className={`group ${config.cardBg} rounded-2xl border ${isPinned ? 'border-amber-200' : 'border-slate-100'} ${config.hoverBorder} shadow-sm hover:shadow-xl transition-all duration-300 ease-out flex overflow-hidden cursor-pointer active:scale-[0.97] select-none border-l-[5px] ${config.borderColor}`}
+=======
+                                className={`group ${config.cardBg} rounded-2xl border border-slate-100 ${config.hoverBorder} shadow-sm hover:shadow-xl transition-all duration-300 ease-out flex overflow-hidden cursor-pointer active:scale-[0.97] select-none border-l-[5px] ${config.borderColor}`}
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                                 onClick={() => openDetails(order)}
                                 style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
@@ -399,6 +430,7 @@ export default function HeadOrdersPage() {
                                 <div className="flex-1 flex flex-col min-w-0">
                                     {/* Row 1: Name + Amount */}
                                     <div className="flex items-start justify-between px-4 pt-3.5 pb-1 gap-3">
+<<<<<<< HEAD
                                         <div className="flex items-center gap-1.5 min-w-0">
                                             {isPinned && <Star className="h-3 w-3 text-amber-400 shrink-0 fill-amber-400" />}
                                             <h3 className="font-extrabold text-slate-900 text-[15px] truncate leading-tight">
@@ -415,6 +447,14 @@ export default function HeadOrdersPage() {
                                                 {formatINR(order.total_amount)}
                                             </p>
                                         </div>
+=======
+                                        <h3 className="font-extrabold text-slate-900 text-[15px] truncate leading-tight">
+                                            {order.customer_name || 'Guest'}
+                                        </h3>
+                                        <p className="text-lg font-extrabold text-emerald-600 tabular-nums whitespace-nowrap tracking-tight leading-tight">
+                                            {formatINR(order.total_amount)}
+                                        </p>
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                                     </div>
 
                                     {/* Row 2: Table, Time, Order # */}
@@ -438,6 +478,7 @@ export default function HeadOrdersPage() {
                                         )}
                                     </div>
 
+<<<<<<< HEAD
                                     {/* Row 3: Item Chips with dietary dots */}
                                     <div className="flex flex-wrap gap-1.5 px-4 pb-3">
                                         {order.items?.slice(0, 5).map((item: any, idx: number) => {
@@ -453,6 +494,18 @@ export default function HeadOrdersPage() {
                                                 </span>
                                             );
                                         })}
+=======
+                                    {/* Row 3: Item Chips */}
+                                    <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+                                        {order.items?.slice(0, 5).map((item: any, idx: number) => (
+                                            <span
+                                                key={idx}
+                                                className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-[11px] font-semibold rounded-lg px-2 py-1 transition-colors duration-200 group-hover:bg-slate-200/70"
+                                            >
+                                                {item.quantity}× {item.name_snapshot || item.product?.name || 'Item'}
+                                            </span>
+                                        ))}
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                                         {order.items?.length > 5 && (
                                             <span className="inline-flex items-center text-[11px] font-bold text-primary bg-primary/10 rounded-lg px-2 py-1">
                                                 +{order.items.length - 5} more
@@ -468,6 +521,7 @@ export default function HeadOrdersPage() {
                                         </span>
 
                                         <div className="flex items-center gap-1.5">
+<<<<<<< HEAD
                                             {/* Pin Button */}
                                             <button
                                                 className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border active:scale-90 transition-all duration-150 ${isPinned ? 'text-amber-500 bg-amber-50 border-amber-200 hover:bg-amber-100' : 'text-slate-400 bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'}`}
@@ -477,6 +531,8 @@ export default function HeadOrdersPage() {
                                                 <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-amber-400' : ''}`} />
                                             </button>
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                                             {/* Add Button */}
                                             <button
                                                 className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all duration-150 shadow-sm"
@@ -577,6 +633,7 @@ export default function HeadOrdersPage() {
                                     </div>
                                 </DialogHeader>
 
+<<<<<<< HEAD
                                 {/* Body — item chips grouped by course */}
                                 <div className="flex-1 overflow-y-auto scrollbar-hide px-3 pt-3 pb-1 bg-slate-50/50">
                                     {(() => {
@@ -644,6 +701,27 @@ export default function HeadOrdersPage() {
                                             </div>
                                         );
                                     })()}
+=======
+                                {/* Body — item chips */}
+                                <div className="flex-1 overflow-y-auto scrollbar-hide px-3 pt-3 pb-1 bg-slate-50/50">
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedOrder.items?.slice().sort((a: any, b: any) =>
+                                            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                                        ).map((item: any, idx: number) => (
+                                            <div
+                                                key={item.id || idx}
+                                                className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold ${mCfg.bgColor} ${mCfg.color}`}
+                                            >
+                                                <span className="font-extrabold">{item.quantity}×</span>
+                                                <span className="truncate max-w-[100px]">
+                                                    {item.name_snapshot || item.product?.name || 'Item'}
+                                                </span>
+                                                <span className="font-extrabold opacity-75 tabular-nums">
+                                                    {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
+                                                </span>
+                                            </div>
+                                        ))}
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                                     </div>
                                     {/* Total */}
                                     <div className="flex items-center justify-between mt-3 mb-2 px-1">

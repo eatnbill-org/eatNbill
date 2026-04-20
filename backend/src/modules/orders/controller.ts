@@ -771,6 +771,52 @@ export async function voidOrderItem(
   }
 }
 
+
+/**
+ * PATCH /:id/items/:itemId/void
+ * Void or comp an individual order item (MANAGER/OWNER only)
+ */
+export async function voidOrderItem(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const restaurantId = (req as any).restaurantId;
+    const userId = (req as any).user?.restaurantUserId || (req as any).user?.id;
+    const orderId = req.params.id as string;
+    const itemId = req.params.itemId as string;
+    const { action, reason } = req.body as { action: 'VOIDED' | 'COMPED'; reason?: string };
+
+    if (!action || !['VOIDED', 'COMPED'].includes(action)) {
+      return res.status(400).json({ success: false, error: 'action must be VOIDED or COMPED' });
+    }
+
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, restaurant_id: restaurantId as string },
+      select: { id: true },
+    });
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const updated = await prisma.orderItem.update({
+      where: { id: itemId, order_id: orderId },
+      data: {
+        status: action,
+        void_reason: action === 'VOIDED' ? (reason || null) : undefined,
+        comp_reason: action === 'COMPED' ? (reason || null) : undefined,
+        voided_by_user_id: userId || null,
+        voided_at: new Date(),
+      },
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 /**
  * GET /public/:restaurant_slug/orders/:orderId/receipt
  * Public receipt — no auth, returns read-only order data for digital receipt page

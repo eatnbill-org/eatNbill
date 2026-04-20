@@ -24,7 +24,11 @@ export interface CreateInternalOrderInput {
   customer_phone?: string;
   table_number?: string;
   notes?: string;
+<<<<<<< HEAD
   source: "MANUAL" | "ZOMATO" | "SWIGGY" | "BAR_TAB";
+=======
+  source: "MANUAL" | "ZOMATO" | "SWIGGY";
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   items: { product_id: string; quantity: number; notes?: string; modifier_option_ids?: string[] }[];
   order_type?: OrderType;
   table_id?: string;

@@ -24,7 +24,10 @@ import { ActivityFeed } from "./components/ActivityFeed";
 import { RevenueSourceSplit } from "./components/RevenueSourceSplit";
 import { UnpaidBillsCard } from "./components/UnpaidBillsCard";
 import { ActiveStaffCard } from "./components/ActiveStaffCard";
+<<<<<<< HEAD
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 import { DashboardStatsSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 
 type DateRangeMode = "today" | "week" | "month";
@@ -231,6 +234,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+<<<<<<< HEAD
         <div className="flex w-full sm:w-auto flex-wrap items-center gap-2 sm:gap-3">
           {/* Date range toggle */}
           <div className="flex bg-white border border-border rounded-lg overflow-hidden shadow-sm">
@@ -247,6 +251,8 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
         <div className="flex w-full sm:w-auto flex-wrap items-center gap-2 sm:gap-3 bg-white p-2 rounded-xl border border-border shadow-sm">
           <Button
             variant="outline"

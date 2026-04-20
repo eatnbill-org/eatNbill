@@ -65,6 +65,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const [loyaltyPointsInput, setLoyaltyPointsInput] = useState('');
     const [loyaltyApplied, setLoyaltyApplied] = useState(false);
     const [happyHourRule, setHappyHourRule] = useState<{ name: string; discount_amount: number } | null>(null);
+<<<<<<< HEAD
     const [giftCardInput, setGiftCardInput] = useState('');
     const [giftCardLoading, setGiftCardLoading] = useState(false);
     const [appliedGiftCard, setAppliedGiftCard] = useState<{ id: string; code: string; remaining_value: number; applied_amount: number } | null>(null);
@@ -84,6 +85,8 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             setGiftCardLoading(false);
         }
     };
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
     const handleApplyVoucher = async () => {
         if (!voucherInput.trim() || !order) return;
@@ -116,8 +119,11 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
             setLoyaltyPointsInput('');
             setLoyaltyApplied(false);
             setHappyHourRule(null);
+<<<<<<< HEAD
             setGiftCardInput('');
             setAppliedGiftCard(null);
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
             // Fetch loyalty balance if order has a customer
             if (order.customer_id) {
                 apiClient.get<{ data: any }>(`/restaurant/loyalty/customers/${order.customer_id}`)
@@ -144,8 +150,12 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
     const loyaltyPoints = loyaltyApplied ? (parseInt(loyaltyPointsInput) || 0) : 0;
     const loyaltyDiscount = loyaltyBalance ? loyaltyPoints * parseFloat(loyaltyBalance.program?.redemption_rate || '0') : 0;
     const happyHourDiscount = happyHourRule ? happyHourRule.discount_amount : 0;
+<<<<<<< HEAD
     const giftCardDiscount = appliedGiftCard ? appliedGiftCard.applied_amount : 0;
     const finalPayable = Math.max(0, baseTotal - currentDiscount - loyaltyDiscount - happyHourDiscount - giftCardDiscount + currentTip);
+=======
+    const finalPayable = Math.max(0, baseTotal - currentDiscount - loyaltyDiscount - happyHourDiscount + currentTip);
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
     const handleApplyLoyalty = () => {
         const pts = parseInt(loyaltyPointsInput) || 0;
@@ -187,11 +197,16 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                 payment_status: isCreditView ? 'PENDING' : 'PAID',
                 payment_method: currentMethod as PaymentMethod,
                 payment_amount: finalPayable,
+<<<<<<< HEAD
                 discount_amount: currentDiscount + loyaltyDiscount + happyHourDiscount + giftCardDiscount,
+=======
+                discount_amount: currentDiscount + loyaltyDiscount + happyHourDiscount,
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                 tip_amount: currentTip || undefined,
                 voucher_id: appliedVoucher?.voucher_id,
                 loyalty_points_to_redeem: loyaltyApplied && loyaltyPoints > 0 ? loyaltyPoints : undefined,
             } as any);
+<<<<<<< HEAD
 
             // Redeem gift card if applied
             if (appliedGiftCard && !isCreditView) {
@@ -200,6 +215,8 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                     amount: appliedGiftCard.applied_amount,
                 }).catch(() => { /* non-fatal */ });
             }
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
             if (autoPrint && !isCreditView) {
                 const updatedOrder = {
@@ -430,6 +447,7 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                             </div>
                                         )}
 
+<<<<<<< HEAD
                                         {/* Gift Card */}
                                         <div className="flex gap-2">
                                             <Input
@@ -455,6 +473,8 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                                             </div>
                                         )}
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                                         {/* Loyalty Points Redemption */}
                                         {loyaltyBalance && loyaltyBalance.points_balance > 0 && (
                                             <div className="space-y-1.5">

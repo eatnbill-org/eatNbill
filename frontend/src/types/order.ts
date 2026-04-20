@@ -157,7 +157,10 @@ export interface CreateOrderPayload {
     quantity: number;
     notes?: string;
     modifier_option_ids?: string[];
+<<<<<<< HEAD
     course?: string;
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   }>;
   // Note: source is NOT included - backend defaults to 'MANUAL' for internal orders
 }

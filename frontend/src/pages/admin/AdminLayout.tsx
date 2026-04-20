@@ -44,7 +44,10 @@ import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { playOrderSound, playReservationSound } from "@/lib/sound-notification";
+<<<<<<< HEAD
 import { showNewOrderNotification } from "@/lib/push-notifications";
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 import { apiClient } from "@/lib/api-client";
 import type { OrderListResponse, OrderResponse } from "@/types/order";
 import type { ReservationAlert } from "@/types/reservation";
@@ -81,6 +84,7 @@ import {
   Bell,
   TrendingUp,
   Plug,
+<<<<<<< HEAD
   ClipboardList,
   Timer,
   Monitor,
@@ -89,6 +93,8 @@ import {
   ScrollText,
   Beer,
   CalendarDays,
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 } from "lucide-react";
 
 // Helper for Auto-Close
@@ -348,6 +354,7 @@ function AdminSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
+<<<<<<< HEAD
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Purchase Orders" isActive={pathname === "/admin/purchase-orders"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/purchase-orders" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
@@ -357,6 +364,8 @@ function AdminSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
             {/* Campaigns - Conditional Render */}
             {prefs.sidebar.showCampaigns && (
               <SidebarMenuItem>
@@ -418,6 +427,7 @@ function AdminSidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+<<<<<<< HEAD
               <SidebarMenuButton asChild tooltip="Menu Performance" isActive={pathname === "/admin/analytics/menu"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/analytics/menu" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <BarChart3 className="h-[18px] w-[18px] shrink-0" />
@@ -438,6 +448,8 @@ function AdminSidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
               <SidebarMenuButton asChild tooltip="Day End" isActive={pathname === "/admin/day-end"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/day-end" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <WalletCards className="h-[18px] w-[18px] shrink-0" />
@@ -465,6 +477,7 @@ function AdminSidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+<<<<<<< HEAD
               <SidebarMenuButton asChild tooltip="Gift Cards" isActive={pathname === "/admin/gift-cards"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/gift-cards" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <CreditCard className="h-[18px] w-[18px] shrink-0" />
@@ -474,6 +487,8 @@ function AdminSidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
               <SidebarMenuButton asChild tooltip="Loyalty Program" isActive={pathname === "/admin/loyalty"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/loyalty" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <Gift className="h-[18px] w-[18px] shrink-0" />
@@ -483,6 +498,7 @@ function AdminSidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+<<<<<<< HEAD
               <SidebarMenuButton asChild tooltip="Bar Tabs" isActive={pathname === "/admin/bar-tabs"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/bar-tabs" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <Beer className="h-[18px] w-[18px] shrink-0" />
@@ -492,6 +508,8 @@ function AdminSidebar() {
             </SidebarMenuItem>
 
             <SidebarMenuItem>
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
               <SidebarMenuButton asChild tooltip="Happy Hour Pricing" isActive={pathname === "/admin/pricing-rules"} className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all rounded-lg h-10 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <NavLink to="/admin/pricing-rules" className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                   <Clock className="h-[18px] w-[18px] shrink-0" />
@@ -511,9 +529,13 @@ function AdminSidebar() {
                 { label: "Restaurant Profile", path: "/admin/company/profile", icon: Store },
                 { label: "Tables", path: "/admin/company/tables", icon: Armchair },
                 { label: "Staff", path: "/admin/company/staff", icon: UserCog },
+<<<<<<< HEAD
                 { label: "Scheduling", path: "/admin/company/scheduling", icon: Calendar },
                 { label: "Timesheets", path: "/admin/company/timesheets", icon: Timer },
                 { label: "Banquet & Events", path: "/admin/company/banquet", icon: CalendarDays }
+=======
+                { label: "Scheduling", path: "/admin/company/scheduling", icon: Calendar }
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
               ]}
             />
 
@@ -531,8 +553,11 @@ function AdminSidebar() {
                 { label: "Delivery Zones", path: "/admin/settings/delivery-zones", icon: MapPin },
                 { label: "Notifications", path: "/admin/settings/notifications", icon: Bell },
                 { label: "Integrations", path: "/admin/settings/integrations", icon: Plug },
+<<<<<<< HEAD
                 { label: "Embed Widget", path: "/admin/settings/embed-widget", icon: ExternalLink },
                 { label: "Audit Log", path: "/admin/settings/audit-log", icon: ScrollText },
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
               ]}
             />
 
@@ -583,12 +608,15 @@ export default function AdminLayout() {
       const fullOrder = response?.data?.data;
       if (!response?.error && fullOrder?.id) {
         useNotificationStore.getState().addNotification(fullOrder);
+<<<<<<< HEAD
         void showNewOrderNotification({
           orderNumber: fullOrder.order_number || orderId.slice(-4).toUpperCase(),
           customerName: fullOrder.customer_name,
           tableNumber: (fullOrder as any).table?.table_number ?? fullOrder.table_number ?? null,
           totalAmount: Number(fullOrder.total_amount),
         });
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
         void fetchOrders();
         void fetchStats();
         return;
@@ -606,11 +634,14 @@ export default function AdminLayout() {
       total_amount: Number(fallback?.total_amount || 0),
       items: [],
     } as any);
+<<<<<<< HEAD
     void showNewOrderNotification({
       orderNumber: fallback?.order_number || orderId.slice(-4).toUpperCase(),
       customerName: fallback?.customer_name,
       tableNumber: fallback?.table_number,
     });
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
     void fetchOrders();
     void fetchStats();

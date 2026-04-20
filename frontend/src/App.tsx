@@ -13,7 +13,10 @@ import { RouteLoadingFallback, type RouteRole } from "@/components/loading";
 import { AuthLayout as AuthLayoutShell, CustomerLayout as CustomerLayoutShell } from "@/layouts";
 
 const NotFound = lazy(() => import("./pages/NotFound"));
+<<<<<<< HEAD
 const ReceiptPage = lazy(() => import("./pages/public/ReceiptPage"));
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 const LandingPage = lazy(() => import("./pages/website/LandingPage"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
@@ -24,7 +27,10 @@ const OrderConfirmationPage = lazy(() => import("./pages/user/OrderConfirmationP
 const RestaurantSetupPage = lazy(() => import("./pages/restaurant/RestaurantSetupPage"));
 const PublicMenuPage = lazy(() => import("./pages/customer/PublicMenuPage"));
 const HeadLayoutPage = lazy(() => import("./pages/head/HeadLayout"));
+<<<<<<< HEAD
 const CaptainLayoutPage = lazy(() => import("./pages/captain/CaptainLayout"));
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 const HeadOrdersPage = lazy(() => import("./pages/head/HeadOrdersPage"));
 const HeadStockPage = lazy(() => import("./pages/head/HeadStockPage"));
 const HeadMenuPage = lazy(() => import("./pages/head/HeadMenuPage"));
@@ -55,6 +61,7 @@ const CompanyProfilePage = lazy(() => import("./pages/admin/company/CompanyProfi
 const TablePage = lazy(() => import("./pages/admin/company/TablePage"));
 const StaffPage = lazy(() => import("./pages/admin/company/staff/StaffPage"));
 const StaffSchedulingPage = lazy(() => import("./pages/admin/company/staff/StaffSchedulingPage"));
+<<<<<<< HEAD
 const TimesheetPage = lazy(() => import("./pages/admin/company/staff/TimesheetPage"));
 const BanquetPage = lazy(() => import("./pages/admin/company/BanquetPage"));
 const PurchaseOrdersPage = lazy(() => import("./pages/admin/inventory/PurchaseOrdersPage"));
@@ -66,17 +73,28 @@ const BarTabPage = lazy(() => import("./pages/admin/billing/BarTabPage"));
 const GiftCardsPage = lazy(() => import("./pages/admin/billing/GiftCardsPage"));
 const EmbedMenuPage = lazy(() => import("./pages/public/EmbedMenuPage"));
 const EmbedWidgetPage = lazy(() => import("./pages/admin/adminSettings/EmbedWidgetPage"));
+=======
+const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage"));
+const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
+const VouchersPage = lazy(() => import("./pages/admin/billing/VouchersPage"));
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 const LoyaltyPage = lazy(() => import("./pages/admin/billing/LoyaltyPage"));
 const PricingRulesPage = lazy(() => import("./pages/admin/billing/PricingRulesPage"));
 const PrinterZonesPage = lazy(() => import("./pages/admin/adminSettings/PrinterZonesPage"));
 const DeliveryZonesPage = lazy(() => import("./pages/admin/adminSettings/DeliveryZonesPage"));
 const NotificationChannelsPage = lazy(() => import("./pages/admin/adminSettings/NotificationChannelsPage"));
 const IntegrationsPage = lazy(() => import("./pages/admin/adminSettings/IntegrationsPage"));
+<<<<<<< HEAD
 const AuditLogPage = lazy(() => import("./pages/admin/adminSettings/AuditLogPage"));
 const StaffAnalyticsPage = lazy(() => import("./pages/admin/analytics/StaffAnalyticsPage"));
 const FeedbackPage = lazy(() => import("./pages/admin/analytics/FeedbackPage"));
 const AggregatorAnalyticsPage = lazy(() => import("./pages/admin/analytics/AggregatorAnalyticsPage"));
 const MenuAnalyticsPage = lazy(() => import("./pages/admin/analytics/MenuAnalyticsPage"));
+=======
+const StaffAnalyticsPage = lazy(() => import("./pages/admin/analytics/StaffAnalyticsPage"));
+const FeedbackPage = lazy(() => import("./pages/admin/analytics/FeedbackPage"));
+const AggregatorAnalyticsPage = lazy(() => import("./pages/admin/analytics/AggregatorAnalyticsPage"));
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 const RestaurantSlugDebugPage = lazy(() => import("./pages/admin/RestaurantSlugDebugPage"));
 const DebugAuthPage = lazy(() => import("./pages/admin/DebugAuthPage"));
 const CustomerEntry = lazy(() => import("./pages/admin/customerSettings/CustomerEntry"));
@@ -84,6 +102,7 @@ const CustomerEntry = lazy(() => import("./pages/admin/customerSettings/Customer
 const withRoleSuspense = (role: RouteRole, element: ReactElement) => (
   <Suspense fallback={<RouteLoadingFallback role={role} />}>{element}</Suspense>
 );
+<<<<<<< HEAD
 
 // Applies dark class to <html> based on stored/system preference on initial render
 function DarkModeInit() {
@@ -94,6 +113,11 @@ function DarkModeInit() {
 const App = () => (
   <TooltipProvider>
     <DarkModeInit />
+=======
+
+const App = () => (
+  <TooltipProvider>
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     <Toaster />
     <Sonner />
     <DemoStoreProvider>
@@ -106,7 +130,10 @@ const App = () => (
             {/* PUBLIC MENU - /:slug/menu */}
             <Route path="/:slug/menu" element={withRoleSuspense("customer", <CustomerLayoutShell><PublicMenuPage /></CustomerLayoutShell>)} />
             <Route path="/:slug/customer" element={withRoleSuspense("customer", <CustomerLayoutShell><UserMenuPage /></CustomerLayoutShell>)} />
+<<<<<<< HEAD
             <Route path="/:slug/orders/:orderId/receipt" element={withRoleSuspense("customer", <ReceiptPage />)} />
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
             {/* AUTH */}
             <Route path="/auth" element={withRoleSuspense("auth", <AuthLayoutShell><Outlet /></AuthLayoutShell>)}>
@@ -128,6 +155,7 @@ const App = () => (
                 <Route path="stock" element={<HeadStockPage />} />
                 <Route path="settings" element={<HeadSettingsPage />} />
             </Route>
+<<<<<<< HEAD
             {/* CAPTAIN MODE — stripped mobile UI for senior waiters */}
             <Route path="/captain" element={<Navigate to="/captain/tables" replace />} />
             <Route path="/captain" element={withRoleSuspense("waiter", <CaptainLayoutPage />)}>
@@ -159,6 +187,27 @@ const App = () => (
             {/* EMBED WIDGET — stripped layout for iframe use */}
             <Route path="/embed/:slug" element={<Suspense fallback={null}><EmbedMenuPage /></Suspense>} />
 
+=======
+            {/* BACKWARD COMPATIBILITY: Redirect /staff and /waiter to /head */}
+            <Route path="/staff" element={<Navigate to="/head/orders" replace />} />
+            <Route path="/staff/orders" element={<Navigate to="/head/orders" replace />} />
+            <Route path="/staff/menu" element={<Navigate to="/head/menu" replace />} />
+            <Route path="/staff/menu/:orderId" element={<Navigate to="/head/menu" replace />} />
+            <Route path="/staff/stock" element={<Navigate to="/head/stock" replace />} />
+            <Route path="/staff/settings" element={<Navigate to="/head/settings" replace />} />
+            <Route path="/waiter" element={<Navigate to="/head/orders" replace />} />
+            <Route path="/waiter/orders" element={<Navigate to="/head/orders" replace />} />
+            <Route path="/waiter/menu" element={<Navigate to="/head/menu" replace />} />
+            <Route path="/waiter/stock" element={<Navigate to="/head/stock" replace />} />
+            <Route path="/waiter/settings" element={<Navigate to="/head/settings" replace />} />
+
+            {/* RESTAURANT SETUP */}
+            <Route path="/restaurant/setup" element={withRoleSuspense("auth", <AuthLayoutShell><RestaurantSetupPage /></AuthLayoutShell>)} />
+
+            {/* CUSTOMER MENU */}
+            <Route path="/menu" element={withRoleSuspense("customer", <CustomerLayoutShell><CustomerEntry /></CustomerLayoutShell>)} />
+
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
             {/* ADMIN */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin" element={withRoleSuspense("admin", <AdminRoute><AdminLayoutPage /></AdminRoute>)} >
@@ -174,13 +223,17 @@ const App = () => (
                 <Route path="analytics/staff" element={<StaffAnalyticsPage />} />
                 <Route path="analytics/feedback" element={<FeedbackPage />} />
                 <Route path="analytics/aggregator" element={<AggregatorAnalyticsPage />} />
+<<<<<<< HEAD
                 <Route path="analytics/menu" element={<MenuAnalyticsPage />} />
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
                 {/* ✅ COMPANY SECTION */}
                 <Route path="company/profile" element={<CompanyProfilePage />} />
                 <Route path="company/tables" element={<TablePage />} />
                 <Route path="company/staff" element={<StaffPage />} />
                 <Route path="company/scheduling" element={<StaffSchedulingPage />} />
+<<<<<<< HEAD
                 <Route path="company/timesheets" element={<TimesheetPage />} />
                 <Route path="company/banquet" element={<BanquetPage />} />
                 <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
@@ -190,6 +243,11 @@ const App = () => (
                 <Route path="vouchers" element={<VouchersPage />} />
                 <Route path="bar-tabs" element={<BarTabPage />} />
                 <Route path="gift-cards" element={<GiftCardsPage />} />
+=======
+                <Route path="day-end" element={<AdminDayEndPage />} />
+                <Route path="exports" element={<AdminExportCenterPage />} />
+                <Route path="vouchers" element={<VouchersPage />} />
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                 <Route path="loyalty" element={<LoyaltyPage />} />
                 <Route path="pricing-rules" element={<PricingRulesPage />} />
 
@@ -205,8 +263,11 @@ const App = () => (
                 <Route path="settings/delivery-zones" element={<DeliveryZonesPage />} />
                 <Route path="settings/notifications" element={<NotificationChannelsPage />} />
                 <Route path="settings/integrations" element={<IntegrationsPage />} />
+<<<<<<< HEAD
                 <Route path="settings/embed-widget" element={<EmbedWidgetPage />} />
                 <Route path="settings/audit-log" element={<AuditLogPage />} />
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
             </Route>
 
             {/* MANAGER */}

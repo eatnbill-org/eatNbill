@@ -1386,7 +1386,11 @@ export function restaurantRoutes() {
       if (!canManageVouchers(req)) throw new AppError('FORBIDDEN', 'Only owner/manager can manage inventory', 403);
       const restaurantId: string = req.user?.restaurantId;
       const tenantId: string = req.user?.tenantId;
+<<<<<<< HEAD
       const { name, unit, current_stock, reorder_level, cost_per_unit, category, expiry_date } = req.body;
+=======
+      const { name, unit, current_stock, reorder_level, cost_per_unit, category } = req.body;
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
       const ingredient = await prisma.ingredient.create({
         data: {
           tenant_id: tenantId,
@@ -1397,7 +1401,10 @@ export function restaurantRoutes() {
           reorder_level: reorder_level ? parseFloat(reorder_level) : null,
           cost_per_unit: parseFloat(cost_per_unit ?? '0'),
           category: category ?? null,
+<<<<<<< HEAD
           expiry_date: expiry_date ? new Date(expiry_date) : null,
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
         },
       });
       res.status(201).json({ data: ingredient });
@@ -1413,11 +1420,18 @@ export function restaurantRoutes() {
       const existing = await prisma.ingredient.findFirst({ where: { id, restaurant_id: restaurantId } });
       if (!existing) throw new AppError('NOT_FOUND', 'Ingredient not found', 404);
       const data: any = {};
+<<<<<<< HEAD
       const fields = ['name', 'unit', 'reorder_level', 'cost_per_unit', 'category', 'is_active', 'expiry_date'];
       for (const f of fields) {
         if (req.body[f] !== undefined) {
           if (['reorder_level', 'cost_per_unit'].includes(f)) data[f] = req.body[f] ? parseFloat(req.body[f]) : null;
           else if (f === 'expiry_date') data[f] = req.body[f] ? new Date(req.body[f]) : null;
+=======
+      const fields = ['name', 'unit', 'reorder_level', 'cost_per_unit', 'category', 'is_active'];
+      for (const f of fields) {
+        if (req.body[f] !== undefined) {
+          if (['reorder_level', 'cost_per_unit'].includes(f)) data[f] = req.body[f] ? parseFloat(req.body[f]) : null;
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
           else data[f] = req.body[f];
         }
       }
@@ -1791,6 +1805,7 @@ export function restaurantRoutes() {
       res.json({ success: true });
     } catch (err) { next(err); }
   });
+<<<<<<< HEAD
 
   // ============================================================================
   // Gift Cards
@@ -2002,6 +2017,8 @@ export function restaurantRoutes() {
       res.json({ success: true });
     } catch (err) { next(err); }
   });
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
   return router;
 }

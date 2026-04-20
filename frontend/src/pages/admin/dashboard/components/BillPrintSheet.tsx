@@ -6,7 +6,10 @@ import { formatINR } from "@/lib/format";
 import type { Order } from "@/types/order";
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
 import i18n from "@/i18n";
+<<<<<<< HEAD
 import { QRCodeSVG } from "qrcode.react";
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
 type ReceiptTemplate = "MM80_STANDARD" | "MM58_COMPACT" | "A4_TAX_INVOICE";
 
@@ -37,9 +40,12 @@ interface BillPrintSheetProps {
 
 export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
   const { restaurant } = useRestaurantStore();
+<<<<<<< HEAD
   const receiptUrl = restaurant?.slug && order
     ? `${window.location.origin}/${restaurant.slug}/orders/${order.id}/receipt`
     : null;
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   const receiptTemplate = getReceiptTemplate();
   const pageSize = receiptTemplate === "MM58_COMPACT" ? "58mm auto" : receiptTemplate === "MM80_STANDARD" ? "80mm auto" : "A4";
   const pageWidth = receiptTemplate === "MM58_COMPACT" ? "58mm" : receiptTemplate === "MM80_STANDARD" ? "80mm" : "210mm";
@@ -205,12 +211,15 @@ export function BillPrintSheet({ order, onOpenChange }: BillPrintSheetProps) {
             {/* Footer */}
             <div className="text-center pt-8 border-t border-dashed border-slate-300 space-y-4">
               <p className="text-sm font-bold italic tracking-tight">{billLabel("thankYou")}</p>
+<<<<<<< HEAD
               {receiptUrl && (
                 <div className="flex flex-col items-center gap-1.5">
                   <QRCodeSVG value={receiptUrl} size={72} level="M" />
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Scan for digital receipt</p>
                 </div>
               )}
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
               <div className="flex flex-col items-center gap-1.5">
                 <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-[0.4em]">Powered by</p>
                 <div className="flex items-center gap-1">

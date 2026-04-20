@@ -105,8 +105,11 @@ export const updateTableSchema = z
     x_position: z.number().int().min(0).max(99).nullable().optional(),
     y_position: z.number().int().min(0).max(99).nullable().optional(),
     shape: z.enum(["RECTANGLE", "CIRCLE"]).nullable().optional(),
+<<<<<<< HEAD
     table_width: z.number().int().min(1).max(2).optional(),
     table_height: z.number().int().min(1).max(2).optional(),
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   })
   .strict();
 

@@ -5,9 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+<<<<<<< HEAD
 import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2, Percent, Moon, Sun, SunMoon, BellRing } from "lucide-react";
 import { useDarkMode } from "@/hooks/use-dark-mode";
 import { getNotificationPermission, requestNotificationPermission, getNotificationsEnabled, setNotificationsEnabled } from "@/lib/push-notifications";
+=======
+import { ShieldCheck, Bell, Smartphone, Monitor, Upload, Settings2, EyeOff, Eye, Lock, Smartphone as SmartphoneIcon, ShoppingCart, Info, Volume2, Percent } from "lucide-react";
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { SecuritySettings } from "./components/SecuritySettings";

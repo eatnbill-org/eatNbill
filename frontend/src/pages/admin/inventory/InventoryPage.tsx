@@ -7,7 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   Package2, Plus, Trash2, Edit2, AlertTriangle, TrendingDown, TrendingUp,
+<<<<<<< HEAD
   RotateCcw, ChevronDown, ChevronRight, History, ChefHat, BookOpen, Minus, Clock
+=======
+  RotateCcw, ChevronDown, ChevronRight, History, ChefHat, BookOpen, Minus
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -21,7 +25,10 @@ interface Ingredient {
   reorder_level: string | null;
   cost_per_unit: string;
   category: string | null;
+<<<<<<< HEAD
   expiry_date: string | null;
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   is_active: boolean;
 }
 
@@ -37,7 +44,10 @@ interface StockMovement {
 interface ProductBasic {
   id: string;
   name: string;
+<<<<<<< HEAD
   price: string;
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   category_id: string | null;
 }
 
@@ -48,7 +58,11 @@ interface RecipeLine {
   ingredient: { id: string; name: string; unit: string; cost_per_unit: string };
 }
 
+<<<<<<< HEAD
 type Tab = "ingredients" | "recipes" | "low-stock" | "food-cost" | "expiring";
+=======
+type Tab = "ingredients" | "recipes";
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
 const UNITS = ["pcs", "kg", "g", "L", "ml", "dozen", "box", "bag"];
 const MOVEMENT_TYPES = ["PURCHASE", "WASTE", "ADJUSTMENT"] as const;
@@ -78,6 +92,7 @@ export default function InventoryPage() {
   // Draft lines in dialog: { ingredient_id, quantity }
   const [draftLines, setDraftLines] = React.useState<{ ingredient_id: string; quantity: string }[]>([]);
 
+<<<<<<< HEAD
   // Food cost tab state: map productId -> ingredient cost
   const [foodCostData, setFoodCostData] = React.useState<Record<string, number>>({});
   const [foodCostLoading, setFoodCostLoading] = React.useState(false);
@@ -86,6 +101,12 @@ export default function InventoryPage() {
   const [ingredientDialog, setIngredientDialog] = React.useState(false);
   const [editingIngredient, setEditingIngredient] = React.useState<Ingredient | null>(null);
   const [iForm, setIForm] = React.useState({ name: "", unit: "pcs", reorder_level: "", cost_per_unit: "0", category: "", expiry_date: "", is_active: true });
+=======
+  // Ingredient CRUD dialog
+  const [ingredientDialog, setIngredientDialog] = React.useState(false);
+  const [editingIngredient, setEditingIngredient] = React.useState<Ingredient | null>(null);
+  const [iForm, setIForm] = React.useState({ name: "", unit: "pcs", reorder_level: "", cost_per_unit: "0", category: "", is_active: true });
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   const [saving, setSaving] = React.useState(false);
 
   // Adjustment dialog
@@ -127,6 +148,7 @@ export default function InventoryPage() {
 
   React.useEffect(() => {
     if (activeTab === "recipes") void loadProducts();
+<<<<<<< HEAD
     if (activeTab === "food-cost") void loadFoodCost();
   }, [activeTab]);
 
@@ -163,6 +185,10 @@ export default function InventoryPage() {
     setFoodCostLoading(false);
   };
 
+=======
+  }, [activeTab]);
+
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   const openRecipeEditor = async (product: ProductBasic) => {
     setRecipeProduct(product);
     setDraftLines([]);
@@ -193,13 +219,21 @@ export default function InventoryPage() {
 
   const openNewIngredient = () => {
     setEditingIngredient(null);
+<<<<<<< HEAD
     setIForm({ name: "", unit: "pcs", reorder_level: "", cost_per_unit: "0", category: "", expiry_date: "", is_active: true });
+=======
+    setIForm({ name: "", unit: "pcs", reorder_level: "", cost_per_unit: "0", category: "", is_active: true });
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     setIngredientDialog(true);
   };
 
   const openEditIngredient = (i: Ingredient) => {
     setEditingIngredient(i);
+<<<<<<< HEAD
     setIForm({ name: i.name, unit: i.unit, reorder_level: i.reorder_level ?? "", cost_per_unit: String(i.cost_per_unit), category: i.category ?? "", expiry_date: i.expiry_date ? i.expiry_date.split('T')[0] : "", is_active: i.is_active });
+=======
+    setIForm({ name: i.name, unit: i.unit, reorder_level: i.reorder_level ?? "", cost_per_unit: String(i.cost_per_unit), category: i.category ?? "", is_active: i.is_active });
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     setIngredientDialog(true);
   };
 
@@ -284,6 +318,7 @@ export default function InventoryPage() {
 
   const lowStockCount = ingredients.filter((i) => i.reorder_level && Number(i.current_stock) <= Number(i.reorder_level)).length;
 
+<<<<<<< HEAD
   const now = new Date();
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const expiringIngredients = ingredients.filter((i) => i.expiry_date && new Date(i.expiry_date) <= sevenDaysFromNow);
@@ -301,6 +336,8 @@ export default function InventoryPage() {
     return { label: `${daysLeft}d left`, cls: "bg-slate-100 text-slate-500" };
   };
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   return (
     <div className="space-y-4 p-4">
       {/* Header */}
@@ -327,6 +364,7 @@ export default function InventoryPage() {
             <Icon className="h-3.5 w-3.5" />{label}
           </button>
         ))}
+<<<<<<< HEAD
         <button type="button" onClick={() => setActiveTab("low-stock")}
           className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all", activeTab === "low-stock" ? "bg-amber-500 text-white shadow" : "text-slate-500 hover:bg-slate-50")}>
           <AlertTriangle className="h-3.5 w-3.5" />
@@ -351,6 +389,8 @@ export default function InventoryPage() {
           className={cn("flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all", activeTab === "food-cost" ? "bg-teal-600 text-white shadow" : "text-slate-500 hover:bg-slate-50")}>
           <TrendingUp className="h-3.5 w-3.5" /> Food Cost
         </button>
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
       </div>
 
       {/* Low stock alert banner */}
@@ -397,11 +437,15 @@ export default function InventoryPage() {
             <tbody>
               {filtered.map((ing) => {
                 const isLow = ing.reorder_level !== null && Number(ing.current_stock) <= Number(ing.reorder_level);
+<<<<<<< HEAD
                 const expiryBadge = getExpiryBadge(ing.expiry_date);
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                 return (
                   <tr key={ing.id} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-3">
                       <p className="font-semibold text-slate-800">{ing.name}</p>
+<<<<<<< HEAD
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {ing.category && <p className="text-[11px] text-slate-400">{ing.category}</p>}
                         {expiryBadge && (
@@ -410,6 +454,9 @@ export default function InventoryPage() {
                           </span>
                         )}
                       </div>
+=======
+                      {ing.category && <p className="text-[11px] text-slate-400">{ing.category}</p>}
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={cn("font-black tabular-nums", isLow ? "text-rose-600" : "text-slate-700")}>
@@ -498,6 +545,7 @@ export default function InventoryPage() {
         </div>
       )}
 
+<<<<<<< HEAD
       {/* Low Stock Tab */}
       {activeTab === "low-stock" && (
         <div className="space-y-4">
@@ -684,6 +732,8 @@ export default function InventoryPage() {
         </div>
       )}
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
       {/* Recipe Edit Dialog */}
       <Dialog open={recipeDialog} onOpenChange={setRecipeDialog}>
         <DialogContent className="max-w-lg rounded-2xl p-6 space-y-4 max-h-[80vh] overflow-hidden flex flex-col">
@@ -769,10 +819,13 @@ export default function InventoryPage() {
               <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Reorder Level</Label>
               <Input type="number" value={iForm.reorder_level} onChange={(e) => setIForm((p) => ({ ...p, reorder_level: e.target.value }))} className="h-10 rounded-xl" min={0} step={0.1} placeholder="Optional" />
             </div>
+<<<<<<< HEAD
             <div className="col-span-2 space-y-1">
               <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Expiry Date (optional)</Label>
               <Input type="date" value={iForm.expiry_date} onChange={(e) => setIForm((p) => ({ ...p, expiry_date: e.target.value }))} className="h-10 rounded-xl" />
             </div>
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
           </div>
 
           <div className="flex gap-2 pt-2">

@@ -1,5 +1,6 @@
 /**
  * FloorPlanEditor — drag-and-drop floor plan for restaurant tables
+<<<<<<< HEAD
  * Features:
  *  - Explicit CSS Grid placement (tables can span 2×1, 1×2, 2×2 cells)
  *  - Zoom slider (0.5× – 2×)
@@ -7,21 +8,34 @@
  *  - Right-click context menu to resize table span
  *  - Click-on-placed-table toggles shape (rect ↔ circle)
  *  - Supabase Realtime for live status updates
+=======
+ * Uses HTML5 drag events. Tables with x/y positions are shown on a grid.
+ * Tables without positions appear in the "Unplaced" sidebar.
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
  */
 import * as React from "react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { useTableStore } from "@/stores/tables";
+<<<<<<< HEAD
 import { useRealtimeStore } from "@/stores/realtime/realtime.store";
 import { useRestaurantStore } from "@/stores/restaurant/restaurant.store";
 import type { RestaurantTable } from "@/types/table";
 import { cn } from "@/lib/utils";
 import { Armchair, Circle, Square, Wifi, ZoomIn, ZoomOut, Move } from "lucide-react";
+=======
+import type { RestaurantTable } from "@/types/table";
+import { cn } from "@/lib/utils";
+import { Armchair, Circle, Square, Trash2, RotateCcw } from "lucide-react";
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 import { Button } from "@/components/ui/button";
 
 const GRID_COLS = 10;
 const GRID_ROWS = 8;
+<<<<<<< HEAD
 const BASE_CELL_PX = 56; // px at zoom 1.0
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 
 const STATUS_COLORS: Record<string, string> = {
   AVAILABLE: "bg-emerald-100 border-emerald-400 text-emerald-800",
@@ -34,6 +48,7 @@ interface PlacedTable extends RestaurantTable {
   y_position: number;
 }
 
+<<<<<<< HEAD
 type SpanSize = "1x1" | "2x1" | "1x2" | "2x2";
 
 interface ContextMenu {
@@ -109,10 +124,22 @@ export function FloorPlanEditor() {
 
   const activeTables = tables.filter(t => t.is_active);
   const placedTables: PlacedTable[] = activeTables.filter(
+=======
+export function FloorPlanEditor() {
+  const { tables, fetchTables } = useTableStore();
+  const [draggingId, setDraggingId] = React.useState<string | null>(null);
+  const [saving, setSaving] = React.useState<string | null>(null);
+
+  React.useEffect(() => { void fetchTables(); }, [fetchTables]);
+
+  const activeTables = tables.filter(t => t.is_active);
+  const placed: PlacedTable[] = activeTables.filter(
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     (t): t is PlacedTable => t.x_position != null && t.y_position != null
   );
   const unplaced = activeTables.filter(t => t.x_position == null || t.y_position == null);
 
+<<<<<<< HEAD
   // Build set of all cells covered by placed tables
   const coveredCells = new Set<string>();
   for (const t of placedTables) {
@@ -138,6 +165,18 @@ export function FloorPlanEditor() {
         y_position: y,
         ...extra,
       });
+=======
+  // Map grid position → table (for occupied-cell check)
+  const cellMap = new Map<string, PlacedTable>();
+  for (const t of placed) {
+    cellMap.set(`${t.x_position},${t.y_position}`, t);
+  }
+
+  const updatePosition = async (tableId: string, x: number | null, y: number | null, shape?: string | null) => {
+    setSaving(tableId);
+    try {
+      await apiClient.patch(`/tables/${tableId}`, { x_position: x, y_position: y, ...(shape !== undefined ? { shape } : {}) });
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
       await fetchTables();
     } catch (e: any) {
       toast.error(e.message || "Failed to update position");
@@ -154,6 +193,7 @@ export function FloorPlanEditor() {
     e.preventDefault();
     const tableId = e.dataTransfer.getData("text/plain");
     if (!tableId) return;
+<<<<<<< HEAD
     const table = tables.find(t => t.id === tableId);
     if (!table) return;
     const w = table.table_width ?? 1;
@@ -177,6 +217,15 @@ export function FloorPlanEditor() {
     const clampedCol = Math.min(col, GRID_COLS - w);
     const clampedRow = Math.min(row, GRID_ROWS - h);
     await updatePosition(tableId, clampedCol, clampedRow);
+=======
+    // Check if cell is occupied by a different table
+    const occupant = cellMap.get(`${col},${row}`);
+    if (occupant && occupant.id !== tableId) {
+      toast.error(`Cell occupied by Table ${occupant.table_number}`);
+      return;
+    }
+    await updatePosition(tableId, col, row);
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     setDraggingId(null);
   };
 
@@ -190,6 +239,7 @@ export function FloorPlanEditor() {
 
   const toggleShape = (table: RestaurantTable) => {
     const newShape = table.shape === "CIRCLE" ? "RECTANGLE" : "CIRCLE";
+<<<<<<< HEAD
     void updatePosition(table.id, table.x_position ?? null, table.y_position ?? null, { shape: newShape });
   };
 
@@ -312,6 +362,57 @@ export function FloorPlanEditor() {
           </div>
 
           {/* Legend */}
+=======
+    void updatePosition(table.id, table.x_position ?? null, table.y_position ?? null, newShape);
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-start gap-4 flex-wrap">
+        {/* Grid */}
+        <div className="flex-1 min-w-0">
+          <div
+            className="grid gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-3 select-none"
+            style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(52px, 1fr))` }}
+          >
+            {Array.from({ length: GRID_ROWS }, (_, row) =>
+              Array.from({ length: GRID_COLS }, (_, col) => {
+                const table = cellMap.get(`${col},${row}`);
+                const isLoading = table && saving === table.id;
+                return (
+                  <div
+                    key={`${col},${row}`}
+                    className={cn(
+                      "h-14 rounded-xl border-2 border-dashed flex items-center justify-center transition-colors",
+                      table ? "border-transparent" : "border-slate-200 bg-white hover:border-primary/30 hover:bg-primary/5"
+                    )}
+                    onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                    onDrop={e => void handleDropOnCell(e, col, row)}
+                  >
+                    {table ? (
+                      <div
+                        draggable
+                        onDragStart={e => handleDragStart(e, table.id)}
+                        title={`Table ${table.table_number} — ${table.seats} seats`}
+                        className={cn(
+                          "w-full h-full flex flex-col items-center justify-center border-2 font-bold text-xs cursor-grab transition-all",
+                          table.shape === "CIRCLE" ? "rounded-full" : "rounded-xl",
+                          STATUS_COLORS[table.table_status] ?? "bg-slate-100 border-slate-300",
+                          isLoading && "opacity-50",
+                          draggingId === table.id && "opacity-40 scale-95"
+                        )}
+                        onClick={() => toggleShape(table)}
+                      >
+                        <span className="leading-none text-[11px] font-black">{table.table_number}</span>
+                        <span className="text-[9px] leading-none mt-0.5 opacity-60">{table.seats}s</span>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })
+            )}
+          </div>
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
           <div className="flex items-center gap-4 mt-2 px-1">
             <div className="flex gap-3 text-[10px] font-bold text-slate-400">
               {[["AVAILABLE", "emerald"], ["OCCUPIED", "rose"], ["RESERVED", "amber"]].map(([status, color]) => (
@@ -321,6 +422,7 @@ export function FloorPlanEditor() {
                 </div>
               ))}
             </div>
+<<<<<<< HEAD
             <div className="flex items-center gap-2 ml-auto">
               {realtimeActive && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600">
@@ -334,6 +436,9 @@ export function FloorPlanEditor() {
               )}
               <p className="text-[10px] text-slate-400">Dbl-click = shape · Right-click = resize</p>
             </div>
+=======
+            <p className="text-[10px] text-slate-400 ml-auto">Click table to toggle shape (rect ↔ circle)</p>
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
           </div>
         </div>
 
@@ -369,12 +474,17 @@ export function FloorPlanEditor() {
         </div>
       </div>
 
+<<<<<<< HEAD
       {placedTables.length === 0 && unplaced.length === 0 && (
+=======
+      {placed.length === 0 && unplaced.length === 0 && (
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
         <div className="text-center py-8 text-slate-400">
           <Armchair className="h-10 w-10 mx-auto mb-2 text-slate-200" />
           <p className="text-sm">No tables yet. Add tables in the Tables tab first.</p>
         </div>
       )}
+<<<<<<< HEAD
 
       {/* Right-click context menu */}
       {contextMenu && (
@@ -398,6 +508,8 @@ export function FloorPlanEditor() {
           ))}
         </div>
       )}
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     </div>
   );
 }

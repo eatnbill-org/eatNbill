@@ -11,8 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from "framer-motion";
+<<<<<<< HEAD
 import { Plus, Search, Package, Tag, Pencil, Trash2, Image as ImageIcon, TrendingUp, AlertCircle, SlidersHorizontal, CheckSquare2, Square, ToggleLeft, ToggleRight, Percent } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
+=======
+import { Plus, Search, Package, Tag, Pencil, Trash2, Image as ImageIcon, TrendingUp, AlertCircle, SlidersHorizontal } from 'lucide-react';
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 import CreateCategoryDialog from './components/CreateCategoryDialog';
 import EditCategoryDialog from './components/EditCategoryDialog';
 import CreateProductDialog from './components/CreateProductDialog';

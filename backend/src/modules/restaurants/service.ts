@@ -541,7 +541,11 @@ export async function updateTableInfo(
   tenantId: string,
   userId: string,
   tableId: string,
+<<<<<<< HEAD
   data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean; x_position?: number | null; y_position?: number | null; shape?: string | null; table_width?: number; table_height?: number; }
+=======
+  data: { hall_id?: string; outlet_id?: string; table_number?: string; seats?: number; is_active?: boolean; x_position?: number | null; y_position?: number | null; shape?: string | null; }
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
 ) {
   const table = await updateTable(tableId, data);
   await createAuditLog(tenantId, userId, 'UPDATE', 'RESTAURANT_TABLE', tableId);

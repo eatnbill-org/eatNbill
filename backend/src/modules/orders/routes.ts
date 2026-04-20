@@ -249,6 +249,7 @@ export function orderRoutes() {
     controller.voidOrderItem
   );
 
+<<<<<<< HEAD
   // Assign course to an order item
   router.patch(
     "/:id/items/:itemId/course",
@@ -267,6 +268,8 @@ export function orderRoutes() {
     controller.fireCourse
   );
 
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
   // Delete order
   router.delete(
     "/:id",

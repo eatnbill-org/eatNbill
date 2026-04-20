@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import RegionalSettingsPanel from '@/components/settings/RegionalSettingsPanel';
@@ -108,3 +109,14 @@ export default function HeadSettingsPage() {
     </div>
   );
 }
+=======
+import RegionalSettingsPanel from '@/components/settings/RegionalSettingsPanel';
+
+export default function HeadSettingsPage() {
+  return (
+    <div className="max-w-6xl mx-auto">
+      <RegionalSettingsPanel compact />
+    </div>
+  );
+}
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980

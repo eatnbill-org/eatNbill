@@ -19,8 +19,11 @@ export interface RestaurantTable {
     x_position?: number | null;
     y_position?: number | null;
     shape?: 'RECTANGLE' | 'CIRCLE' | null;
+<<<<<<< HEAD
     table_width?: number | null;
     table_height?: number | null;
+=======
+>>>>>>> e64fa6d97db3794800d20b234cd7fc9c8a744980
     created_at: string;
     hall?: {
         id: string;
