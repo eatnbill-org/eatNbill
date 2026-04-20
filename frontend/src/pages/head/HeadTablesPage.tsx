@@ -318,6 +318,26 @@ export default function HeadTablesPage() {
                                         {formatTime(table.next_reservation.reserved_from)}
                                     </span>
                                 </div>
+                            ) : table.is_reserved_now && table.current_reservation ? (
+                                <div className="mt-1 flex flex-col items-center gap-0.5 text-amber-600 font-bold text-[8px] uppercase">
+                                    <div className="flex items-center gap-1">
+                                        <CalendarClock className="h-2.5 w-2.5" />
+                                        Reserved Now
+                                    </div>
+                                    <span className="normal-case text-[9px] font-semibold tracking-normal">
+                                        {table.current_reservation.customer_name} • {formatTime(table.current_reservation.reserved_to)}
+                                    </span>
+                                </div>
+                            ) : table.next_reservation ? (
+                                <div className="mt-1 flex flex-col items-center gap-0.5 text-amber-500 font-bold text-[8px] uppercase">
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-2.5 w-2.5" />
+                                        Next Reservation
+                                    </div>
+                                    <span className="normal-case text-[9px] font-semibold tracking-normal">
+                                        {formatTime(table.next_reservation.reserved_from)}
+                                    </span>
+                                </div>
                             ) : (
                                 <div className="mt-1 flex items-center gap-1 text-emerald-500 font-bold text-[8px] uppercase">
                                     <Check className="h-2.5 w-2.5" />

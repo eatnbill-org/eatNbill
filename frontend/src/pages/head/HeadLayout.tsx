@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize, Search, Plus } from "lucide-react";
+import { ClipboardList, UtensilsCrossed, LogOut, Maximize, Minimize, Search, Plus, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import QROrderNotification from "@/components/QROrderNotification";
@@ -28,6 +28,7 @@ const NAV_ITEMS = [
     { to: "/head/menu", label: "Menu", icon: UtensilsCrossed },
     { to: "/head/tables", label: "Tables", icon: LayoutGrid },
     { to: "/head/stock", label: "Stock", icon: Package },
+    { to: "/head/settings", label: "Settings", icon: Settings2 },
 ];
 
 export default function HeadLayout() {
@@ -227,6 +228,20 @@ export default function HeadLayout() {
         notifiedQrOrderIds.current.clear();
         knownOrderIdsRef.current.clear();
         pollingInitializedRef.current = false;
+    }, [restaurant?.id]);
+
+    useEffect(() => {
+        if (!restaurant?.id) return;
+        void (async () => {
+            try {
+                const prefs = await fetchMyPreferences();
+                const language = backendLanguageToUi(prefs?.effective_language);
+                await i18n.changeLanguage(language);
+                persistLanguage(language);
+            } catch {
+                // Ignore preference failures in head layout.
+            }
+        })();
     }, [restaurant?.id]);
 
     // Fallback: if websocket realtime is down, detect new QR orders from polling data.
