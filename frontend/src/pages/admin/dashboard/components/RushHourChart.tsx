@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Zap } from "lucide-react";
 
+
 export function RushHourChart({ data }: { data: any[] }) {
   return (
     <Card className="rounded-[1.5rem] border border-border shadow-elev-1 bg-card text-card-foreground overflow-hidden flex flex-col h-[320px]">
