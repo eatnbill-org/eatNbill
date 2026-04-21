@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 // LocalStorage key and expiry (6 months in ms)
 const CUSTOMER_STORAGE_KEY = "resto-bilo:customer-info";
@@ -167,9 +168,10 @@ type Props = {
   onSubmit: (payload: {
     customerName: string;
     customerPhone: string;
-    specialInstructions: string;
+    notes: string;
     consentWhatsapp: boolean;
     arrivingAt?: string;
+    orderType: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
   }) => void;
   onTableChange?: (tableId: string) => void; // Callback when table is changed
   occupiedTableIds?: Set<string>;
@@ -197,6 +199,8 @@ export default function CheckoutDialog({
   const [consent, setConsent] = React.useState(true);
   const [arriveAt, setArriveAt] = React.useState("");
   const [selectedTableLocal, setSelectedTableLocal] = React.useState(tableId || "TAKEAWAY");
+  const [orderTypeSelection, setOrderTypeSelection] = React.useState<'TAKEAWAY' | 'DELIVERY' | null>(null);
+  const [printSlip, setPrintSlip] = React.useState(true);
 
   // Search for existing customer by phone
   // For public orders (with restaurantSlug), use the public hook
@@ -268,9 +272,10 @@ export default function CheckoutDialog({
     onSubmit({
       customerName: name.trim(),
       customerPhone: normalizedPhone,
-      specialInstructions: instructions.trim(),
+      notes: instructions.trim(),
       consentWhatsapp: consent,
       arrivingAt: arriveAt || undefined,
+      orderType: selectedTableLocal === 'TAKEAWAY' ? (orderTypeSelection || 'TAKEAWAY') : (orderTypeSelection || 'DINE_IN'),
     });
   };
 
@@ -291,6 +296,14 @@ export default function CheckoutDialog({
             )}
             {selectedTableLocal === 'TAKEAWAY' && (
               <span className="text-blue-500 font-medium">• Takeaway</span>
+            )}
+            {orderTypeSelection && (
+              <span className={cn(
+                "font-medium",
+                orderTypeSelection === 'TAKEAWAY' ? "text-blue-500" : "text-orange-500"
+              )}>
+                • {orderTypeSelection === 'TAKEAWAY' ? 'Takeaway' : 'Delivery'}
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -390,7 +403,7 @@ export default function CheckoutDialog({
               )}
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Special Instructions (optional)</label>
+                <label className="text-sm font-medium">Order Notes {isWaiterMode ? "" : "(optional)"}</label>
                 <Textarea
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
@@ -485,7 +498,44 @@ export default function CheckoutDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <div className="flex items-center justify-between px-4 py-2 border-t bg-slate-50/50">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="print-slip"
+                checked={printSlip}
+                onCheckedChange={(v) => setPrintSlip(Boolean(v))}
+                className="data-[state=checked]:bg-primary"
+              />
+              <label htmlFor="print-slip" className="text-xs font-bold text-slate-600 uppercase">
+                Print
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center space-x-1.5">
+                <Checkbox
+                  id="type-t-waiter"
+                  checked={orderTypeSelection === 'TAKEAWAY'}
+                  onCheckedChange={() => setOrderTypeSelection(prev => prev === 'TAKEAWAY' ? null : 'TAKEAWAY')}
+                  className="data-[state=checked]:bg-blue-600 border-slate-300"
+                />
+                <Label htmlFor="type-t-waiter" className="text-xs font-bold text-slate-600">T</Label>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <Checkbox
+                  id="type-d-waiter"
+                  checked={orderTypeSelection === 'DELIVERY'}
+                  onCheckedChange={() => setOrderTypeSelection(prev => prev === 'DELIVERY' ? null : 'DELIVERY')}
+                  className="data-[state=checked]:bg-orange-600 border-slate-300"
+                />
+                <Label htmlFor="type-d-waiter" className="text-xs font-bold text-slate-600">D</Label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2 p-4">
           <Button variant="secondary" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>

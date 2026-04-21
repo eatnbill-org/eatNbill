@@ -215,8 +215,9 @@ export default function HeadMenuPage() {
   const handlePlaceOrder = async (payload: {
     customerName: string;
     customerPhone: string;
-    specialInstructions: string;
+    notes: string;
     arrivingAt?: string;
+    orderType: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
   }) => {
     try {
       if (isReorderMode && reorderId) {
@@ -224,7 +225,6 @@ export default function HeadMenuPage() {
         await addOrderItems(reorderId, items.map(i => ({
           product_id: i.id.toString(),
           quantity: i.qty,
-          notes: payload.specialInstructions
         })));
         toast.success("Items added to order successfully!");
         setCart({});
@@ -242,11 +242,11 @@ export default function HeadMenuPage() {
           items: items.map(i => ({
             product_id: i.id.toString(),
             quantity: i.qty,
-            notes: payload.specialInstructions // Apply notes to all for now, or simplistic approach
+            // notes: i.notes // Optional: if we had per-item notes in the cart
           })),
           table_id: tableId,
-          order_type: tableId ? 'DINE_IN' : 'TAKEAWAY',
-          notes: payload.specialInstructions,
+          order_type: payload.orderType,
+          notes: payload.notes,
           arrive_at: payload.arrivingAt
         });
 

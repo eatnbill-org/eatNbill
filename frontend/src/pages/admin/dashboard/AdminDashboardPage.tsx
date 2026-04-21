@@ -19,7 +19,7 @@ import { RushHourChart } from "./components/RushHourChart";
 import { PaymentModal } from "./components/PaymentModal";
 import { StockManagerSheet } from "./components/StockManagerSheet";
 import { BillPrintSheet } from "./components/BillPrintSheet";
-import { ActivityFeed } from "./components/ActivityFeed";
+import { ScheduledOrdersCard } from "./components/ScheduledOrdersCard";
 import { RevenueSourceSplit } from "./components/RevenueSourceSplit";
 import { UnpaidBillsCard } from "./components/UnpaidBillsCard";
 import { ActiveStaffCard } from "./components/ActiveStaffCard";
@@ -252,7 +252,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">
-          <ActivityFeed />
+          <ScheduledOrdersCard />
           <ActiveStaffCard />
         </div>
 

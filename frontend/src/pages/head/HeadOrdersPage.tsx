@@ -22,7 +22,8 @@ import {
     Check,
     Tag,
     Search,
-    CalendarClock
+    CalendarClock,
+    FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,7 +67,7 @@ const STATUS_CONFIG: Record<string, {
     hoverBorder: string; footerBg: string;
 }> = {
     ACTIVE: {
-        label: "Active", color: "text-emerald-600", bgColor: "bg-emerald-50",
+        label: "Pending", color: "text-emerald-600", bgColor: "bg-emerald-50",
         icon: <Clock className="h-3.5 w-3.5" />, ringClass: "ring-emerald-100",
         borderColor: "border-l-emerald-500", cardBg: "bg-white",
         dotColor: "bg-emerald-500", hoverBorder: "hover:border-emerald-200",
@@ -80,12 +81,25 @@ const STATUS_CONFIG: Record<string, {
         footerBg: "bg-blue-50/40",
     },
     CANCELLED: {
-        label: "Cancelled", color: "text-rose-600", bgColor: "bg-rose-50",
+        label: "Cancel", color: "text-rose-600", bgColor: "bg-rose-50",
         icon: <UtensilsCrossed className="h-3.5 w-3.5" />, ringClass: "ring-rose-100",
         borderColor: "border-l-rose-400", cardBg: "bg-rose-50/20",
         dotColor: "bg-rose-400", hoverBorder: "hover:border-rose-200",
         footerBg: "bg-rose-50/40",
     },
+    SCHEDULED: {
+        label: "Schedule", color: "text-amber-600", bgColor: "bg-amber-50",
+        icon: <CalendarClock className="h-3.5 w-3.5" />, ringClass: "ring-amber-100",
+        borderColor: "border-l-amber-500", cardBg: "bg-amber-50/20",
+        dotColor: "bg-amber-500", hoverBorder: "hover:border-amber-200",
+        footerBg: "bg-amber-50/40",
+    }
+};
+
+const getTypeTag = (type: string) => {
+    if (type === 'TAKEAWAY') return <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] h-5 w-5 p-0 flex items-center justify-center font-black rounded-lg">T</Badge>;
+    if (type === 'DELIVERY') return <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-[10px] h-5 w-5 p-0 flex items-center justify-center font-black rounded-lg">D</Badge>;
+    return null;
 };
 
 export default function HeadOrdersPage() {
@@ -187,7 +201,11 @@ export default function HeadOrdersPage() {
 
         // Status Filter
         if (statusFilter !== "all") {
-            result = result.filter((o: any) => o.status === statusFilter);
+            if (statusFilter === "SCHEDULED") {
+                result = result.filter((o: any) => o.arrive_at !== null && o.status === "ACTIVE");
+            } else {
+                result = result.filter((o: any) => o.status === statusFilter);
+            }
         }
 
         // Category Filter
@@ -471,8 +489,9 @@ export default function HeadOrdersPage() {
                                         <span className="text-[11px] text-slate-400 font-semibold">
                                             {timeAgo(order.created_at)}
                                         </span>
-                                        <span className="text-[11px] text-slate-400 font-medium">
+                                        <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
                                             #{order.order_number}
+                                            {getTypeTag(order.order_type)}
                                         </span>
                                         {order.arrive_at && (
                                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 rounded-md px-1.5 py-0.5 border border-amber-100/50">
@@ -568,90 +587,133 @@ export default function HeadOrdersPage() {
 
             {/* Order Details Modal — Compact Chip Design */}
             <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-                <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm overflow-hidden rounded-2xl p-0 gap-0 border-0 shadow-2xl mx-auto flex flex-col">
+                <DialogContent className="max-w-[95vw] sm:max-w-2xl overflow-hidden rounded-2xl p-0 gap-0 border-0 shadow-2xl mx-auto flex flex-col max-h-[90vh]">
                     {selectedOrder && (() => {
                         const mCfg = STATUS_CONFIG[selectedOrder.status] || STATUS_CONFIG.ACTIVE;
                         const mPaid = selectedOrder.payment_status === 'PAID';
                         return (
                             <>
                                 {/* Status strip */}
-                                <div className={`h-1 w-full shrink-0 ${mCfg.dotColor}`} />
+                                <div className={`h-1.5 w-full shrink-0 ${mCfg.dotColor}`} />
 
                                 {/* Header */}
-                                <DialogHeader className={`px-4 pt-3 pb-2.5 border-b border-slate-100 ${mCfg.cardBg} shrink-0`}>
-                                    <div className="flex items-center justify-between gap-2">
+                                <DialogHeader className={`px-4 sm:px-6 pt-4 pb-4 border-b border-slate-100 ${mCfg.cardBg} shrink-0`}>
+                                    <div className="flex items-center justify-between gap-4">
                                         <div className="flex-1 min-w-0">
-                                            <DialogTitle className="text-base font-extrabold text-slate-900 truncate leading-tight">
+                                            <DialogTitle className="text-xl sm:text-2xl font-black text-slate-900 truncate leading-tight">
                                                 {selectedOrder.customer_name || 'Guest'}
                                             </DialogTitle>
-                                            <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 mt-0.5">
-                                                <span className="text-[10px] text-slate-400">#{selectedOrder.order_number}</span>
+                                            <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1">
+                                                <span className="text-xs font-bold text-slate-400">#{selectedOrder.order_number}</span>
+                                                {getTypeTag(selectedOrder.order_type)}
                                                 <span className="text-slate-300">·</span>
-                                                <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-400">
-                                                    <MapPin className="h-2.5 w-2.5" />{getOrderLocationLabel(selectedOrder)}
+                                                <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-500">
+                                                    <MapPin className="h-3 w-3 text-slate-400" />{getOrderLocationLabel(selectedOrder)}
                                                 </span>
                                                 {selectedOrder.arrive_at && (
-                                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200/50">
-                                                        <CalendarClock className="h-2.5 w-2.5" />
+                                                    <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-amber-700 bg-amber-50 rounded-lg px-2 py-1 border border-amber-200/50">
+                                                        <CalendarClock className="h-3.5 w-3.5" />
                                                         {formatArriveAt(selectedOrder.arrive_at)}
                                                     </span>
                                                 )}
                                                 {mPaid && (
-                                                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-100 rounded px-1 py-0.5">
-                                                        <Check className="h-2 w-2" /> Paid
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 bg-emerald-50 rounded-lg px-2 py-1 border border-emerald-100">
+                                                        <Check className="h-3 w-3" /> Paid
                                                     </span>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg ${mCfg.bgColor} ${mCfg.color}`}>
-                                                <span className={`h-1.5 w-1.5 rounded-full ${mCfg.dotColor} animate-pulse`} />
+                                        <div className="flex flex-col items-end gap-2 shrink-0">
+                                            <span className={`inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-xl shadow-sm ${mCfg.bgColor} ${mCfg.color} border border-current/10`}>
+                                                <span className={`h-2 w-2 rounded-full ${mCfg.dotColor} animate-pulse`} />
                                                 {mCfg.label}
                                             </span>
                                             <button
-                                                className="h-6 w-6 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+                                                className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all active:scale-90"
                                                 onClick={() => setDetailsDialogOpen(false)}
                                             >
-                                                <X className="h-3 w-3 text-slate-500" />
+                                                <X className="h-4 w-4 text-slate-500" />
                                             </button>
                                         </div>
                                     </div>
                                 </DialogHeader>
 
-                                {/* Body — item chips */}
-                                <div className="flex-1 overflow-y-auto scrollbar-hide px-3 pt-3 pb-1 bg-slate-50/50">
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {selectedOrder.items?.slice().sort((a: any, b: any) =>
-                                            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                                        ).map((item: any, idx: number) => (
-                                            <div
-                                                key={item.id || idx}
-                                                className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold ${mCfg.bgColor} ${mCfg.color}`}
-                                            >
-                                                <span className="font-extrabold">{item.quantity}×</span>
-                                                <span className="truncate max-w-[100px]">
-                                                    {item.name_snapshot || item.product?.name || 'Item'}
-                                                </span>
-                                                <span className="font-extrabold opacity-75 tabular-nums">
-                                                    {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
+                                {/* Body — item list */}
+                                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 bg-slate-50/30">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between px-1">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Order Items</h4>
+                                            <span className="text-[10px] font-black text-slate-400">{selectedOrder.items?.length || 0} ITEMS</span>
+                                        </div>
+                                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                            <div className="divide-y divide-slate-50">
+                                                {selectedOrder.items?.slice().sort((a: any, b: any) =>
+                                                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                                                ).map((item: any, idx: number) => (
+                                                    <div
+                                                        key={item.id || idx}
+                                                        className="flex items-center justify-between p-3.5 hover:bg-slate-50 transition-colors group"
+                                                    >
+                                                        <div className="flex-1 min-w-0 pr-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`font-black text-xs ${mCfg.color}`}>{item.quantity}×</span>
+                                                                <p className="font-bold text-sm text-slate-800 truncate">
+                                                                    {item.name_snapshot || item.product?.name || 'Item'}
+                                                                </p>
+                                                            </div>
+                                                            {item.notes && (
+                                                                <p className="text-[10px] text-slate-500 font-medium italic mt-0.5 ml-6">
+                                                                    Note: {item.notes}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <p className="font-extrabold text-sm text-slate-900 tabular-nums">
+                                                                {formatINR(item.quantity * (item.price_snapshot || item.unit_price || 0))}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-400 font-bold tabular-nums">
+                                                                {formatINR(item.price_snapshot || item.unit_price || 0)} ea
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Order Notes */}
+                                        {selectedOrder.notes && (
+                                            <div className="bg-amber-50 rounded-2xl border border-amber-100/50 p-4 space-y-1">
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1.5">
+                                                    <FileText className="h-3 w-3" /> Order Notes
+                                                </h4>
+                                                <p className="text-xs font-bold text-amber-900 leading-relaxed italic">
+                                                    "{selectedOrder.notes}"
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Summaries */}
+                                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-2">
+                                            <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                                                <span>Subtotal</span>
+                                                <span className="tabular-nums">{formatINR(selectedOrder.total_amount)}</span>
+                                            </div>
+                                            <div className="h-px bg-slate-50" />
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Total Amount</span>
+                                                <span className={`text-xl font-black tabular-nums tracking-tighter ${mCfg.color}`}>
+                                                    {formatINR(selectedOrder.total_amount)}
                                                 </span>
                                             </div>
-                                        ))}
-                                    </div>
-                                    {/* Total */}
-                                    <div className="flex items-center justify-between mt-3 mb-2 px-1">
-                                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Total</span>
-                                        <span className={`text-lg font-extrabold tabular-nums ${mCfg.color}`}>
-                                            {formatINR(selectedOrder.total_amount)}
-                                        </span>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Footer */}
-                                <div className="shrink-0 px-3 py-2.5 bg-white border-t border-slate-100">
-                                    <div className="flex items-center gap-2">
+                                <div className="shrink-0 px-4 sm:px-6 py-4 bg-white border-t border-slate-100">
+                                    <div className="flex items-center gap-3">
                                         <button
-                                            className="flex-1 inline-flex items-center justify-center gap-1 h-9 rounded-xl text-[11px] font-extrabold text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all duration-150 uppercase"
+                                            className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-2xl text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all duration-150 uppercase tracking-wider"
                                             onClick={() => {
                                                 if (selectedOrder.payment_status === 'PAID') {
                                                     toast.error('Cannot add items to a paid order');
@@ -660,22 +722,23 @@ export default function HeadOrdersPage() {
                                                 navigate(`/head/menu/${selectedOrder.id}?table=${selectedOrder.table_id || 'TAKEAWAY'}`);
                                             }}
                                         >
-                                            <Plus className="h-3.5 w-3.5" /> Add
+                                            <Plus className="h-4 w-4" /> Add
                                         </button>
                                         {selectedOrder.payment_status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && (
                                             <button
-                                                className="flex-[1.5] inline-flex items-center justify-center gap-1 h-9 rounded-xl text-[11px] font-extrabold text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all duration-150 uppercase shadow-sm"
+                                                className="flex-[1.5] inline-flex items-center justify-center gap-2 h-11 rounded-2xl text-xs font-black text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all duration-150 uppercase tracking-wider shadow-lg shadow-emerald-500/20"
                                                 onClick={() => setPaymentDialogOpen(true)}
                                             >
-                                                <Check className="h-3.5 w-3.5" /> Mark Paid
+                                                <Check className="h-4 w-4" /> Mark Paid
                                             </button>
                                         )}
                                         {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
                                             <button
-                                                className="flex-1 inline-flex items-center justify-center gap-1 h-9 rounded-xl text-[11px] font-extrabold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 active:scale-95 transition-all duration-150 uppercase"
+                                                className="flex-1 inline-flex items-center justify-center h-11 w-11 rounded-2xl text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 active:scale-95 transition-all duration-150 shrink-0"
                                                 onClick={() => handleOpenCancelDialog(selectedOrder)}
+                                                title="Cancel order"
                                             >
-                                                <X className="h-3.5 w-3.5" /> Cancel
+                                                <X className="h-4 w-4" />
                                             </button>
                                         )}
                                     </div>

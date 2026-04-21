@@ -77,7 +77,8 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
   const [descriptionEnabled, setDescriptionEnabled] = useState(false);
   const [arriveAt, setArriveAt] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [printSlip, setPrintSlip] = useState(false); // Default OFF per plan
+  const [printSlip, setPrintSlip] = useState(false);
+  const [orderTypeSelection, setOrderTypeSelection] = useState<'TAKEAWAY' | 'DELIVERY' | null>(null);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -172,7 +173,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
       notes: notes || undefined,
       description: (descriptionEnabled && description.trim()) ? description.trim() : undefined,
       arrive_at: arriveAt || undefined,
-      order_type: tableId ? 'DINE_IN' : 'TAKEAWAY',
+      order_type: (tableId && !orderTypeSelection) ? 'DINE_IN' : (orderTypeSelection || 'TAKEAWAY'),
       items: orderItems.map(item => ({
         product_id: item.product_id,
         quantity: item.quantity,
@@ -551,20 +552,49 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
               {/* High-Impact Order Footer */}
               <div className="p-6 bg-white border-t border-slate-100 shrink-0 space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="print-slip"
-                    checked={printSlip}
-                    onCheckedChange={(c) => setPrintSlip(!!c)}
-                    className="data-[state=checked]:bg-primary data-[state=checked]:text-white border-slate-300"
-                  />
-                  <Label
-                    htmlFor="print-slip"
-                    className="text-xs font-bold text-slate-600 uppercase tracking-wide cursor-pointer select-none"
-                  >
-                    Print Kitchen Slip Automatically
-                  </Label>
-                </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="print-slip"
+                        checked={printSlip}
+                        onCheckedChange={(c) => setPrintSlip(!!c)}
+                        className="data-[state=checked]:bg-primary data-[state=checked]:text-white border-slate-300"
+                      />
+                      <Label
+                        htmlFor="print-slip"
+                        className="text-xs font-bold text-slate-600 uppercase tracking-wide cursor-pointer select-none"
+                      >
+                        Print
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center space-x-1.5">
+                        <Checkbox
+                          id="type-t"
+                          checked={orderTypeSelection === 'TAKEAWAY'}
+                          onCheckedChange={() => setOrderTypeSelection(prev => prev === 'TAKEAWAY' ? null : 'TAKEAWAY')}
+                          className={cn(
+                            "border-slate-300",
+                            orderTypeSelection === 'TAKEAWAY' && "bg-blue-600 text-white border-blue-600"
+                          )}
+                        />
+                        <Label htmlFor="type-t" className="text-xs font-bold text-slate-600 cursor-pointer">T</Label>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <Checkbox
+                          id="type-d"
+                          checked={orderTypeSelection === 'DELIVERY'}
+                          onCheckedChange={() => setOrderTypeSelection(prev => prev === 'DELIVERY' ? null : 'DELIVERY')}
+                          className={cn(
+                            "border-slate-300",
+                            orderTypeSelection === 'DELIVERY' && "bg-orange-600 text-white border-orange-600"
+                          )}
+                        />
+                        <Label htmlFor="type-d" className="text-xs font-bold text-slate-600 cursor-pointer">D</Label>
+                      </div>
+                    </div>
+                  </div>
 
                 <Button
                   type="submit"

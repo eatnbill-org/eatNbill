@@ -38,12 +38,22 @@ export function applyCommonMiddleware(app: Express) {
       if (!origin) return callback(null, true);
 
       const normalizedOrigin = origin.replace(/\/+$/, '');
+      
+      // Detailed debug logging for CORS in development
+      if (env.NODE_ENV === 'development') {
+        console.log(`[CORS] Checking origin: "${normalizedOrigin}" against allowed:`, Array.from(allowedOrigins));
+      }
+
       if (allowedOrigins.has(normalizedOrigin)) {
         return callback(null, true);
       }
 
-      // Pass null (not an Error) so CORS middleware still sets headers,
-      // then we return false to block the request with proper CORS headers present.
+      // Special case for localhost matching even if port differs or if it's missing in env
+      if (env.NODE_ENV === 'development' && (normalizedOrigin.startsWith('http://localhost') || normalizedOrigin.startsWith('http://127.0.0.1'))) {
+        console.warn(`[CORS] Allowing localhost origin "${normalizedOrigin}" in development even though not in allowedOrigins`);
+        return callback(null, true);
+      }
+
       console.warn(`[CORS] Blocked request from origin: ${origin}`);
       return callback(null, false);
     },

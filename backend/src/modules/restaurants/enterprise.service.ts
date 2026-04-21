@@ -901,10 +901,16 @@ export function startExportWorker() {
 
     void processOneExportJob().catch((error) => {
       const message = error instanceof Error ? error.message : String(error);
-      if (/does not exist/i.test(message) || /P2021/.test(message)) {
+      if (
+        /does not exist/i.test(message) || 
+        /P2021/.test(message) || 
+        /P2028/.test(message) || 
+        /timeout/i.test(message) ||
+        /connection/i.test(message)
+      ) {
         exportWorkerPausedUntil = Date.now() + WORKER_BACKOFF_MS;
         console.warn(
-          '[export-worker] paused for 60s because export tables are not ready. Apply migrations and worker will auto-resume.'
+          `[export-worker] paused for 60s due to DB error: ${message}. Worker will auto-resume.`
         );
         return;
       }

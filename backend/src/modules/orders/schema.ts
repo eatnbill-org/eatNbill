@@ -41,19 +41,11 @@ export const createInternalOrderSchema = z.object({
   arrive_at: z.string().optional(),
 }).superRefine((data, ctx) => {
   const orderType = data.order_type;
-
+  
   if (orderType === "DINE_IN" && !data.table_id) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "table_id is required for DINE_IN orders",
-      path: ["table_id"],
-    });
-  }
-
-  if (orderType && orderType !== "DINE_IN" && data.table_id) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "table_id is only allowed for DINE_IN orders",
       path: ["table_id"],
     });
   }

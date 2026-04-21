@@ -102,6 +102,7 @@ export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [period, setPeriod] = useState<FilterPeriod>('DAILY');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   // Categories & Products for category filter
@@ -179,7 +180,7 @@ export default function AdminOrdersPage() {
     }
 
     fetchOrders({
-      status: 'ACTIVE',
+      status: statusFilter === 'ALL' || statusFilter === 'SCHEDULED' ? undefined : statusFilter as any,
       from_date: start.toISOString(),
       to_date: end.toISOString(),
       limit: pagination?.limit || 25
@@ -190,7 +191,7 @@ export default function AdminOrdersPage() {
   // Re-fetch when period or date changes
   useEffect(() => {
     handleRefresh();
-  }, [period, selectedDate]);
+  }, [period, selectedDate, statusFilter]);
 
   useEffect(() => {
     if (!activeRestaurantId) {
@@ -227,7 +228,15 @@ export default function AdminOrdersPage() {
   }, [products, categories]);
 
   const filteredOrders = useMemo(() => {
-    let result = [...orders].filter((o) => o.status === 'ACTIVE');
+    let result = [...orders];
+
+    if (statusFilter !== 'ALL') {
+      if (statusFilter === 'SCHEDULED') {
+        result = result.filter(o => o.arrive_at !== null && o.status === 'ACTIVE');
+      } else {
+        result = result.filter(o => o.status === statusFilter);
+      }
+    }
 
     // Category filter
     if (selectedCategoryId) {
@@ -292,6 +301,12 @@ export default function AdminOrdersPage() {
       {status}
     </Badge>
   );
+
+  const getTypeTag = (type: string) => {
+    if (type === 'TAKEAWAY') return <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] h-5 w-5 p-0 flex items-center justify-center font-black rounded-lg">T</Badge>;
+    if (type === 'DELIVERY') return <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-[10px] h-5 w-5 p-0 flex items-center justify-center font-black rounded-lg">D</Badge>;
+    return null;
+  };
 
   const getItemSummary = (order: Order) => {
     if (!order.items || order.items.length === 0) return 'No items';
@@ -387,6 +402,29 @@ export default function AdminOrdersPage() {
         </div>
       </header>
 
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        {[
+          { id: 'ALL', label: 'All' },
+          { id: 'ACTIVE', label: 'Pending' },
+          { id: 'COMPLETED', label: 'Completed' },
+          { id: 'CANCELLED', label: 'Cancel' },
+          { id: 'SCHEDULED', label: 'Schedule' },
+        ].map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setStatusFilter(f.id)}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-sm border",
+              statusFilter === f.id
+                ? "bg-primary text-white border-primary shadow-primary/20"
+                : "bg-white text-slate-500 border-border hover:border-primary/40 hover:text-primary"
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-border shadow-sm">
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -475,7 +513,10 @@ export default function AdminOrdersPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-mono text-sm font-bold">#{order.order_number}</p>
+                    <div className="flex items-center gap-2">
+                       <p className="font-mono text-sm font-bold">#{order.order_number}</p>
+                       {getTypeTag(order.order_type)}
+                    </div>
                     <p className="text-sm font-bold uppercase truncate">{order.customer_name}</p>
                     {order.customer_phone && (
                       <p className="text-[10px] text-muted-foreground font-semibold uppercase">{order.customer_phone}</p>
@@ -583,7 +624,10 @@ export default function AdminOrdersPage() {
                     onClick={() => setDetailsOrder(order)}
                   >
                     <TableCell className="font-mono text-sm font-bold pl-6 py-4">
-                      #{order.order_number}
+                      <div className="flex items-center gap-2">
+                         #{order.order_number}
+                         {getTypeTag(order.order_type)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
