@@ -160,6 +160,7 @@ model Product {
   @@index([category_id])
   @@index([restaurant_id, is_active])
   @@index([restaurant_id, category_id])
+  @@index([restaurant_id, deleted_at])
 }
 
 model Category {
@@ -177,6 +178,7 @@ model Category {
 
   @@unique([restaurant_id, name])
   @@index([restaurant_id, is_active])
+  @@index([restaurant_id, deleted_at])
 }
 
 model AuditLog {
@@ -244,6 +246,7 @@ model Order {
   gst_invoice       GstInvoice?
 
   @@unique([source, external_order_id])
+  @@index([restaurant_id, status, placed_at])
   @@index([restaurant_id, status])
   @@index([outlet_id])
   @@index([restaurant_id, placed_at])

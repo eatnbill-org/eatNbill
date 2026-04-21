@@ -198,12 +198,20 @@ export default function AdminOrdersPage() {
       return;
     }
 
+    // Only set up polling if NOT connected via realtime
+    if (realtimeConnected) {
+      return;
+    }
+
     const intervalId = setInterval(() => {
-      handleRefresh();
+      // Avoid refreshing if already loading
+      if (!loading) {
+        handleRefresh();
+      }
     }, 5000);
 
     return () => clearInterval(intervalId);
-  }, [activeRestaurantId, period, selectedDate, pagination?.limit]);
+  }, [activeRestaurantId, period, selectedDate, pagination?.limit, realtimeConnected, loading]);
 
   useEffect(() => {
     if (connectionMode === 'realtime') {

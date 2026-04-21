@@ -9,7 +9,7 @@ const globalForPrisma = globalThis as unknown as {
 const connectionUrl = process.env.DATABASE_URL || process.env.DIRECT_URL || '';
 // Increased connection_limit to 10 for better concurrency in development
 // and increased pool_timeout to 60s to handle slow cold starts or network lag
-const urlWithPooling = `${connectionUrl}${connectionUrl.includes('?') ? '&' : '?'}connection_limit=10&pool_timeout=60`;
+const urlWithPooling = `${connectionUrl}${connectionUrl.includes('?') ? '&' : '?'}connection_limit=20&pool_timeout=60`;
 
 export const prisma =
   globalForPrisma.prisma ??
