@@ -11,6 +11,8 @@ import {
   staffMeController,
   staffLogoutController,
   verifyPasswordController,
+  requestEmailChangeController,
+  verifyEmailChangeController,
 } from './controller';
 import {
   registerWithOTPController,
@@ -30,7 +32,9 @@ import {
   resendOTPSchema,
   loginWithPasswordSchema,
   verifyPasswordSchema,
+  requestEmailChangeSchema,
   verifyResetOTPSchema,
+  verifyEmailChangeSchema,
   resetPasswordWithTokenSchema,
 } from './schema';
 
@@ -53,6 +57,8 @@ export function authRoutes() {
   router.get('/me', authMiddleware, authenticateController);
   router.post('/verify-password', rateLimiters.authSensitive, authMiddleware, validateBody(verifyPasswordSchema), verifyPasswordController);
   router.patch('/change-password', authMiddleware, validateBody(changePasswordSchema), changePasswordController);
+  router.post('/change-email/request', rateLimiters.authSensitive, authMiddleware, validateBody(requestEmailChangeSchema), requestEmailChangeController);
+  router.post('/change-email/verify', rateLimiters.authSensitive, authMiddleware, validateBody(verifyEmailChangeSchema), verifyEmailChangeController);
   router.post('/logout', logoutController);
 
   // Staff auth

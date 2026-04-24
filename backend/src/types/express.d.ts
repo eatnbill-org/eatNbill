@@ -9,6 +9,8 @@ declare global {
         userId: string;
         tenantId: string;
         role: Role;
+        email?: string;
+        phone?: string | null;
         tenantPlan?: string;
         allowedRestaurantIds: string[];
         restaurantRoles?: Record<string, string>; // Map of restaurantId -> role

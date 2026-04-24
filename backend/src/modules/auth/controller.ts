@@ -1,5 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
-import { changePassword, refreshSession, signOut, verifyCurrentPassword } from './service';
+import {
+  changePassword,
+  refreshSession,
+  requestEmailChange,
+  signOut,
+  verifyCurrentPassword,
+  verifyEmailChange,
+} from './service';
 import { clearAuthCookies, setAuthCookies, REFRESH_TOKEN_COOKIE } from './cookies';
 import * as staffAuthService from './staff-auth.service';
 
@@ -44,6 +51,8 @@ export async function authenticateController(req: Request, res: Response, next: 
         tenantId: req.user!.tenantId,
         role: req.user!.role,
         allowed_restaurant_ids: req.user!.allowedRestaurantIds,
+        email: req.user!.email,
+        phone: req.user!.phone,
       },
     });
   } catch (error) {
@@ -79,6 +88,26 @@ export async function changePasswordController(req: Request, res: Response, next
   try {
     const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
     const result = await changePassword(req.user!.userId, currentPassword, newPassword);
+    return res.json(result);
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function requestEmailChangeController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { currentPassword, newEmail } = req.body as { currentPassword: string; newEmail: string };
+    const result = await requestEmailChange(req.user!.userId, currentPassword, newEmail);
+    return res.json(result);
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function verifyEmailChangeController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { otp } = req.body as { otp: string };
+    const result = await verifyEmailChange(req.user!.userId, otp);
     return res.json(result);
   } catch (error) {
     return next(error as Error);

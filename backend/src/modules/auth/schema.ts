@@ -102,3 +102,16 @@ export const changePasswordSchema = z
     path: ['newPassword'],
   })
   .strict();
+
+export const requestEmailChangeSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newEmail: z.string().email('Invalid email format'),
+  })
+  .strict();
+
+export const verifyEmailChangeSchema = z
+  .object({
+    otp: z.string().length(6, 'OTP must be 6 digits'),
+  })
+  .strict();

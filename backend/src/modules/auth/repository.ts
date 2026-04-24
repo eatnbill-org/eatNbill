@@ -124,3 +124,53 @@ export async function updateUserPassword(userId: string, passwordHash: string) {
     },
   });
 }
+
+export async function setPendingEmailChange(userId: string, pendingEmail: string, otp: string, expiresAt: Date) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      pending_email_change: pendingEmail,
+      email_change_otp: otp,
+      email_change_expires_at: expiresAt,
+      email_change_attempts: 0,
+      email_change_last_sent_at: new Date(),
+    },
+  });
+}
+
+export async function incrementEmailChangeAttempts(userId: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      email_change_attempts: { increment: 1 },
+    },
+  });
+}
+
+export async function clearPendingEmailChange(userId: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      pending_email_change: null,
+      email_change_otp: null,
+      email_change_expires_at: null,
+      email_change_attempts: 0,
+      email_change_last_sent_at: null,
+    },
+  });
+}
+
+export async function confirmEmailChange(userId: string, email: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      email,
+      email_verified: true,
+      pending_email_change: null,
+      email_change_otp: null,
+      email_change_expires_at: null,
+      email_change_attempts: 0,
+      email_change_last_sent_at: null,
+    },
+  });
+}

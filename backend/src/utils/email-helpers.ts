@@ -54,6 +54,22 @@ export async function sendPasswordResetEmail(
   }
 }
 
+export async function sendEmailChangeOTPEmail(
+  email: string,
+  userName: string,
+  otp: string,
+  expiryMinutes: number = 15
+): Promise<void> {
+  const subject = 'Verify Your New Email - eatNbill';
+  const html = confirmSignupTemplate(otp, userName, expiryMinutes);
+
+  const result = await sendEmailSync(email, subject, html);
+
+  if (!result.success) {
+    throw new Error(`Failed to send email change verification email: ${result.error}`);
+  }
+}
+
 /**
  * Send invitation email to join restaurant
  * @param email - Invitee's email address

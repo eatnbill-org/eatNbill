@@ -67,6 +67,8 @@ async function handleAuth(token: string, req: Request, res: Response, next: Next
         id: true,
         tenant_id: true,
         role: true,
+        email: true,
+        phone: true,
         tenant: { select: { plan: true } }
       },
     });
@@ -103,6 +105,8 @@ async function handleAuth(token: string, req: Request, res: Response, next: Next
       userId: user.id,
       tenantId: user.tenant_id,
       role: user.role,
+      email: user.email,
+      phone: user.phone,
       tenantPlan: user.tenant.plan,
       allowedRestaurantIds,
       restaurantRoles,
@@ -148,6 +152,8 @@ async function handleAuth(token: string, req: Request, res: Response, next: Next
             tenant_id: true,
             role: true,
             supabase_id: true,
+            email: true,
+            phone: true,
             tenant: { select: { plan: true } }
           },
         });
@@ -217,6 +223,8 @@ async function handleAuth(token: string, req: Request, res: Response, next: Next
           userId: user.id,
           tenantId: user.tenant_id,
           role: user.role,
+          email: user.email,
+          phone: user.phone,
           tenantPlan: user.tenant.plan,
           allowedRestaurantIds,
           restaurantRoles,
@@ -246,5 +254,5 @@ async function handleAuth(token: string, req: Request, res: Response, next: Next
  * ✅ Helper to invalidate user cache (call after user/role updates)
  */
 export async function invalidateUserCache(supabaseId: string) {
-  await redisClient.hdel(`${AUTH_CACHE_PREFIX}${supabaseId}`).catch(() => { });
+  await redisClient.delete(`${AUTH_CACHE_PREFIX}${supabaseId}`).catch(() => { });
 }

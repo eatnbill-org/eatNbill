@@ -77,6 +77,11 @@ model User {
   otp_expires_at   DateTime?
   otp_attempts     Int              @default(0)
   last_otp_sent_at DateTime?
+  pending_email_change String?
+  email_change_otp String?
+  email_change_expires_at DateTime?
+  email_change_attempts Int         @default(0)
+  email_change_last_sent_at DateTime?
   password_hash    String?
   created_at       DateTime         @default(now())
   updated_at       DateTime         @updatedAt
