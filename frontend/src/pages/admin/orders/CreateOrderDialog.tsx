@@ -118,10 +118,9 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
   }, [products, selectedCategoryId, searchQuery]);
 
   const tablesWithOrders = new Set<string>(
-    orders
-      .filter(order => order.status === 'ACTIVE')
-      .map(order => order.table_id)
-      .filter(Boolean) as string[]
+    tables
+      .filter(table => table.table_status === 'OCCUPIED')
+      .map(table => table.id)
   );
 
   const addItem = (product: Product) => {
@@ -223,8 +222,8 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
 
             {/* Middle: Product Grid (Modern Fresh Design) */}
             <div className="lg:col-span-8 flex flex-col p-3 sm:p-4 lg:p-6 overflow-hidden bg-white">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                <div className="flex items-center gap-3 sm:block hidden">
                   <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-md">
                     <ShoppingBag className="w-5 h-5" />
                   </div>
@@ -237,11 +236,11 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">POS Terminal</p>
                   </div>
                 </div>
-                <div className="relative group flex-1 max-w-xs mr-8">
+                <div className="relative group flex-1 w-full sm:max-w-xs sm:mr-8">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     placeholder="Search products..."
-                    className="pl-11 h-10 bg-slate-50 border-2 border-transparent focus:border-primary/20 focus:bg-white transition-all shadow-none rounded-xl text-sm font-bold"
+                    className="pl-11 h-12 sm:h-10 bg-slate-50 border-2 border-transparent focus:border-primary/20 focus:bg-white transition-all shadow-none rounded-xl text-sm font-bold w-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -268,15 +267,15 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                     type="button"
                     variant="ghost"
                     className={cn(
-                      "flex flex-col items-center gap-1.5 h-auto py-2.5 px-4 rounded-2xl transition-all min-w-[80px]",
+                      "flex flex-col items-center gap-1.5 h-auto py-2 px-3 sm:py-2.5 sm:px-4 rounded-2xl transition-all min-w-[70px] sm:min-w-[80px]",
                       selectedCategoryId === null ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
                     )}
                     onClick={() => setSelectedCategoryId(null)}
                   >
-                    <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border-2 transition-all", selectedCategoryId === null ? "bg-white/20 border-white/30" : "bg-white border-slate-100")}>
-                      <UtensilsCrossed className={cn("w-6 h-6", selectedCategoryId === null ? "text-white" : "text-primary")} />
+                    <div className={cn("h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0 border-2 transition-all hidden sm:flex", selectedCategoryId === null ? "bg-white/20 border-white/30" : "bg-white border-slate-100")}>
+                      <UtensilsCrossed className={cn("w-5 h-5 sm:w-6 sm:h-6", selectedCategoryId === null ? "text-white" : "text-primary")} />
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Catalog</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">All</span>
                   </Button>
                   {activeCats.map(category => (
                     <Button
@@ -284,12 +283,12 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                       type="button"
                       variant="ghost"
                       className={cn(
-                        "flex flex-col items-center gap-1.5 h-auto py-2.5 px-4 rounded-2xl transition-all min-w-[80px]",
+                        "flex flex-col items-center gap-1.5 h-auto py-2 px-3 sm:py-2.5 sm:px-4 rounded-2xl transition-all min-w-[70px] sm:min-w-[80px]",
                         selectedCategoryId === category.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-indigo-600"
                       )}
                       onClick={() => setSelectedCategoryId(category.id)}
                     >
-                      <div className={cn("h-12 w-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all", selectedCategoryId === category.id ? "border-white/40" : "border-slate-100")}>
+                      <div className={cn("h-10 w-10 sm:h-12 sm:w-12 rounded-xl overflow-hidden shrink-0 border-2 transition-all hidden sm:flex", selectedCategoryId === category.id ? "border-white/40" : "border-slate-100")}>
                         {category.image_url ? (
                           <img src={category.image_url} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -389,11 +388,12 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
             </div>
 
             {/* Right: Checkout Flow (Ultra-Premium POS Design) */}
-            <div className="lg:col-span-4 bg-slate-50/40 flex flex-col border-t lg:border-t-0 lg:border-l border-indigo-50/50 h-full overflow-hidden">
-              <div className="p-3 sm:p-4 lg:p-6 flex flex-col h-full overflow-hidden space-y-4">
+            <div className="lg:col-span-4 bg-slate-50/40 flex flex-col border-t lg:border-t-0 lg:border-l border-indigo-50/50 lg:h-full overflow-y-auto lg:overflow-hidden">
+              <div className="pt-0 p-2 sm:p-4 lg:p-6 flex flex-col lg:h-full space-y-2 sm:space-y-4">
 
-                {/* Customer Identity Section - Fixed at top */}
-                <div className="space-y-3 shrink-0">
+                {/* Customer Identity Section - Moved to bottom on mobile via flex-col-reverse or similar if needed, 
+                    but simpler to just wrap it in a div that we can reorder. */}
+                <div className="space-y-3 shrink-0 order-2 lg:order-1 sm:mt-0 mt-2">
                   <div className="grid grid-cols-2 gap-2">
                     <div className="relative group">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
@@ -484,7 +484,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                 </div>
 
                 {/* Notes & Description Section */}
-                <div className="space-y-2">
+                <div className="space-y-2 order-3 lg:order-2">
                   <div className="relative group">
                     <FileText className="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
                     <textarea
@@ -499,14 +499,14 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                 </div>
 
                 {/* Order Summary Manifest - Independent Scroll Area */}
-                <div className="flex-1 flex flex-col min-h-0 bg-white rounded-[1.75rem] p-4 shadow-[0_10px_40px_-15px_rgba(16,185,129,0.08)] border border-primary/50 overflow-hidden">
-                  <div className="flex items-center justify-between mb-3 px-1 shrink-0">
+                <div className="flex-1 flex flex-col min-h-[200px] lg:min-h-0 bg-white rounded-[1.75rem] p-3 sm:p-4 shadow-[0_10px_40px_-15px_rgba(16,185,129,0.08)] border border-primary/50 overflow-hidden order-1 lg:order-3 mt-0">
+                  <div className="flex items-center justify-between mb-1.5 sm:mb-3 px-1 shrink-0">
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-none rounded-lg text-[10px] font-bold px-2 py-0.5">
                       {orderItems.reduce((acc, item) => acc + item.quantity, 0)} ITEMS
                     </Badge>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto no-scrollbar space-y-2">
+                  <div className="flex-1 overflow-y-auto no-scrollbar space-y-1 sm:space-y-2">
                     <AnimatePresence mode="popLayout">
                       {orderItems.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-200 py-16 opacity-50">
@@ -521,7 +521,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onSuccess }: Cre
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="flex items-center justify-between bg-slate-50/50 hover:bg-white group px-4 py-3 rounded-2xl border border-transparent hover:border-indigo-50 hover:shadow-sm transition-all"
+                            className="flex items-center justify-between bg-slate-50/50 hover:bg-white group px-3 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-transparent hover:border-indigo-50 hover:shadow-sm transition-all"
                           >
                             <div className="min-w-0 flex-1 flex flex-col gap-0.5">
                               <p className="text-xs font-bold text-slate-800 truncate">{item.product.name}</p>

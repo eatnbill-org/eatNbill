@@ -247,7 +247,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                     </p>
                   )}
                   {data.slug && (
-                    <p className="text-[10px] font-medium text-muted-foreground px-1">
+                    <p className="text-[10px] font-medium text-muted-foreground px-1 break-all">
                       Menu URL: <span className="font-mono text-primary">{window.location.origin}/{data.slug}/menu</span>
                     </p>
                   )}
@@ -343,7 +343,7 @@ export function BrandIdentity({ data, onChange }: BrandIdentityProps) {
                 </div>
                 <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Opening Hours</Label>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="relative">
                   <Input
                     type="time"
