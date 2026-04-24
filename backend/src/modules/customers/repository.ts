@@ -451,33 +451,22 @@ export async function getOrdersByPhone(
       orderBy: { created_at: 'desc' },
       skip,
       take: limit,
-      select: {
-        id: true,
-        order_number: true,
-        customer_name: true,
-        customer_phone: true,
-        total_amount: true,
-        status: true,
-        order_type: true,
-        source: true,
-        placed_at: true,
-        completed_at: true,
-        restaurant: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            address: true,
+        select: {
+          id: true,
+          order_number: true,
+          customer_name: true,
+          total_amount: true,
+          status: true,
+          order_type: true,
+          placed_at: true,
+          completed_at: true,
+          restaurant: {
+            select: {
+              name: true,
+              slug: true,
+            },
           },
         },
-        items: {
-          select: {
-            name_snapshot: true,
-            quantity: true,
-            price_snapshot: true,
-          },
-        },
-      },
     }),
     prisma.order.count({
       where: {

@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { getRestaurantIdFromCookie } from '@/utils/cookie-utils';
 import type {
   DayEndClosure,
   ExportJob,
@@ -103,20 +104,9 @@ export function exportDownloadUrl(jobId: string) {
 
 function getAuthHeaders() {
   const headers: Record<string, string> = {};
-  const staffToken = localStorage.getItem('staff_token') || localStorage.getItem('waiter_token');
-  if (staffToken) {
-    headers.Authorization = `Bearer ${staffToken}`;
-  }
-  const restaurantData = localStorage.getItem('staff_restaurant') || localStorage.getItem('waiter_restaurant');
-  if (restaurantData) {
-    try {
-      const parsed = JSON.parse(restaurantData) as { id?: string };
-      if (parsed?.id) {
-        headers['x-restaurant-id'] = parsed.id;
-      }
-    } catch {
-      // ignore parse errors
-    }
+  const restaurantId = apiClient.getRestaurantId() || getRestaurantIdFromCookie();
+  if (restaurantId) {
+    headers['x-restaurant-id'] = restaurantId;
   }
   return headers;
 }

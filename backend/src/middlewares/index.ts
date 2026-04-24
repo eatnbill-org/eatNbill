@@ -12,10 +12,11 @@ import { requestTimeout } from '../security/requestTimeout';
 import { timingMiddleware } from './timing.middleware';
 import { env } from '../env';
 import { redisClient } from '../utils/redis';
+import { csrfProtection } from './csrf.middleware';
 
 const authLimiter = rateLimit({
   windowMs: 60_000,
-  limit: 120,
+  limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
   store: env.REDIS_URL && redisClient.getClient()
@@ -26,6 +27,20 @@ const authLimiter = rateLimit({
 });
 
 const defaultLimiter = (req: any, res: any, next: any) => next(); // No-op for better performance
+
+const sensitiveAuthLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many authentication attempts' } },
+  store: env.REDIS_URL && redisClient.getClient()
+    ? new RedisStore({
+        sendCommand: (...args: string[]) => redisClient.getClient()!.call(...(args as [string, ...string[]])) as Promise<any>,
+        prefix: 'rl:auth-sensitive:',
+      })
+    : undefined,
+});
 
 
 export function applyCommonMiddleware(app: Express) {
@@ -46,7 +61,7 @@ export function applyCommonMiddleware(app: Express) {
     },
     credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-restaurant-id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-restaurant-id', 'x-csrf-token'],
   }));
 
   // Logging middleware (development only)
@@ -61,6 +76,7 @@ export function applyCommonMiddleware(app: Express) {
   
   app.use(helmetMiddleware);
   app.use(cookieParser());
+  app.use(csrfProtection);
   app.use(hpp());
   app.use(jsonLimit);
   app.use(urlencodedLimit);
@@ -70,6 +86,7 @@ export function applyCommonMiddleware(app: Express) {
 
 export const rateLimiters = {
   auth: authLimiter,
+  authSensitive: sensitiveAuthLimiter,
   default: defaultLimiter,
 };
 

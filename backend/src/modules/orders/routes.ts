@@ -41,12 +41,39 @@ const publicOrderLimiter = rateLimit({
       : undefined,
 });
 
+const publicCustomerLookupLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: "Too many customer lookup requests, please try again later",
+  },
+  keyGenerator: (req: any) => `${ipKeyGenerator(req)}:${req.params?.restaurant_slug || "unknown"}`,
+  store:
+    env.REDIS_URL && redisClient.getClient()
+      ? new RedisStore({
+          sendCommand: (...args: string[]) =>
+            redisClient.getClient()!.call(...(args as [string, ...string[]])) as Promise<any>,
+          prefix: "rl:public-customer-lookup:",
+        })
+      : undefined,
+});
+
 /**
  * Public order routes (no auth)
  * POST /public/:restaurant_slug/orders
  */
 export function publicOrderRoutes() {
   const router = Router();
+  const { searchCustomerByPhoneController } = require('../customers/controller');
+
+  router.get(
+    "/:restaurant_slug/customers/search",
+    publicCustomerLookupLimiter,
+    searchCustomerByPhoneController
+  );
 
   router.post(
     "/:restaurant_slug/orders",

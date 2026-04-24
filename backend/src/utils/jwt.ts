@@ -11,7 +11,8 @@ export type LocalJwtPayload = {
   tenantId: string;
   role: 'OWNER' | 'MANAGER' | 'WAITER';
   supabaseId?: string; // Keep for backwards compatibility with Supabase operations
-  type: 'access' | 'refresh';
+  resetNonce?: string;
+  type: 'access' | 'refresh' | 'password_reset';
 };
 
 // ==========================================
@@ -24,9 +25,14 @@ export type LocalJwtPayload = {
  */
 export function signLocalJwt(
   payload: Omit<LocalJwtPayload, 'type'>,
-  type: 'access' | 'refresh'
+  type: 'access' | 'refresh' | 'password_reset'
 ): string {
-  const expiresIn = type === 'access' ? env.JWT_ACCESS_EXPIRY : env.JWT_REFRESH_EXPIRY;
+  const expiresIn =
+    type === 'access'
+      ? env.JWT_ACCESS_EXPIRY
+      : type === 'refresh'
+        ? env.JWT_REFRESH_EXPIRY
+        : env.JWT_PASSWORD_RESET_EXPIRY;
   
   const options: SignOptions = {
     expiresIn: expiresIn as any,

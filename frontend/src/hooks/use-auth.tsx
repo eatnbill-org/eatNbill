@@ -29,7 +29,7 @@ interface AuthContextType {
   loginWithPassword: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   forgotPasswordOTP: (email: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   verifyResetOTP: (email: string, otp: string) => Promise<{ success: boolean; error?: string; resetToken?: string }>;
-  resetPasswordWithToken: (resetToken: string, newPassword: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+  resetPasswordWithToken: (resetToken: string, newPassword: string, confirmPassword?: string) => Promise<{ success: boolean; error?: string; message?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -481,11 +481,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * Reset password with verified token (V2)
    */
-  const resetPasswordWithToken = useCallback(async (resetToken: string, newPassword: string) => {
+  const resetPasswordWithToken = useCallback(async (resetToken: string, newPassword: string, confirmPassword?: string) => {
     try {
       const response = await apiClient.post('/auth/reset-password', {
         resetToken,
         newPassword,
+        confirmPassword: confirmPassword ?? newPassword,
       });
 
       if (response.error) {

@@ -17,7 +17,7 @@ import { env } from './env';
 export async function createApp() {
   const app = express();
 
-  app.set('trust proxy', 2);
+  app.set('trust proxy', env.TRUST_PROXY_VALUE);
 
   // Non-blocking startup diagnostics
   checkConnections().catch(console.error);

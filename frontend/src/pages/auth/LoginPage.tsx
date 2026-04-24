@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Loader2, User, ChefHat } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
-import { clearStaffSessionStorage, saveStaffSession } from "@/lib/staff-session";
+import { clearStaffSessionStorage } from "@/lib/staff-session";
 import { FormSkeleton } from "@/components/ui/skeleton";
 import { useLoadingTask } from "@/hooks/use-loading-task";
 
@@ -101,8 +101,6 @@ export default function LoginPage() {
             throw new Error(data.message || data.error || 'Login failed');
           }
 
-          // Store canonical staff session and refresh API client context
-          saveStaffSession(data);
           apiClient.setRestaurantId(data.restaurant?.id || null);
           apiClient.setTenantId(data.restaurant?.tenantId || null);
 

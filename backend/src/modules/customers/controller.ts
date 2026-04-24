@@ -21,6 +21,7 @@ import {
   publicOrderHistorySchema,
   updateCustomerCreditSchema,
 } from './schema';
+import { prisma } from '../../utils/prisma';
 
 function requireContext(req: Request) {
   if (!req.user || !req.restaurantId) {
@@ -237,6 +238,54 @@ export async function publicOrderHistoryController(
       parsed.data.limit
     );
     return res.json(result);
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function searchCustomerByPhoneController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const restaurantSlug = typeof req.params.restaurant_slug === 'string' ? req.params.restaurant_slug.trim() : '';
+    const phone = typeof req.query.phone === 'string' ? req.query.phone.trim() : '';
+
+    if (!restaurantSlug || !phone) {
+      return next(new AppError('VALIDATION_ERROR', 'restaurant_slug and phone are required', 400));
+    }
+
+    const restaurant = await prisma.restaurant.findFirst({
+      where: { slug: restaurantSlug, deleted_at: null },
+      select: { id: true },
+    });
+
+    if (!restaurant) {
+      return next(new AppError('NOT_FOUND', 'Restaurant not found', 404));
+    }
+
+    const customer = await prisma.customer.findFirst({
+      where: {
+        restaurant_id: restaurant.id,
+        phone,
+      },
+      select: {
+        name: true,
+      },
+    });
+
+    return res.json({
+      data: customer
+        ? {
+            found: true,
+            name: customer.name,
+          }
+        : {
+            found: false,
+            name: null,
+          },
+    });
   } catch (error) {
     return next(error as Error);
   }

@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
 
     try {
       const response = await apiClient.post("/auth/reset-password", {
-        accessToken,
+        resetToken: accessToken,
         newPassword: formData.newPassword,
         confirmPassword: formData.confirmPassword,
       });

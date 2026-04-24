@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { refreshSession, signOut } from './service';
+import { changePassword, refreshSession, signOut, verifyCurrentPassword } from './service';
 import { clearAuthCookies, setAuthCookies, REFRESH_TOKEN_COOKIE } from './cookies';
 import * as staffAuthService from './staff-auth.service';
 
@@ -61,6 +61,26 @@ export async function logoutController(_req: Request, res: Response, next: NextF
     return res.json(result);
   } catch (error) {
     clearAuthCookies(res);
+    return next(error as Error);
+  }
+}
+
+export async function verifyPasswordController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { currentPassword } = req.body as { currentPassword: string };
+    const result = await verifyCurrentPassword(req.user!.userId, currentPassword);
+    return res.json(result);
+  } catch (error) {
+    return next(error as Error);
+  }
+}
+
+export async function changePasswordController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
+    const result = await changePassword(req.user!.userId, currentPassword, newPassword);
+    return res.json(result);
+  } catch (error) {
     return next(error as Error);
   }
 }

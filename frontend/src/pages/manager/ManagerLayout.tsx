@@ -43,6 +43,7 @@ import { logoutStaffSession } from "@/lib/staff-session";
 import type { ReservationAlert } from "@/types/reservation";
 import i18n, { backendLanguageToUi, persistLanguage } from "@/i18n";
 import { fetchMyPreferences } from "@/lib/enterprise-api";
+import { useStaffAuth } from "@/hooks/use-head-auth";
 
 const NAV_ITEMS = [
   { to: "/manager/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -70,8 +71,8 @@ interface RestaurantData {
 export default function ManagerLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { staff, restaurant: sessionRestaurant, isLoading: staffLoading } = useStaffAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [staff, setStaff] = useState<StaffData | null>(null);
   const { restaurant, fetchRestaurant } = useRestaurantStore();
   const reservationPollCursorRef = useRef<Date | null>(null);
 
@@ -79,44 +80,36 @@ export default function ManagerLayout() {
     // Ensure no lingering realtime connections in manager views
     useRealtimeStore.getState().unsubscribeAll();
     useAdminOrdersStore.getState().unsubscribe();
+  }, []);
 
-    const token = localStorage.getItem('staff_token') || localStorage.getItem('waiter_token');
-    const staffData = localStorage.getItem('staff_data') || localStorage.getItem('waiter_data');
-    const restaurantData = localStorage.getItem('staff_restaurant') || localStorage.getItem('waiter_restaurant');
-
-    if (!token || !staffData) {
-      navigate('/auth/login');
+  useEffect(() => {
+    if (staffLoading) return;
+    if (!staff) {
+      navigate('/auth/login', { replace: true });
+      return;
+    }
+    if (staff.role !== 'MANAGER') {
+      navigate('/head/orders', { replace: true });
       return;
     }
 
-    try {
-      const parsed = JSON.parse(staffData);
-      if (parsed?.role !== 'MANAGER') {
-        navigate('/staff/orders');
-        return;
+    void (async () => {
+      try {
+        const prefs = await fetchMyPreferences();
+        const language = backendLanguageToUi(prefs?.effective_language);
+        await i18n.changeLanguage(language);
+        persistLanguage(language);
+      } catch {
+        // Ignore preference failures in manager layout.
       }
-      setStaff(parsed);
+    })();
+  }, [staffLoading, staff, navigate]);
 
-      void (async () => {
-        try {
-          const prefs = await fetchMyPreferences();
-          const language = backendLanguageToUi(prefs?.effective_language);
-          await i18n.changeLanguage(language);
-          persistLanguage(language);
-        } catch {
-          // Ignore preference failures in manager layout.
-        }
-      })();
-    } catch {
-      navigate('/auth/login');
-      return;
-    }
-
-    // Fetch restaurant data if missing
-    if (!restaurant) {
+  useEffect(() => {
+    if (!restaurant && sessionRestaurant?.id) {
       fetchRestaurant();
     }
-  }, [navigate, restaurant, fetchRestaurant]);
+  }, [restaurant, sessionRestaurant?.id, fetchRestaurant]);
 
   useEffect(() => {
     reservationPollCursorRef.current = null;
@@ -292,10 +285,8 @@ function ManagerSidebar({
 
 function ReservationAlertsWrapper({ basePath }: { basePath: string }) {
   const navigate = useNavigate();
-  const { current, dismissAlert } = useReservationAlertsStore((state) => ({
-    current: state.current,
-    dismissAlert: state.dismissAlert,
-  }));
+  const current = useReservationAlertsStore((state) => state.current);
+  const dismissAlert = useReservationAlertsStore((state) => state.dismissAlert);
 
   return (
     <ReservationAlertPopup

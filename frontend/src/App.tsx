@@ -51,7 +51,6 @@ const StaffPage = lazy(() => import("./pages/admin/company/staff/StaffPage"));
 const AdminDayEndPage = lazy(() => import("./pages/admin/billing/AdminDayEndPage"));
 const AdminExportCenterPage = lazy(() => import("./pages/admin/billing/AdminExportCenterPage"));
 const RestaurantSlugDebugPage = lazy(() => import("./pages/admin/RestaurantSlugDebugPage"));
-const DebugAuthPage = lazy(() => import("./pages/admin/DebugAuthPage"));
 const CustomerEntry = lazy(() => import("./pages/admin/customerSettings/CustomerEntry"));
 
 const withRoleSuspense = (role: RouteRole, element: ReactElement) => (
@@ -131,7 +130,6 @@ const App = () => (
 
                 {/* DEBUG: Restaurant Slug */}
                 <Route path="debug/slug" element={<RestaurantSlugDebugPage />} />
-                <Route path="debug/auth" element={<DebugAuthPage />} />
 
                 {/* SETTINGS */}
                 <Route path="settings" element={<Navigate to="settings/admin" replace />} />

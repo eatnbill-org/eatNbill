@@ -1,5 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './service';
+import {
+  clearSuperAdminAuthCookies,
+  setSuperAdminAuthCookies,
+} from '../../auth/cookies';
 
 /**
  * POST /super-admin/auth/login - Super admin login with email/password
@@ -14,18 +18,11 @@ export async function loginController(req: Request, res: Response, next: NextFun
       return res.json({ success: true, requiresTOTP: true, tempToken: result.tempToken });
     }
 
-    // Set auth cookies
-    res.cookie('sa_access_token', result.accessToken!, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
-    res.cookie('sa_refresh_token', result.refreshToken!, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+    setSuperAdminAuthCookies(res, {
+      accessToken: result.accessToken!,
+      refreshToken: result.refreshToken!,
+      accessMaxAgeMs: 15 * 60 * 1000,
+      refreshMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.json({ success: true, requiresTOTP: false, admin: result.admin });
@@ -42,17 +39,11 @@ export async function verifyTotpLoginController(req: Request, res: Response, nex
     const { tempToken, totpCode } = req.body as { tempToken: string; totpCode: string };
     const result = await service.verifyTotpLogin(tempToken, totpCode);
 
-    res.cookie('sa_access_token', result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
-    res.cookie('sa_refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+    setSuperAdminAuthCookies(res, {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      accessMaxAgeMs: 15 * 60 * 1000,
+      refreshMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.json({ success: true, admin: result.admin });
@@ -74,11 +65,11 @@ export async function refreshController(req: Request, res: Response, next: NextF
 
     const result = await service.refreshSession(refreshToken);
 
-    res.cookie('sa_access_token', result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 15 * 60 * 1000,
+    setSuperAdminAuthCookies(res, {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      accessMaxAgeMs: 15 * 60 * 1000,
+      refreshMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.json({ success: true, accessToken: result.accessToken, admin: result.admin });
@@ -107,10 +98,10 @@ export async function meController(req: Request, res: Response, next: NextFuncti
  */
 export async function logoutController(_req: Request, res: Response, next: NextFunction) {
   try {
-    res.clearCookie('sa_access_token');
-    res.clearCookie('sa_refresh_token');
+    clearSuperAdminAuthCookies(res);
     return res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
+    clearSuperAdminAuthCookies(res);
     return next(error as Error);
   }
 }

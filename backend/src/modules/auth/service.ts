@@ -1,7 +1,8 @@
 import { AppError } from '../../middlewares/error.middleware';
 import { prisma } from '../../utils/prisma';
 import { signLocalJwt, verifyLocalJwt } from '../../utils/jwt';
-import { getUserRestaurants } from './repository';
+import { comparePassword, hashPassword } from '../../utils/hash';
+import { createAuditLog, getUserRestaurants, updateUserPassword } from './repository';
 
 /**
  * Refresh tokens using local JWT verification.
@@ -82,4 +83,51 @@ export async function refreshSession(refreshToken: string) {
  */
 export async function signOut() {
   return { success: true, message: 'Logged out successfully' };
+}
+
+export async function verifyCurrentPassword(userId: string, currentPassword: string) {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deleted_at: null, is_active: true },
+    select: {
+      id: true,
+      password_hash: true,
+    },
+  });
+
+  if (!user || !user.password_hash) {
+    throw new AppError('UNAUTHORIZED', 'User not found', 404);
+  }
+
+  const isValid = await comparePassword(currentPassword, user.password_hash);
+  if (!isValid) {
+    throw new AppError('INVALID_CREDENTIALS', 'Current password is incorrect', 400);
+  }
+
+  return { success: true, message: 'Password verified successfully' };
+}
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deleted_at: null, is_active: true },
+    select: {
+      id: true,
+      tenant_id: true,
+      password_hash: true,
+    },
+  });
+
+  if (!user || !user.password_hash) {
+    throw new AppError('UNAUTHORIZED', 'User not found', 404);
+  }
+
+  const isValid = await comparePassword(currentPassword, user.password_hash);
+  if (!isValid) {
+    throw new AppError('INVALID_CREDENTIALS', 'Current password is incorrect', 400);
+  }
+
+  const nextHash = await hashPassword(newPassword);
+  await updateUserPassword(user.id, nextHash);
+  await createAuditLog(user.tenant_id, user.id, 'PASSWORD_CHANGED', 'USER', user.id);
+
+  return { success: true, message: 'Password changed successfully' };
 }

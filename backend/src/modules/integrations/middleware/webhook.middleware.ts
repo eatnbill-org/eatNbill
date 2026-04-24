@@ -157,7 +157,6 @@ export function verifyWebhookSignature(platform: IntegrationPlatform) {
       });
 
       // If signature validation is required and failed, reject
-      // In production, you may want to make this stricter
       if (!signatureValid) {
         logger.warn(`Invalid signature for ${platform} webhook`, {
           config_id: config.id,
@@ -168,8 +167,11 @@ export function verifyWebhookSignature(platform: IntegrationPlatform) {
           failure_reason: "Invalid webhook signature",
         });
 
-        // Still return 200 to prevent retries, but don't process
-        // Some providers keep retrying on non-200 responses
+        if (env.WEBHOOK_STRICT_SIGNATURE) {
+          return next(new AppError("FORBIDDEN", "Invalid webhook signature", 403));
+        }
+
+        // Non-strict fallback for development/testing environments.
         return res.status(200).json({
           success: false,
           error: "Signature verification failed",
