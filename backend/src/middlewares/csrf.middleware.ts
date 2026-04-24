@@ -10,6 +10,20 @@ import {
 } from '../modules/auth/cookies';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const PUBLIC_AUTH_CSRF_EXEMPT_PATHS = new Set([
+  '/api/v1/auth/login',
+  '/api/v1/auth/staff/login',
+  '/api/v1/auth/waiter/login',
+  '/api/v1/auth/register',
+  '/api/v1/auth/verify-register-otp',
+  '/api/v1/auth/resend-register-otp',
+  '/api/v1/auth/resend-otp',
+  '/api/v1/auth/forgot-password',
+  '/api/v1/auth/verify-forgot-password-otp',
+  '/api/v1/auth/reset-password',
+  '/api/v1/super-admin/auth/login',
+  '/api/v1/super-admin/auth/2fa/verify-login',
+]);
 
 function normalizeOrigin(origin: string) {
   return origin.trim().replace(/\/+$/, '');
@@ -22,8 +36,16 @@ function safeEqual(left: string, right: string) {
   return crypto.timingSafeEqual(leftBuffer, rightBuffer);
 }
 
+function getRequestPath(req: Request) {
+  return (req.baseUrl || req.path || req.originalUrl || '').replace(/\/+$/, '');
+}
+
 export function csrfProtection(req: Request, _res: Response, next: NextFunction) {
   if (!MUTATING_METHODS.has(req.method.toUpperCase())) {
+    return next();
+  }
+
+  if (PUBLIC_AUTH_CSRF_EXEMPT_PATHS.has(getRequestPath(req))) {
     return next();
   }
 
