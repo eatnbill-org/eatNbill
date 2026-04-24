@@ -44,6 +44,8 @@ import {
   Calendar as CalendarIcon,
   ChevronDown,
   Tag,
+  Check,
+  Armchair,
 } from 'lucide-react';
 import { formatINR } from '@/lib/format';
 import type { Order } from '@/types/order';
@@ -327,23 +329,24 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="min-h-full bg-transparent p-3 sm:p-6 space-y-6 overflow-y-auto no-scrollbar">
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Bills</h1>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">Bills</h1>
             {realtimeConnected && (
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="flex items-center gap-1.5 text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 uppercase tracking-widest">
+                <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
                 Live
               </span>
             )}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
             {!realtimeConnected && (
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                Syncing (5s)
+              <span className="flex items-center gap-1 text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-200 uppercase tracking-widest">
+                Offline
               </span>
             )}
-            <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold opacity-70">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-black opacity-60">
               {format(selectedDate, 'MMMM yyyy')}
             </span>
           </div>
@@ -516,81 +519,88 @@ export default function AdminOrdersPage() {
             filteredOrders.map((order) => (
               <div
                 key={order.id}
-                className="rounded-2xl border border-border bg-white p-4 shadow-sm space-y-3"
+                className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm space-y-4 hover:border-primary/20 transition-all active:scale-[0.99]"
                 onClick={() => setDetailsOrder(order)}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                       <p className="font-mono text-sm font-bold">#{order.order_number}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1.5">
+                       <span className="font-mono text-[10px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10">#{order.order_number}</span>
                        {getTypeTag(order.order_type)}
+                       {order.table_number && (
+                         <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
+                           <Armchair className="h-2.5 w-2.5" /> T-{order.table_number}
+                         </span>
+                       )}
+                       <span className={cn(
+                         "text-[8px] font-black px-1.5 py-0.5 rounded-md border uppercase tracking-widest",
+                         order.source === 'QR' ? "text-purple-600 bg-purple-50 border-purple-100" : "text-slate-400 bg-slate-50 border-slate-100"
+                       )}>
+                         {order.source}
+                       </span>
                     </div>
-                    <p className="text-sm font-bold uppercase truncate">{order.customer_name}</p>
+                    <p className="text-sm font-black uppercase text-slate-800 truncate">{order.customer_name || 'Walk-in'}</p>
                     {order.customer_phone && (
-                      <p className="text-[10px] text-muted-foreground font-semibold uppercase">{order.customer_phone}</p>
+                      <p className="text-[10px] text-slate-400 font-bold tracking-tight">{order.customer_phone}</p>
                     )}
                   </div>
-                  {getStatusBadge(order.status)}
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <p className="text-muted-foreground font-semibold uppercase tracking-wider">Items</p>
-                    <p className="font-bold">{getItemSummary(order)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground font-semibold uppercase tracking-wider">Total</p>
-                    <p className="font-bold">{formatINR(parseFloat(order.total_amount))}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground font-semibold uppercase tracking-wider">Time</p>
-                    <p className="font-bold">{formatArriveAt(order.arrive_at) || formatTime(order.placed_at || order.created_at)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground font-semibold uppercase tracking-wider">Source</p>
-                    <p className="font-bold text-primary">{order.source}</p>
+                  <div className="flex flex-col items-end gap-1.5">
+                    {getStatusBadge(order.status)}
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                      {formatArriveAt(order.arrive_at) || formatTime(order.placed_at || order.created_at)}
+                    </span>
                   </div>
                 </div>
-                <div className="flex flex-wrap justify-end gap-1">
-                  {order.payment_status === 'PENDING' && !['CANCELLED'].includes(order.status) && (
+
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-50">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">Order Items</span>
+                    <span className="text-xs font-bold text-slate-600 line-clamp-1 italic">"{getItemSummary(order)}"</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">Total Bill</span>
+                    <span className="text-sm font-black text-indigo-600 tabular-nums">{formatINR(parseFloat(order.total_amount))}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <div className="flex items-center gap-1.5">
+                    {order.payment_status === 'PAID' ? (
+                      <div className="flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 uppercase tracking-widest">
+                        <Check className="h-3 w-3" /> PAID
+                      </div>
+                    ) : (
+                      <div className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100 uppercase tracking-widest">
+                        PENDING
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className="h-8 text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary hover:bg-primary/20 rounded-md"
+                      size="icon"
+                      className="h-9 w-9 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl border border-slate-50"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setMarkPaidOrder(order);
+                        setBillOrder(order);
                       }}
                     >
-                      Mark Paid
+                      <Printer className="h-4 w-4" />
                     </Button>
-                  )}
-                  {order.payment_status === 'PAID' && (
-                    <Badge variant="secondary" className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0 border-primary/20 h-8">
-                      PAID
-                    </Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setBillOrder(order);
-                    }}
-                  >
-                    <Printer className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteOrder(order);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    {order.payment_status === 'PENDING' && !['CANCELLED'].includes(order.status) && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-9 px-4 text-[10px] font-black uppercase tracking-widest bg-primary text-white rounded-xl shadow-md shadow-primary/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMarkPaidOrder(order);
+                        }}
+                      >
+                        Settle
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
