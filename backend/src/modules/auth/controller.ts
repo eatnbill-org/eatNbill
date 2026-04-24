@@ -86,32 +86,6 @@ export async function changePasswordController(req: Request, res: Response, next
 }
 
 /**
- * POST /auth/verify-password - Verify current password for the authenticated user
- */
-export async function verifyPasswordController(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { currentPassword } = req.body as { currentPassword: string };
-    const result = await verifyCurrentPassword(req.user!.userId, currentPassword);
-    return res.json(result);
-  } catch (error) {
-    return next(error as Error);
-  }
-}
-
-/**
- * PATCH /auth/change-password - Change password for the authenticated user
- */
-export async function changePasswordController(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
-    const result = await changePassword(req.user!.userId, currentPassword, newPassword);
-    return res.json(result);
-  } catch (error) {
-    return next(error as Error);
-  }
-}
-
-/**
  * POST /auth/staff/login - Staff login
  */
 export async function staffLoginController(req: Request, res: Response, next: NextFunction) {

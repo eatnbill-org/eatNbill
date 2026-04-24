@@ -76,14 +76,6 @@ export function publicOrderRoutes() {
     searchCustomerByPhoneController
   );
 
-  // Import customer controller
-  const { searchCustomerByPhoneController } = require('../customers/controller');
-
-  router.get(
-    "/:restaurant_slug/customers/search",
-    searchCustomerByPhoneController
-  );
-
   router.post(
     "/:restaurant_slug/orders",
     publicOrderLimiter,

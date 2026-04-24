@@ -138,3 +138,19 @@ export async function rejectQROrder(orderId: string, reason?: string): Promise<a
     body: { reason },
   });
 }
+
+export async function searchCustomerByPhone(phone: string) {
+  const normalizedPhone = phone.trim();
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  const response = await requestOrThrow<{ data?: Array<{ id: string; name: string; phone: string }> }>(
+    `customers?search=${encodeURIComponent(normalizedPhone)}&limit=10`
+  );
+
+  const customers = Array.isArray(response?.data) ? response.data : [];
+  const exactMatch = customers.find((customer) => customer.phone?.trim() === normalizedPhone);
+
+  return exactMatch ?? null;
+}
