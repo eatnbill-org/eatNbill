@@ -6,6 +6,15 @@ const parseCsv = (value?: string) =>
     .map((item) => item.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
+const parseBooleanish = (value: unknown, defaultValue: boolean) => {
+  if (value === undefined || value === null || value === '') return defaultValue;
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  return defaultValue;
+};
+
 const envSchema = z.object({
   // Supabase (required)
   SUPABASE_URL: z.string().min(1),
@@ -37,8 +46,16 @@ const envSchema = z.object({
   // Server Configuration
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
+  TRUST_PROXY: z.string().default('2'),
   FRONTEND_URL: z.string().default('https://eatnbill.com').transform((val) => val.trim().replace(/\/+$/, '')),
   FRONTEND_URLS: z.string().optional().transform((val) => parseCsv(val)),
+  AUTH_COOKIE_DOMAIN: z.string().optional(),
+  AUTH_COOKIE_SAMESITE: z.enum(['strict', 'lax', 'none']).default('lax'),
+  AUTH_COOKIE_SECURE: z.preprocess((value) => parseBooleanish(value, process.env.NODE_ENV === 'production'), z.boolean()),
+  AUTH_CSRF_COOKIE_NAME: z.string().default('rbs_csrf'),
+  SUPER_ADMIN_CSRF_COOKIE_NAME: z.string().default('sa_csrf'),
+  WEBHOOK_STRICT_SIGNATURE: z.preprocess((value) => parseBooleanish(value, process.env.NODE_ENV === 'production'), z.boolean()),
+  ENABLE_DEBUG_ROUTES: z.preprocess((value) => parseBooleanish(value, process.env.NODE_ENV !== 'production'), z.boolean()),
 
   // Admin configuration (optional)
   ADMIN_ALLOWED_IPS: z.string().optional().transform((val) =>
@@ -61,8 +78,18 @@ const envSchema = z.object({
 
 const parsedEnv = envSchema.parse(process.env);
 
+function parseTrustProxy(value: string): boolean | number | string {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true') return true;
+  if (normalized === 'false') return false;
+  const asNumber = Number(value);
+  if (!Number.isNaN(asNumber) && Number.isFinite(asNumber)) return asNumber;
+  return value;
+}
+
 export const env = {
   ...parsedEnv,
+  TRUST_PROXY_VALUE: parseTrustProxy(parsedEnv.TRUST_PROXY),
   CORS_ALLOWED_ORIGINS: Array.from(
     new Set([
       parsedEnv.FRONTEND_URL,

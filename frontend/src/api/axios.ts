@@ -3,7 +3,7 @@
  * 
  * Centralized Axios configuration with:
  * - Base URL and timeout
- * - Request interceptor: inject access token
+ * - Cookie-based auth with credentials included
  * - Response interceptor: normalize errors, handle 401 refresh
  * 
  * This is the low-level HTTP client used by api/client.ts.
@@ -11,7 +11,7 @@
  */
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { getAccessToken, getRefreshToken, setAccessToken, setRefreshToken, clearTokens } from '@/utils/token';
+import { getCsrfTokenFromCookie } from '@/utils/cookie-utils';
 import { normalizeError } from './error';
 
 // Base API URL from environment
@@ -27,9 +27,8 @@ let isRefreshing = false;
 
 /**
  * Promise that resolves when token refresh completes.
- * Used to queue requests that arrive during refresh.
  */
-let refreshPromise: Promise<string> | null = null;
+let refreshPromise: Promise<void> | null = null;
 
 /**
  * Creates and configures the Axios instance.
@@ -38,20 +37,21 @@ function createAxiosInstance(): AxiosInstance {
   const instance = axios.create({
     baseURL: API_BASE_URL,
     timeout: REQUEST_TIMEOUT,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
     },
   });
 
-  // Request interceptor: inject access token
   instance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-      const token = getAccessToken();
-      
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
+      const method = (config.method || 'get').toUpperCase();
+      if (config.headers && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        const csrfToken = getCsrfTokenFromCookie();
+        if (csrfToken) {
+          config.headers['x-csrf-token'] = csrfToken;
+        }
       }
-
       return config;
     },
     (error: AxiosError) => {
@@ -75,8 +75,7 @@ function createAxiosInstance(): AxiosInstance {
         try {
           // If already refreshing, wait for that to complete
           if (isRefreshing && refreshPromise) {
-            const newToken = await refreshPromise;
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            await refreshPromise;
             return instance(originalRequest);
           }
 
@@ -84,18 +83,10 @@ function createAxiosInstance(): AxiosInstance {
           isRefreshing = true;
           refreshPromise = refreshAccessToken();
 
-          const newToken = await refreshPromise;
-          
-          // Update authorization header and retry original request
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          await refreshPromise;
           return instance(originalRequest);
         } catch (refreshError) {
-          // Token refresh failed - clear tokens and redirect to login
-          clearTokens();
-          
-          // Dispatch custom event for auth failure (caught by auth store/context)
           window.dispatchEvent(new CustomEvent('auth:token-refresh-failed'));
-          
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
@@ -112,45 +103,22 @@ function createAxiosInstance(): AxiosInstance {
 }
 
 /**
- * Refreshes the access token using the refresh token.
- * 
- * @returns New access token
+ * Refreshes the access token using the refresh cookie.
+ *
  * @throws Error if refresh fails
  */
-async function refreshAccessToken(): Promise<string> {
-  const refreshToken = getRefreshToken();
-
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
-  }
-
+async function refreshAccessToken(): Promise<void> {
   try {
-    // Create a separate axios instance to avoid interceptor recursion
-    const response = await axios.post(
+    await axios.post(
       `${API_BASE_URL}/auth/refresh`,
-      { refreshToken },
+      {},
       {
+        withCredentials: true,
         headers: { 'Content-Type': 'application/json' },
         timeout: REQUEST_TIMEOUT,
       }
     );
-
-    const { accessToken, refreshToken: newRefreshToken } = response.data;
-
-    if (!accessToken) {
-      throw new Error('No access token in refresh response');
-    }
-
-    // Update stored tokens
-    setAccessToken(accessToken);
-    if (newRefreshToken) {
-      setRefreshToken(newRefreshToken);
-    }
-
-    return accessToken;
   } catch (error) {
-    // Clear tokens on refresh failure
-    clearTokens();
     throw normalizeError(error, 'Failed to refresh authentication');
   }
 }

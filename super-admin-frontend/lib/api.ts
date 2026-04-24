@@ -4,6 +4,14 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 // This prevents path duplication in the rewrite rule
 const API_URL = '/api/v1';
 
+function getCookie(name: string) {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length !== 2) return null;
+  return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+}
+
 class ApiClient {
   private client: AxiosInstance;
 
@@ -18,6 +26,13 @@ class ApiClient {
 
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
+        const method = (config.method || 'get').toUpperCase();
+        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+          const csrfToken = getCookie('sa_csrf');
+          if (csrfToken) {
+            config.headers.set('x-csrf-token', csrfToken);
+          }
+        }
         return config;
       },
       (error) => Promise.reject(error)

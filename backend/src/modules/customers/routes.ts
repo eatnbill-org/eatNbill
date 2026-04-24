@@ -20,7 +20,7 @@ export function customerRoutes() {
   const router = Router();
 
   // Public endpoint - no auth required
-  router.post('/public/orders-by-phone', rateLimiters.auth, publicOrderHistoryController);
+  router.post('/public/orders-by-phone', rateLimiters.authSensitive, publicOrderHistoryController);
 
   // Protected routes
   router.use(rateLimiters.default);

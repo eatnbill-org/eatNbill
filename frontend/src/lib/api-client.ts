@@ -4,7 +4,7 @@
  * Handles authentication via HTTP-only cookies, token refresh, and error handling
  */
 
-import { getRestaurantIdFromCookie, getTenantIdFromCookie } from '@/utils/cookie-utils';
+import { getCsrfTokenFromCookie, getRestaurantIdFromCookie, getTenantIdFromCookie } from '@/utils/cookie-utils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
@@ -28,38 +28,26 @@ class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    // Load restaurant and tenant ID from cookies on initialization
-    this.restaurantId = getRestaurantIdFromCookie() || getStaffRestaurantId();
+    this.restaurantId = getRestaurantIdFromCookie();
     this.tenantId = getTenantIdFromCookie();
-
-    // Debug: Log restaurant ID on initialization
-    if (this.restaurantId) {
-      console.log('[API Client] Initialized with restaurant ID:', this.restaurantId);
-    } else {
-      console.warn('[API Client] No restaurant ID found in cookies');
-    }
   }
 
   /**
    * Set the restaurant ID (updates local state from cookie)
    */
   setRestaurantId(restaurantId: string | null) {
-    console.log('[API Client] Setting restaurant ID:', restaurantId);
     this.restaurantId = restaurantId;
-    // Note: Cookie is set by backend, this just updates local state
   }
 
   setTenantId(tenantId: string | null) {
-    console.log('[API Client] Setting tenant ID:', tenantId);
     this.tenantId = tenantId;
-    // Note: Cookie is set by backend, this just updates local state
   }
 
   /**
    * Get the current restaurant ID (reads from cookie if not cached)
    */
   getRestaurantId(): string | null {
-    return this.restaurantId || getRestaurantIdFromCookie() || getStaffRestaurantId();
+    return this.restaurantId || getRestaurantIdFromCookie();
   }
 
   getTenantId(): string | null {
@@ -114,7 +102,6 @@ class ApiClient {
           throw new Error('Token refresh failed');
         }
 
-        // Backend will set new cookies automatically
         const data = await response.json();
 
         // Update local restaurant ID if provided
@@ -198,10 +185,10 @@ class ApiClient {
       console.warn('[API Client] Missing restaurant ID for endpoint:', endpoint);
     }
 
-    // Attach staff bearer token if present (manager/staff sessions)
-    const staffToken = getStaffToken();
-    if (staffToken && !headers['Authorization']) {
-      headers['Authorization'] = `Bearer ${staffToken}`;
+    const isMutatingMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes((options.method || 'GET').toUpperCase());
+    const csrfToken = getCsrfTokenFromCookie();
+    if (isMutatingMethod && csrfToken) {
+      headers['x-csrf-token'] = csrfToken;
     }
 
     // Make the request with credentials to include cookies
@@ -227,7 +214,6 @@ class ApiClient {
           // Retry the request with new token (in cookie)
           response = await fetch(url, requestOptions);
         } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
           return { error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
         }
       }
@@ -245,7 +231,6 @@ class ApiClient {
 
       return { data };
     } catch (error) {
-      console.error('API request error:', error);
       return {
         error: {
           code: 'NETWORK_ERROR',
@@ -308,11 +293,9 @@ class ApiClient {
   clearAuth() {
     this.restaurantId = null;
     this.tenantId = null;
-    this.authFailed = false; // Reset auth failed flag
-    localStorage.removeItem('staff_token');
+    this.authFailed = false;
     localStorage.removeItem('staff_data');
     localStorage.removeItem('staff_restaurant');
-    localStorage.removeItem('waiter_token');
     localStorage.removeItem('waiter_data');
     localStorage.removeItem('waiter_restaurant');
     // Note: Cookies will be cleared by backend on logout
@@ -331,18 +314,3 @@ export const apiClient = new ApiClient(API_URL);
 
 // Export types
 export type { ApiError, ApiResponse };
-
-function getStaffToken(): string | null {
-  return localStorage.getItem('staff_token') || localStorage.getItem('waiter_token');
-}
-
-function getStaffRestaurantId(): string | null {
-  const data = localStorage.getItem('staff_restaurant') || localStorage.getItem('waiter_restaurant');
-  if (!data) return null;
-  try {
-    const parsed = JSON.parse(data);
-    return parsed?.id || null;
-  } catch {
-    return null;
-  }
-}

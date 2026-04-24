@@ -16,7 +16,7 @@ async function bootstrap() {
 
     // Create Express app
     const app = express();
-    app.set('trust proxy', 2);
+    app.set('trust proxy', env.TRUST_PROXY_VALUE);
 
     // Apply middleware
     applyCommonMiddleware(app);

@@ -10,7 +10,8 @@ export function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) {
-    return parts.pop()?.split(';').shift() || null;
+    const raw = parts.pop()?.split(';').shift() || null;
+    return raw ? decodeURIComponent(raw) : null;
   }
   return null;
 }
@@ -34,6 +35,14 @@ export function getRestaurantIdFromCookie(): string | null {
  */
 export function getTenantIdFromCookie(): string | null {
   return getCookie('rbs_tenant');
+}
+
+export function getCsrfTokenFromCookie(): string | null {
+  return getCookie('rbs_csrf');
+}
+
+export function getSuperAdminCsrfTokenFromCookie(): string | null {
+  return getCookie('sa_csrf');
 }
 
 /**

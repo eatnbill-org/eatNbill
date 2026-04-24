@@ -1,671 +1,140 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// Staff API client
-// Handles all API calls for staff-side functionality
+import { apiClient } from '@/lib/api-client';
 
-const VITE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+async function requestOrThrow<T = any>(endpoint: string, options?: RequestInit & { body?: any }) {
+  const method = options?.method || 'GET';
+  const response = await apiClient.request<T>(endpoint, {
+    ...options,
+    method,
+    body:
+      options?.body instanceof FormData
+        ? options.body
+        : options?.body
+          ? JSON.stringify(options.body)
+          : undefined,
+  });
 
-// Internal function to clean up double slashes
-const cleanUrl = (url: string) => url.replace(/([^:]\/)\/+/g, "$1");
+  if (response.error) {
+    throw new Error(response.error.message || 'Request failed');
+  }
 
-// Function to get proper path (prevents double /api/v1)
-const getPath = (endpoint: string) => {
-    let baseUrl = VITE_API_URL;
-
-    // Remove trailing slash if present
-    if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-    }
-
-    // Ensure endpoint starts with slash
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-
-    // If baseUrl already includes /api/v1, don't add it again
-    if (baseUrl.includes('/api/v1')) {
-        return cleanUrl(`${baseUrl}${path}`);
-    }
-
-    // Otherwise add it
-    return cleanUrl(`${baseUrl}/api/v1${path}`);
-};
-
-/**
- * Get staff token from localStorage (with backward compatibility)
- */
-function getStaffToken(): string | null {
-    return localStorage.getItem('staff_token') || localStorage.getItem('waiter_token');
+  return response.data;
 }
 
-/**
- * Get restaurant ID from localStorage (with backward compatibility)
- */
-function getRestaurantId(): string | null {
-    const restaurantData = localStorage.getItem('staff_restaurant') || localStorage.getItem('waiter_restaurant');
-    if (!restaurantData) return null;
-    try {
-        const parsed = JSON.parse(restaurantData);
-        return parsed.id || null;
-    } catch {
-        return null;
-    }
-}
-
-/**
- * Fetch all orders for the staff member's restaurant
- */
 export async function fetchStaffOrders() {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath('orders'), {
-        headers,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch orders');
-    }
-
-    return response.json();
+  return requestOrThrow('orders');
 }
 
-/**
- * Fetch specific order by ID
- */
 export async function fetchOrderById(orderId: string) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}`), {
-        headers,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch order');
-    }
-
-    return response.json();
+  return requestOrThrow(`orders/${orderId}`);
 }
 
-/**
- * Update order status
- */
-export async function updateOrderStatus(
-    orderId: string,
-    status: string,
-    cancel_reason?: string
-) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}/status`), {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({
-            status,
-            ...(cancel_reason ? { cancel_reason } : {}),
-        }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update status');
-    }
-
-    return response.json();
+export async function updateOrderStatus(orderId: string, status: string, cancel_reason?: string) {
+  return requestOrThrow(`orders/${orderId}/status`, {
+    method: 'PATCH',
+    body: {
+      status,
+      ...(cancel_reason ? { cancel_reason } : {}),
+    },
+  });
 }
 
-/**
- * Mark order as paid
- */
 export async function markOrderPaid(orderId: string, paymentMethod: string) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}/payment`), {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({
-            payment_method: paymentMethod.toUpperCase(),
-            payment_status: 'PAID',
-        }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to mark as paid');
-    }
-
-    return response.json();
+  return requestOrThrow(`orders/${orderId}/payment`, {
+    method: 'PATCH',
+    body: {
+      payment_method: paymentMethod.toUpperCase(),
+      payment_status: 'PAID',
+    },
+  });
 }
 
-/**
- * Fetch products/menu items (for stock page)
- */
 export async function fetchProducts() {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath('products'), {
-        headers,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch products');
-    }
-
-    return response.json();
+  return requestOrThrow('products');
 }
 
-/**
- * Add items to an existing order
- */
 export async function addOrderItems(orderId: string, items: Array<{ product_id: string; quantity: number }>) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}/items`), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ items }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to add items');
-    }
-
-    return response.json();
+  return requestOrThrow(`orders/${orderId}/items`, {
+    method: 'POST',
+    body: { items },
+  });
 }
 
-/**
- * Create a new order (internal/staff)
- */
 export async function createOrder(payload: {
-    customer_name?: string;
-    customer_phone?: string;
-    items: Array<{ product_id: string; quantity: number; notes?: string }>;
-    order_type: 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
-    table_id?: string;
-    hall_id?: string;
-    notes?: string;
-    arrive_at?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  items: Array<{ product_id: string; quantity: number; notes?: string }>;
+  order_type: 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
+  table_id?: string;
+  hall_id?: string;
+  notes?: string;
 }) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const body = {
-        ...payload,
-        source: 'MANUAL',
-    };
-
-    const response = await fetch(getPath('orders'), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create order');
-    }
-
-    return response.json();
+  return requestOrThrow('orders', {
+    method: 'POST',
+    body: {
+      ...payload,
+      source: 'MANUAL',
+    },
+  });
 }
 
-/**
- * Fetch tables for the restaurant
- */
 export async function fetchTables() {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath('restaurant/tables'), {
-        headers,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch tables');
-    }
-
-    return response.json();
+  return requestOrThrow('restaurant/tables');
 }
 
-/**
- * Fetch halls for the restaurant
- */
 export async function fetchHalls() {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath('restaurant/halls'), {
-        headers,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch halls');
-    }
-
-    return response.json();
+  return requestOrThrow('restaurant/halls');
 }
 
-/**
- * Update table status (AVAILABLE/RESERVED)
- */
 export async function updateTableStatus(tableId: string, table_status: 'AVAILABLE' | 'RESERVED') {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`restaurant/tables/${tableId}/status`), {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ table_status }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update table status');
-    }
-
-    return response.json();
+  return requestOrThrow(`restaurant/tables/${tableId}/status`, {
+    method: 'PATCH',
+    body: { table_status },
+  });
 }
 
-/**
- * Fetch categories (for stock page filter)
- */
 export async function fetchCategories() {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath('categories'), {
-        headers,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch categories');
-    }
-
-    return response.json();
+  return requestOrThrow('categories');
 }
 
-// Backward-compatible export alias
 export const fetchWaiterOrders = fetchStaffOrders;
 
-/**
- * Update status of an individual order item
- */
 export async function updateOrderItemStatus(orderId: string, itemId: string, status: string) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}/items/${itemId}`), {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ status }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update item status');
-    }
-
-    return response.json();
+  return requestOrThrow(`orders/${orderId}/items/${itemId}`, {
+    method: 'PATCH',
+    body: { status },
+  });
 }
-/**
- * Toggle product availability (In Stock / Out of Stock)
- */
+
 export async function toggleProductAvailability(productId: string, isAvailable: boolean) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`products/${productId}`), {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ isAvailable: isAvailable }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update availability');
-    }
-
-    return response.json();
+  return requestOrThrow(`products/${productId}`, {
+    method: 'PATCH',
+    body: { isAvailable },
+  });
 }
 
-/**
- * Update order item (quantity or notes)
- */
 export async function updateOrderItem(orderId: string, itemId: string, payload: { quantity?: number; notes?: string }) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}/items/${itemId}`), {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update order item');
-    }
-
-    return response.json();
+  return requestOrThrow(`orders/${orderId}/items/${itemId}`, {
+    method: 'PATCH',
+    body: payload,
+  });
 }
 
-/**
- * Remove/delete order item
- */
 export async function removeOrderItem(orderId: string, itemId: string) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        throw new Error('Not authenticated');
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}/items/${itemId}`), {
-        method: 'DELETE',
-        headers,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to remove order item');
-    }
-
-    return response.json();
+  return requestOrThrow(`orders/${orderId}/items/${itemId}`, {
+    method: 'DELETE',
+  });
 }
 
-/**
- * Accept a pending QR order
- */
-export async function acceptQROrder(orderId: string, restaurantId?: string): Promise<any> {
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}/accept`), {
-        method: 'POST',
-        headers,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to accept order');
-    }
-
-    return response.json();
+export async function acceptQROrder(orderId: string): Promise<any> {
+  return requestOrThrow(`orders/${orderId}/accept`, {
+    method: 'POST',
+  });
 }
 
-/**
- * Reject a pending QR order
- */
-export async function rejectQROrder(orderId: string, reason?: string, restaurantId?: string): Promise<any> {
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    const response = await fetch(getPath(`orders/${orderId}/reject`), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ reason }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to reject order');
-    }
-
-    return response.json();
-}
-
-/**
- * Search for customer by phone number
- * Used for staff/admin orders to check existing customer names
- */
-export async function searchCustomerByPhone(phone: string) {
-    const token = getStaffToken();
-    const restaurantId = getRestaurantId();
-
-    if (!token) {
-        return null;
-    }
-
-    const headers: Record<string, string> = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-    };
-
-    if (restaurantId) {
-        headers['x-restaurant-id'] = restaurantId;
-    }
-
-    try {
-        const response = await fetch(getPath(`customers?search=${encodeURIComponent(phone)}`), {
-            headers,
-        });
-
-        if (!response.ok) {
-            return null;
-        }
-
-        const data = await response.json();
-        
-        // Find exact phone match in the results
-        if (data.data && Array.isArray(data.data)) {
-            const normalizedPhone = phone.replace(/\s+/g, '').trim();
-            const match = data.data.find((c: any) => 
-                c.phone && c.phone.replace(/\s+/g, '').trim() === normalizedPhone
-            );
-            return match || null;
-        }
-        
-        return null;
-    } catch {
-        return null;
-    }
+export async function rejectQROrder(orderId: string, reason?: string): Promise<any> {
+  return requestOrThrow(`orders/${orderId}/reject`, {
+    method: 'POST',
+    body: { reason },
+  });
 }

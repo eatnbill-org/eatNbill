@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logoutStaffSession } from '@/lib/staff-session';
+import { apiClient } from '@/lib/api-client';
 
 interface StaffData {
     id: string;
@@ -24,33 +25,36 @@ export function useHeadAuth() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('staff_token') || localStorage.getItem('waiter_token');
-        const staffData = localStorage.getItem('staff_data') || localStorage.getItem('waiter_data');
-        const restaurantData = localStorage.getItem('staff_restaurant') || localStorage.getItem('waiter_restaurant');
+        let cancelled = false;
 
-        if (!token || !staffData) {
-            navigate('/auth/login');
-            setIsLoading(false);
-            return;
-        }
+        const loadSession = async () => {
+            const response = await apiClient.get<{ staff?: StaffData; restaurant?: RestaurantData }>('/auth/staff/me');
+            if (cancelled) return;
 
-        try {
-            setStaff(JSON.parse(staffData));
-            if (restaurantData) {
-                setRestaurant(JSON.parse(restaurantData));
+            if (response.error || !response.data?.staff) {
+                navigate('/auth/login', { replace: true });
+                setIsLoading(false);
+                return;
             }
-        } catch (error) {
-            console.error('Failed to parse staff data:', error);
-            void logout();
-        }
 
-        setIsLoading(false);
+            setStaff(response.data.staff);
+            setRestaurant(response.data.restaurant ?? null);
+            apiClient.setRestaurantId(response.data.restaurant?.id ?? null);
+            apiClient.setTenantId((response.data.restaurant as { tenantId?: string } | undefined)?.tenantId ?? null);
+            setIsLoading(false);
+        };
+
+        void loadSession();
+
+        return () => {
+            cancelled = true;
+        };
     }, [navigate]);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         await logoutStaffSession();
         navigate('/auth/login');
-    };
+    }, [navigate]);
 
     return { staff, restaurant, logout, isLoading };
 }

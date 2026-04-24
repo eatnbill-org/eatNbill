@@ -12,10 +12,11 @@ import { requestTimeout } from '../security/requestTimeout';
 import { timingMiddleware } from './timing.middleware';
 import { env } from '../env';
 import { redisClient } from '../utils/redis';
+import { csrfProtection } from './csrf.middleware';
 
 const authLimiter = rateLimit({
   windowMs: 60_000,
-  limit: 120,
+  limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
   store: env.REDIS_URL && redisClient.getClient()
@@ -27,45 +28,41 @@ const authLimiter = rateLimit({
 
 const defaultLimiter = (req: any, res: any, next: any) => next(); // No-op for better performance
 
+const sensitiveAuthLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many authentication attempts' } },
+  store: env.REDIS_URL && redisClient.getClient()
+    ? new RedisStore({
+        sendCommand: (...args: string[]) => redisClient.getClient()!.call(...(args as [string, ...string[]])) as Promise<any>,
+        prefix: 'rl:auth-sensitive:',
+      })
+    : undefined,
+});
+
 
 export function applyCommonMiddleware(app: Express) {
   const allowedOrigins = new Set(env.CORS_ALLOWED_ORIGINS.map((origin) => origin.replace(/\/+$/, '')));
 
   // CORS configuration - must be before other middleware
-  const corsOptions = {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  app.use(cors({
+    origin: (origin, callback) => {
       // Allow non-browser and same-origin requests (no Origin header)
       if (!origin) return callback(null, true);
 
       const normalizedOrigin = origin.replace(/\/+$/, '');
-      
-      // Detailed debug logging for CORS in development
-      if (env.NODE_ENV === 'development') {
-        console.log(`[CORS] Checking origin: "${normalizedOrigin}" against allowed:`, Array.from(allowedOrigins));
-      }
-
       if (allowedOrigins.has(normalizedOrigin)) {
         return callback(null, true);
       }
 
-      // Special case for localhost matching even if port differs or if it's missing in env
-      if (env.NODE_ENV === 'development' && (normalizedOrigin.startsWith('http://localhost') || normalizedOrigin.startsWith('http://127.0.0.1'))) {
-        console.warn(`[CORS] Allowing localhost origin "${normalizedOrigin}" in development even though not in allowedOrigins`);
-        return callback(null, true);
-      }
-
-      console.warn(`[CORS] Blocked request from origin: ${origin}`);
-      return callback(null, false);
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-restaurant-id'],
-  };
-
-  app.use(cors(corsOptions));
-
-  // Handle preflight OPTIONS requests explicitly
-  app.options(/.*/, cors(corsOptions));
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-restaurant-id', 'x-csrf-token'],
+  }));
 
   // Logging middleware (development only)
   if (env.NODE_ENV === 'development') {
@@ -79,6 +76,7 @@ export function applyCommonMiddleware(app: Express) {
   
   app.use(helmetMiddleware);
   app.use(cookieParser());
+  app.use(csrfProtection);
   app.use(hpp());
   app.use(jsonLimit);
   app.use(urlencodedLimit);
@@ -88,6 +86,7 @@ export function applyCommonMiddleware(app: Express) {
 
 export const rateLimiters = {
   auth: authLimiter,
+  authSensitive: sensitiveAuthLimiter,
   default: defaultLimiter,
 };
 

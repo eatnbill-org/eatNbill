@@ -5,6 +5,7 @@ import { AppError } from '../../middlewares/error.middleware';
 import { rateLimit } from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { redisClient } from '../../utils/redis';
+import { SUPER_ADMIN_ACCESS_TOKEN_COOKIE } from '../auth/cookies';
 
 /**
  * Super Admin authentication middleware
@@ -15,7 +16,7 @@ import { redisClient } from '../../utils/redis';
 export async function superAdminAuthMiddleware(req: Request, _res: Response, next: NextFunction) {
   try {
     // Try to get token from cookies first, then Authorization header
-    const cookieToken = req.cookies?.sa_access_token;
+    const cookieToken = req.cookies?.[SUPER_ADMIN_ACCESS_TOKEN_COOKIE];
     const header = req.get('authorization');
     const bearer = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
     const token = cookieToken || bearer;

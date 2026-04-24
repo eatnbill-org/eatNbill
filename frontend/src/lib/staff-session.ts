@@ -1,15 +1,5 @@
 import { apiClient } from "@/lib/api-client";
 
-type StaffLoginResponse = {
-  token?: string;
-  accessToken?: string;
-  staff?: unknown;
-  restaurant?: {
-    id?: string;
-    tenantId?: string;
-  };
-};
-
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
 
 function authUrl(path: string): string {
@@ -26,23 +16,11 @@ export function clearStaffSessionStorage() {
   localStorage.removeItem("waiter_restaurant");
 }
 
-export function saveStaffSession(data: StaffLoginResponse) {
-  const token = data.token || data.accessToken || "";
-  clearStaffSessionStorage();
-
-  localStorage.setItem("staff_token", token);
-  localStorage.setItem("staff_data", JSON.stringify(data.staff || {}));
-  localStorage.setItem("staff_restaurant", JSON.stringify(data.restaurant || {}));
-}
-
 export async function logoutStaffSession() {
-  const token = localStorage.getItem("staff_token") || localStorage.getItem("waiter_token");
-
   try {
     await fetch(authUrl("/auth/staff/logout"), {
       method: "POST",
       credentials: "include",
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
   } catch {
     // Best-effort logout

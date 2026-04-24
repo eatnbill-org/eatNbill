@@ -27,6 +27,7 @@ import {
 
 export function superAdminAuthRoutes() {
   const router = Router();
+  router.use(rateLimiters.authSensitive);
 
   // Public authentication endpoints
   router.post('/login', validateBody(loginSchema), loginController);
@@ -49,4 +50,3 @@ export function superAdminAuthRoutes() {
 
   return router;
 }
-
