@@ -15,7 +15,7 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [resetToken, setResetToken] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     newPassword: "",
     confirmPassword: "",
@@ -23,7 +23,11 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     // Check for token in query params first
-    let token = searchParams.get("access_token") || searchParams.get("token");
+    let token =
+      searchParams.get("resetToken") ||
+      searchParams.get("reset_token") ||
+      searchParams.get("token") ||
+      searchParams.get("access_token");
 
     // If not in query params, check URL hash (Supabase sends it in hash)
     if (!token) {
@@ -33,7 +37,7 @@ export default function ResetPasswordPage() {
     }
 
     if (token) {
-      setAccessToken(token);
+      setResetToken(token);
     } else {
       toast.error("Invalid or missing reset token");
       setTimeout(() => navigate("/auth/forgot-password"), 2000);
@@ -71,7 +75,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (!accessToken) {
+    if (!resetToken) {
       toast.error("Reset token is missing");
       return;
     }
@@ -80,7 +84,7 @@ export default function ResetPasswordPage() {
 
     try {
       const response = await apiClient.post("/auth/reset-password", {
-        accessToken,
+        resetToken,
         newPassword: formData.newPassword,
         confirmPassword: formData.confirmPassword,
       });
@@ -118,7 +122,7 @@ export default function ResetPasswordPage() {
     }
   };
 
-  if (!accessToken) {
+  if (!resetToken) {
     return null;
   }
 

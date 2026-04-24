@@ -603,7 +603,7 @@ export async function forgotPassword(email: string) {
   // Find user
   const user = await findUserByEmail(normalizedEmail);
 
-  if (!user) {
+  if (!user || !user.is_active || !user.email_verified || !user.password_hash) {
     // Security: Don't reveal if email exists
     return {
       success: true,
@@ -680,15 +680,15 @@ export async function verifyResetOTP(email: string, otp: string) {
   // Find user
   const user = await findUserByEmail(normalizedEmail);
 
-  if (!user) {
-    throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+  if (!user || !user.is_active || !user.email_verified || !user.password_hash) {
+    throw new AppError('INVALID_OTP', 'Invalid or expired reset code', 400);
   }
 
   // Check if OTP exists and not expired
   if (!user.otp || !user.otp_expires_at) {
     throw new AppError(
-      'OTP_NOT_FOUND',
-      'No reset code found. Please request a new one.',
+      'INVALID_OTP',
+      'Invalid or expired reset code',
       400
     );
   }
@@ -696,7 +696,7 @@ export async function verifyResetOTP(email: string, otp: string) {
   if (new Date(user.otp_expires_at) < new Date()) {
     throw new AppError(
       'OTP_EXPIRED',
-      'Reset code has expired. Please request a new one.',
+      'Invalid or expired reset code',
       400
     );
   }
@@ -713,23 +713,22 @@ export async function verifyResetOTP(email: string, otp: string) {
   // Verify OTP
   if (user.otp !== otp) {
     await incrementOTPAttempts(user.id);
-    const remainingAttempts = MAX_OTP_ATTEMPTS - (user.otp_attempts + 1);
-
     throw new AppError(
       'INVALID_OTP',
-      `Invalid reset code. ${remainingAttempts} attempts remaining.`,
+      'Invalid or expired reset code',
       400
     );
   }
 
-  // Generate a temporary token (valid for 30 minutes to complete password reset)
+  // Generate a dedicated reset token that cannot be used as a normal auth token.
   const resetToken = signLocalJwt(
     {
       userId: user.id,
       tenantId: user.tenant_id,
       role: user.role,
-    } as any,
-    'access' // Use shorter expiry
+      resetNonce: user.otp,
+    },
+    'password_reset'
   );
 
   return {
@@ -755,6 +754,41 @@ export async function resetPassword(resetToken: string, newPassword: string) {
     throw new AppError('INVALID_TOKEN', 'Invalid or expired reset token', 400);
   }
 
+  if (payload.type !== 'password_reset') {
+    throw new AppError('INVALID_TOKEN', 'Invalid or expired reset token', 400);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: {
+      id: true,
+      tenant_id: true,
+      is_active: true,
+      email_verified: true,
+      password_hash: true,
+      otp: true,
+      otp_expires_at: true,
+    },
+  });
+
+  if (
+    !user ||
+    !user.is_active ||
+    !user.email_verified ||
+    !user.password_hash ||
+    !user.otp ||
+    !user.otp_expires_at ||
+    new Date(user.otp_expires_at) < new Date() ||
+    payload.resetNonce !== user.otp
+  ) {
+    throw new AppError('INVALID_TOKEN', 'Invalid or expired reset token', 400);
+  }
+
+  const isSamePassword = await comparePassword(newPassword, user.password_hash);
+  if (isSamePassword) {
+    throw new AppError('VALIDATION_FAILED', 'New password must be different from your current password', 400);
+  }
+
   // Hash new password
   const passwordHash = await hashPassword(newPassword);
 
@@ -762,10 +796,7 @@ export async function resetPassword(resetToken: string, newPassword: string) {
   await updateUserPassword(payload.userId, passwordHash);
 
   // Audit log
-  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-  if (user) {
-    await createAuditLog(user.tenant_id, user.id, 'PASSWORD_RESET', 'USER', user.id);
-  }
+  await createAuditLog(user.tenant_id, user.id, 'PASSWORD_RESET', 'USER', user.id);
 
   return {
     success: true,

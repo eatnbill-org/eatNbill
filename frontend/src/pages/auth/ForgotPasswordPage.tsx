@@ -22,7 +22,9 @@ export default function ForgotPasswordPage() {
   const [otp, setOtp] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [canResend, setCanResend] = useState(false);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -121,10 +123,15 @@ export default function ForgotPasswordPage() {
       return;
     }
 
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = await resetPasswordWithToken(resetToken, newPassword);
+      const result = await resetPasswordWithToken(resetToken, newPassword, confirmPassword);
 
       if (result.success) {
         toast.success("Password reset successfully!", {
@@ -363,6 +370,36 @@ export default function ForgotPasswordPage() {
                   <p className="text-xs text-muted-foreground">
                     Must be 8+ characters with uppercase, lowercase, and number
                   </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">
+                    <Lock className="w-4 h-4 inline mr-2" />
+                    Confirm Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={loading}
+                      className="h-11 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full h-11" disabled={loading}>

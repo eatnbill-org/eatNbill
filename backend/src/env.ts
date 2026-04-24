@@ -29,6 +29,7 @@ const envSchema = z.object({
   }),
   JWT_ACCESS_EXPIRY: z.string().default('1d'), // Access token expiry
   JWT_REFRESH_EXPIRY: z.string().default('30d'), // Refresh token expiry
+  JWT_PASSWORD_RESET_EXPIRY: z.string().default('15m'), // Password reset token expiry
 
   // Redis
   REDIS_URL: z.string().optional(),

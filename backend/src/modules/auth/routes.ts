@@ -3,12 +3,14 @@ import { rateLimiters } from '../../middlewares';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { validateBody } from '../../middlewares/validation.middleware';
 import {
+  changePasswordController,
   refreshController,
   logoutController,
   authenticateController,
   staffLoginController,
   staffMeController,
   staffLogoutController,
+  verifyPasswordController,
 } from './controller';
 import {
   registerWithOTPController,
@@ -20,12 +22,14 @@ import {
   resetPasswordWithTokenController,
 } from './otp-controller';
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   staffLoginSchema,
   registerWithOTPSchema,
   verifyOTPSchema,
   resendOTPSchema,
   loginWithPasswordSchema,
+  verifyPasswordSchema,
   verifyResetOTPSchema,
   resetPasswordWithTokenSchema,
 } from './schema';
@@ -47,6 +51,8 @@ export function authRoutes() {
   // Session endpoints
   router.post('/refresh', refreshController);
   router.get('/me', authMiddleware, authenticateController);
+  router.post('/verify-password', authMiddleware, validateBody(verifyPasswordSchema), verifyPasswordController);
+  router.patch('/change-password', authMiddleware, validateBody(changePasswordSchema), changePasswordController);
   router.post('/logout', logoutController);
 
   // Staff auth
