@@ -458,7 +458,76 @@ export function TableManagement({ slug = "demo" }: TableManagementProps) {
                 </div>
             </div>
 
-            <div className="overflow-hidden border border-border rounded-2xl bg-muted/20">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {tables.map(t => (
+                    <div key={t.id} className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="h-12 w-12 border-2 border-slate-50 rounded-xl bg-slate-50 flex items-center justify-center overflow-hidden">
+                                    {t.qr_code?.qr_png_url ? (
+                                        <img src={t.qr_code.qr_png_url} className="w-full h-full object-cover" alt="QR" />
+                                    ) : (
+                                        <QrCode className="w-5 h-5 text-slate-300" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black text-slate-800 uppercase leading-none">{t.table_number}</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{t.hall?.name || "Other"}</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                                <Badge variant="outline" className={cn("px-2 py-0.5 rounded-md font-black uppercase tracking-tighter text-[8px]", getHallBadgeStyle(t.hall?.name || ""))}>
+                                    {t.hall?.is_ac ? "AC" : "Non-AC"}
+                                </Badge>
+                                <div className="flex items-center gap-1 text-slate-400">
+                                    <UsersIcon className="w-3 h-3" />
+                                    <span className="text-[10px] font-bold">{t.seats} Seats</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handlePrintSingle(t)}
+                                className="h-9 px-3 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 rounded-xl border border-primary/5"
+                            >
+                                <Printer className="w-3.5 h-3.5 mr-1.5" /> Print QR
+                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => handleOpenEdit(t)}
+                                    className="h-9 w-9 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl border border-slate-50"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => handleDelete(t.id)}
+                                    className="h-9 w-9 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-50"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {tables.length === 0 && !loading && (
+                    <div className="py-12 bg-white rounded-2xl border border-dashed border-slate-200 text-center">
+                        <Armchair className="h-10 w-10 text-slate-200 mx-auto mb-3" />
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No tables created yet</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-hidden border border-border rounded-2xl bg-muted/20">
                 <div className="overflow-x-auto">
                     <Table className="min-w-[760px]">
                     <TableHeader>

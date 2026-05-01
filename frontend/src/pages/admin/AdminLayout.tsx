@@ -126,8 +126,9 @@ const HoverableMenuItem = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { isMobile } = useSidebar();
 
-  if (isCollapsed) {
+  if (isCollapsed && !isMobile) {
     return (
       <SidebarMenuItem
         onMouseEnter={() => setIsOpen(true)}
@@ -148,8 +149,8 @@ const HoverableMenuItem = ({
             side="right"
             align="start"
             className="w-56 bg-sidebar border-sidebar-border text-sidebar-foreground ml-2 shadow-2xl backdrop-blur-md p-1"
-            onMouseEnter={() => setIsOpen(true)}
-            onMouseLeave={() => setIsOpen(false)}
+            onMouseEnter={() => !isMobile && setIsOpen(true)}
+            onMouseLeave={() => !isMobile && setIsOpen(false)}
           >
             <DropdownMenuLabel className="text-primary text-[10px] font-black uppercase tracking-[0.2em] px-3 py-2 opacity-80">{label}</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-sidebar-border mx-1 mb-1" />
@@ -174,8 +175,8 @@ const HoverableMenuItem = ({
       className="group/collapsible"
     >
       <SidebarMenuItem
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
+        onMouseEnter={() => !isMobile && setIsOpen(true)}
+        onMouseLeave={() => !isMobile && setIsOpen(false)}
       >
         <CollapsibleTrigger asChild>
           <SidebarMenuButton
@@ -220,8 +221,15 @@ function AdminSidebar() {
   const location = useLocation();
   const pathname = location.pathname;
 
-  const { state } = useSidebar();
+  const { state, setOpen, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
+
+  // ✅ Auto-close sidebar on mobile when navigating
+  useEffect(() => {
+    if (isMobile && state === "expanded") {
+      setOpen(false);
+    }
+  }, [pathname, isMobile]);
 
   // ✅ Get Dynamic Logo & Name from Store
   const { restaurant, fetchRestaurant } = useRestaurantStore();

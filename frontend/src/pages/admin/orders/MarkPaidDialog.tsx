@@ -224,68 +224,15 @@ export default function MarkPaidDialog({ order, open, onOpenChange }: MarkPaidDi
                         ) : (
                             <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
                                 <div className="space-y-4">
-                                    {/* Step 1: Select Method */}
-                                    {!isCreditView && (
-                                        <div className="space-y-2">
-                                            <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Payment Method</Label>
-                                            <div className="max-h-44 overflow-y-auto pr-1 sm:max-h-none sm:overflow-visible">
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {PAYMENT_METHODS.map((pm) => {
-                                                        const selected = method === pm.value;
-                                                        return (
-                                                            <button
-                                                                key={pm.value}
-                                                                type="button"
-                                                                onClick={() => setMethod(pm.value as PaymentMethod)}
-                                                                className={cn(
-                                                                    "h-11 rounded-xl border px-2.5 sm:px-3 flex items-center gap-2 text-left transition-all",
-                                                                    selected
-                                                                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
-                                                                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                                                                )}
-                                                            >
-                                                                <div className={cn("p-1.5 rounded-lg", pm.bgColor, pm.color)}>
-                                                                    <pm.icon className="h-4 w-4" />
-                                                                </div>
-                                                                <span className="text-[11px] sm:text-xs font-bold leading-tight">{pm.label}</span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
+                                    {/* Payment Method selection removed as per user request */}
+                                    <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-3">
+                                        <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                                            <Wallet className="h-5 w-5" />
                                         </div>
-                                    )}
-
-                                    {/* Step 2: Credit Toggle */}
-                                    <div className="space-y-2">
-                                        <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Credit Option</Label>
-                                        {!isCreditView ? (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => setIsCreditView(true)}
-                                                className="w-full h-11 rounded-xl border-orange-100 bg-orange-50/20 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 transition-all font-bold gap-2 text-xs"
-                                            >
-                                                <UserPlus className="h-4 w-4" />
-                                                Move to Customer Credit
-                                            </Button>
-                                        ) : (
-                                            <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl space-y-2">
-                                                <div className="flex items-center gap-2 text-orange-800">
-                                                    <AlertCircle className="h-4 w-4" />
-                                                    <span className="text-xs font-black uppercase tracking-tight">Credit Mode Active</span>
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setIsCreditView(false)}
-                                                    className="w-full h-8 rounded-lg text-orange-600 hover:bg-orange-100 font-bold text-[10px]"
-                                                >
-                                                    Switch to Direct Payment
-                                                </Button>
-                                            </div>
-                                        )}
+                                        <div>
+                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1">Settlement Mode</p>
+                                            <p className="text-sm font-bold text-slate-700">Quick Settle (Cash/UPI)</p>
+                                        </div>
                                     </div>
                                 </div>
 
