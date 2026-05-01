@@ -6,10 +6,9 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "dev:all": "docker-compose up -d && bun run --watch src/index.ts",
-    "build": "tsc",
-    "build:bun": "bun build src/index.ts --outdir ./dist --target bun",
+    "build:tsc": "tsc",
+    "build": "bun build src/index.ts --outdir ./dist --target bun",
     "prod": "bun run dist/index.js",
-    "postbuild": "cp package.json dist/",
     "start": "bun run src/index.ts",
     "start:docker": "docker-compose up -d && bun run src/index.ts",
     "docker:up": "docker-compose up -d",
